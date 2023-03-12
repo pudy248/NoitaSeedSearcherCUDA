@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="main.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="noita_random.h" />
+    <ClInclude Include="misc\datatypes.h" />
+    <ClInclude Include="misc\error.h" />
+    <ClInclude Include="misc\stb_hbwang.h" />
+    <ClInclude Include="data\coalhax.h" />
+    <ClInclude Include="data\spells.h" />
+    <ClInclude Include="data\wand_levels.h" />
+  </ItemGroup>
+</Project>
