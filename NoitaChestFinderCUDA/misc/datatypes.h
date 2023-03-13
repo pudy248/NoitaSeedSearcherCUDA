@@ -9,28 +9,12 @@ typedef unsigned long long int ulong;
 struct IntPair {
 	int x;
 	int y;
+	
+	__host__ __device__ IntPair operator+(IntPair other) {
+		return { x + other.x, y + other.y };
+	}
+	
+	__host__ __device__ IntPair operator*(int scalar) {
+		return { x * scalar, y * scalar };
+	}
 };
-
-struct ConfigOptions {
-	//Search space
-	uint batch;
-	uint startSeed;
-	uint endSeed;
-	ushort pwCount;
-	bool biomes[26];
-	//ng+
-
-	//Search scope
-	bool searchChests;
-	bool searchPedestals;
-	bool searchWandAltars;
-	bool searchPixelScenes;
-
-	bool checkPotions;
-	bool checkWands;
-	bool checkCards;
-
-	//More TBD
-};
-
-

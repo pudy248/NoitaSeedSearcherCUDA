@@ -3,6 +3,8 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+#include <iostream>
+
 static const char* _cudaGetErrorEnum(cudaError_t error) {
 	return cudaGetErrorName(error);
 }

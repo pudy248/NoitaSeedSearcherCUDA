@@ -3,11 +3,11 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-typedef unsigned char byte;
+#include "../misc/datatypes.h"
 
 struct wandLevel {
 	float prob;
-	byte id;
+	Item id;
 };
 struct BiomeWands {
 	int count;
@@ -17,101 +17,101 @@ struct BiomeWands {
 __device__ const static BiomeWands wandLevels[] = {
 { //coalmine
 	2,
-	{{17, 71},
-	{1.9, 32}}
+	{{17, UNKNOWN_WAND},
+	{1.9, WAND_T1}}
 },
 { //coalmine_alt
 	2,
-	{{17, 71},
-	{1.9, 32}}
+	{{17, UNKNOWN_WAND},
+	{1.9, WAND_T1}}
 },
 { //excavationsite
 	3,
-	{{2, 33},
-	{2, 34},
-	{2, 66}}
+	{{2, WAND_T1NS},
+	{2, WAND_T2},
+	{2, WAND_T2B}}
 },
 { //fungicave
 	2,
-	{{5, 35},
-	{5, 33}}
+	{{5, WAND_T2NS},
+	{5, WAND_T1NS}}
 },
 { //snowcave
 	3,
-	{{5, 34},
-	{5, 66},
-	{5, 35}}
+	{{5, WAND_T2},
+	{5, WAND_T2B},
+	{5, WAND_T2NS}}
 },
 { //snowcastle
 	3,
-	{{5, 36},
-	{5, 67},
-	{5, 37}}
+	{{5, WAND_T3},
+	{5, WAND_T3B},
+	{5, WAND_T3NS}}
 },
 { //rainforest
 	5,
-	{{5, 38},
-	{3, 40},
-	{3, 35},
-	{3, 37},
-	{3, 68}}
+	{{5, WAND_T4},
+	{3, WAND_T5},
+	{3, WAND_T2NS},
+	{3, WAND_T3NS},
+	{3, WAND_T4B}}
 },
 { //rainforest_open
 	5,
-	{{5, 38},
-	{3, 40},
-	{3, 35},
-	{3, 37},
-	{3, 68}}
+	{{5, WAND_T4},
+	{3, WAND_T5},
+	{3, WAND_T2NS},
+	{3, WAND_T3NS},
+	{3, WAND_T4B}}
 },
 { //rainforest_dark
 	5,
-	{{5, 38},
-	{3, 40},
-	{3, 37},
-	{3, 39},
-	{5, 69}}
+	{{5, WAND_T4},
+	{3, WAND_T5},
+	{3, WAND_T3NS},
+	{3, WAND_T4NS},
+	{5, WAND_T5B}}
 },
 { //vault
 	4,
-	{{5, 40},
-	{5, 69},
-	{3, 37},
-	{2, 39}}
+	{{5, WAND_T5},
+	{5, WAND_T5B},
+	{3, WAND_T3NS},
+	{2, WAND_T4NS}}
 },
 { //crypt
 	4,
-	{{5, 42},
-	{5, 70},
-	{3, 41},
-	{2, 43}}
+	{{5, WAND_T6},
+	{5, WAND_T6B},
+	{3, WAND_T5NS},
+	{2, WAND_T6NS}}
 },
 { //wandcave
 	0
 },
 { //vault_frozen
 	3,
-	{{5, 40},
-	{3, 37},
-	{2, 39}}
+	{{5, WAND_T5},
+	{3, WAND_T3NS},
+	{2, WAND_T4NS}}
 },
 { //wizardcave
 	4,
-	{{5, 42},
-	{5, 70},
-	{3, 41},
-	{2, 43}}
+	{{5, WAND_T6},
+	{5, WAND_T6B},
+	{3, WAND_T5NS},
+	{2, WAND_T6NS}}
 },
 { //sandcave
 	2,
-	{{5, 38},
-	{5, 35}}
+	{{5, WAND_T4},
+	{5, WAND_T2NS}}
 },
 { //fungiforest
 	3,
-	{{5, 37},
-	{5, 39},
-	{5, 69}}
+	{{5, WAND_T3NS},
+	{5, WAND_T4NS},
+	{5, WAND_T5B}}
 },
 { //solid_wall_tower_1
 	0
@@ -142,8 +142,8 @@ __device__ const static BiomeWands wandLevels[] = {
 },
 { //robobase
 	4,
-	{{5, 40},
-	{5, 69},
-	{3, 37},
-	{2, 39}}
+	{{5, WAND_T5},
+	{5, WAND_T5B},
+	{3, WAND_T3NS},
+	{2, WAND_T4NS}}
 }};

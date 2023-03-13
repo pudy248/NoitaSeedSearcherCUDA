@@ -3,7 +3,9 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-struct Spell
+#include "../misc/datatypes.h"
+
+struct SpellData
 {
     const char* id;
     int type;
@@ -23,7 +25,7 @@ enum ACTION_TYPE
     PASSIVE = 7
 };
 
-__device__ const static Spell all_spells[] =
+__device__ const static SpellData all_spells[] =
 {
     {"BOMB", PROJECTILE, {1, 1, 1, 1, 1, 1, 1, 0, 0, 0}},
     {"LIGHT_BULLET", PROJECTILE, {2, 1, 0.5, 0, 0, 0, 0, 0, 0, 0}},

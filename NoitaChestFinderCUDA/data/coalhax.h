@@ -1,7 +1,6 @@
 #pragma once
 
-__device__
-unsigned char coalmine_overlay[] = {
+__device__ unsigned char coalmine_overlay[] = {
 	0,
 	64,
 	0,

@@ -2,49 +2,69 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="Precheckers.cu" />
-    <CudaCompile Include="misc\utilites.cu">
-      <Filter>misc</Filter>
-    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="data\modifiers.h">
-      <Filter>data</Filter>
-    </ClInclude>
-    <ClInclude Include="data\perks.h">
-      <Filter>data</Filter>
-    </ClInclude>
-    <ClInclude Include="data\spells.h">
-      <Filter>data</Filter>
-    </ClInclude>
-    <ClInclude Include="data\wand_levels.h">
+    <ClInclude Include="Precheckers.h" />
+    <ClInclude Include="Worldgen.h" />
+    <ClInclude Include="data\alchemy.h">
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="data\coalhax.h">
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="misc\datatypes.h">
-      <Filter>misc</Filter>
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\fungal.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\materials.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\modifiers.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\perks.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\rains.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\spells.h">
+      <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="misc\error.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="misc\noita_random.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="misc\pathfinding.h">
       <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="misc\stb_hbwang.h">
       <Filter>misc</Filter>
     </ClInclude>
-    <ClInclude Include="data\rains.h">
+    <ClInclude Include="misc\utilities.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="data\wand_levels.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="misc\noita_random.h">
+    <ClInclude Include="misc\worldgen_helpers.h">
       <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="WorldgenSearch.h" />
+    <ClInclude Include="data\items.h">
+      <Filter>data</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">
-      <UniqueIdentifier>{50ad8aa3-d24c-4564-8ff7-15899dc7261f}</UniqueIdentifier>
+      <UniqueIdentifier>{fa318438-36be-44d1-a852-29b98ca3ef22}</UniqueIdentifier>
     </Filter>
     <Filter Include="misc">
-      <UniqueIdentifier>{0170991e-66c1-4c88-bb90-088ed32c8053}</UniqueIdentifier>
+      <UniqueIdentifier>{d214c577-367d-405c-9fc8-9fdc8f24932b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

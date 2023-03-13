@@ -1,4 +1,5 @@
 #pragma once
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "datatypes.h"
@@ -75,7 +76,7 @@ public:
 		else
 		{
 			double y__ = y_ * 3483.328;
-			double t = e;
+			double t = (double)e;
 			y__ += t;
 			y_ *= y__;
 			r = y_;
@@ -112,7 +113,7 @@ public:
 		uint NextU()
 	{
 		Next();
-		return (Seed * 4.656612875e-10) * 2147483645.0;
+		return (uint)((Seed * 4.656612875e-10) * 2147483645.0);
 	}
 
 	__host__ __device__
@@ -190,7 +191,6 @@ public:
 __device__ uint StaticRandom(NollaPrng* prng) {
 	return prng->NextU();
 }
-
 
 class NoitaRandom
 {

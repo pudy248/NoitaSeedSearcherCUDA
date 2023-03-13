@@ -55,6 +55,7 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -78,21 +79,28 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="misc\utilites.cu" />
-    <CudaCompile Include="Precheckers.cu" />
-    <CudaCompile Include="SeedChecker.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="data\items.h" />
+    <ClInclude Include="misc\utilities.h" />
+    <ClInclude Include="Precheckers.h" />
+    <ClInclude Include="Worldgen.h" />
+    <ClInclude Include="data\alchemy.h" />
     <ClInclude Include="data\coalhax.h" />
     <ClInclude Include="data\modifiers.h" />
     <ClInclude Include="data\perks.h" />
     <ClInclude Include="data\spells.h" />
     <ClInclude Include="data\wand_levels.h" />
+    <ClInclude Include="data\materials.h" />
+    <ClInclude Include="data\fungal.h" />
     <ClInclude Include="misc\datatypes.h" />
     <ClInclude Include="misc\error.h" />
     <ClInclude Include="misc\stb_hbwang.h" />
     <ClInclude Include="misc\noita_random.h" />
     <ClInclude Include="data\rains.h" />
+    <ClInclude Include="misc\worldgen_helpers.h" />
+    <ClInclude Include="misc\pathfinding.h" />
+    <ClInclude Include="WorldgenSearch.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

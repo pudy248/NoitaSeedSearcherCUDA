@@ -2,9 +2,9 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-typedef unsigned char byte;
+#include "../misc/datatypes.h"
 
-struct perk_data 
+struct PerkData
 {
     bool stackable;
     bool stackable_rare;
@@ -15,7 +15,7 @@ struct perk_data
 };
 
 #define perkCount 106
-__device__ __constant__ perk_data perkAttrs[] =
+__device__ __constant__ PerkData perkAttrs[] =
 {
     {true}, //CRITICAL_HIT
     {true, true}, //BREATH_UNDERWATER
