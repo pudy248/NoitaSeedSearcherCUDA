@@ -463,17 +463,17 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte** writeLoc, byte* out
 		}
 	}
 	writeByte(writeLoc, END_BLOCK);
-	memcpy(output, origin, *writeLoc - origin);
+	//memcpy(output, origin, *writeLoc - origin);
 }
 
 __device__ Spawnable DecodeSpawnable(byte** bytes) {
 	Spawnable ret = {};
 	ret.x = readInt(bytes);
 	ret.y = readInt(bytes);
-	ret.sType = (SpawnableType)(readByte(bytes) - (byte)SpawnableMetadata::TYPE_CHEST);
+	ret.sType = (SpawnableMetadata)(readByte(bytes));
 
 	int i = 0;
-	while (*(SpawnableMetadata*)(*bytes + i) != END_SPAWNABLE) i++;
+	while (*(*bytes + i) != END_SPAWNABLE) i++;
 	ret.count = i;
 	ret.contents = (Item*)malloc(ret.count);
 	memcpy(ret.contents, *bytes, ret.count);
@@ -484,13 +484,23 @@ __device__ Spawnable DecodeSpawnable(byte** bytes) {
 __device__ SeedSpawnables ParseSpawnableBlock(byte** bytes, byte* output, LootConfig cfg) {
 	(*bytes)++;
 	uint seed = readInt(bytes);
-	Spawnable* spawnables = (Spawnable*)malloc(sizeof(Spawnable) * 20);
+	//int i = 0;
+	int spawnableCount = 100;
+	//while (*(*bytes + i) != END_BLOCK) {
+	//	if (*(*bytes + i) == START_SPAWNABLE) {
+	//		spawnableCount++;
+	//	}
+	//	i++;
+	//}
+	//printf("%i spawnables in %i bytes\n", spawnableCount, i);
+	Spawnable* spawnables = (Spawnable*)malloc(sizeof(Spawnable) * spawnableCount);
 	int idx = 0;
 	SpawnableMetadata b = *(SpawnableMetadata*)*bytes;
 	while (b != END_BLOCK) {
 		b = (SpawnableMetadata)readByte(bytes);
 		if (b == START_SPAWNABLE) {
-			spawnables[idx++] = DecodeSpawnable(bytes);
+			if (idx >= spawnableCount) printf("Stack blown!");
+			else spawnables[idx++] = DecodeSpawnable(bytes);
 		}
 	}
 	//memcpy(output, bak, *bytes - bak);

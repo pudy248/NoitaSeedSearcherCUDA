@@ -90,19 +90,10 @@ enum Item : byte {
 	ERR
 };
 
-enum SpawnableType : byte
-{
-	Chest,
-	GreatChest,
-	ItemPedestal,
-	WandPedestal,
-	EoEDrop
-};
-
 struct Spawnable {
 	int x;
 	int y;
-	SpawnableType sType;
+	SpawnableMetadata sType;
 	int count;
 	Item* contents;
 };
@@ -135,4 +126,8 @@ __device__ void writeInt(byte** ptr, int val) {
 	writeByte(ptr, (val >> 8) & 0xff);
 	writeByte(ptr, (val >> 16) & 0xff);
 	writeByte(ptr, (val >> 24) & 0xff);
+}
+
+__device__ Material readMaterial(byte** ptr) {
+	return (Material)((readByte(ptr)) | (readByte(ptr) << 8));
 }

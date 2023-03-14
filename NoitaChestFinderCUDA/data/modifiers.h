@@ -5,6 +5,32 @@
 
 #define biomeModifierCount 22
 
+enum BiomeModifier : byte {
+	MODIFIER_NONE,
+	MOIST,
+	FOG_OF_WAR_REAPPEARS,
+	HIGH_GRAVITY,
+	LOW_GRAVITY,
+	CONDUCTIVE,
+	HOT,
+	GOLD_VEIN,
+	GOLD_VEIN_SUPER,
+	PLANT_INFESTED,
+	FURNISHED,
+	BOOBY_TRAPPED,
+	PERFORATED,
+	SPOOKY,
+	GRAVITY_FIELDS,
+	FUNGAL,
+	FLOODED,
+	GAS_FLOODED,
+	SHIELDED,
+	PROTECTION_FIELDS,
+	OMINOUS,
+	INVISIBILITY,
+	WORMY
+};
+
 __device__ __constant__ const char* biomeModifierNames[] = {
 	"MOIST", 
 	"FOG_OF_WAR_REAPPEARS", 

@@ -40,7 +40,6 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 		byte* visited = dVisitedMem + index * memSizes.visitedMemSize;
 
 		if (!PrecheckSeed(seed, precheckCfg)) continue;
-		//else printf("Precheck passed: %i\n", seed);
 
 		GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
 
@@ -51,15 +50,24 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 		SeedSpawnables result = ParseSpawnableBlock(&localPtr2, output, lootCfg);
 		for (int i = 0; i < result.count; i++) {
 			Spawnable s = result.spawnables[i];
-			//if(s.count > 5) printf("%i @ (%i, %i) (#%i of %i): T%i #%i (0=%i)\n", result.seed, s.x, s.y, i + 1, result.count, s.sType, s.count, s.contents[0]);
-			for (int j = 0; j < s.count - 1; j++) {
-				if(s.contents[j] == MIMIC_SIGN) {
-					if(s.contents[j + 1] == MIMIC_LEGGY || s.contents[j + 1] == HEART_MIMIC)
-						printf("%i @ (%i, %i) (#%i of %i): T%i #%i (0=%i)\n", result.seed, s.x, s.y, i + 1, result.count, s.sType, s.count, s.contents[0]);
+			bool printSpawnable = false;
+			int pahaSilmaCount = 0;
+			for (int j = 0; j < s.count; j++) {
+				if(s.contents[j] == PAHA_SILMA) {
+					pahaSilmaCount++;
 				}
+			}
+			printSpawnable = pahaSilmaCount >= 3;
+
+			if (printSpawnable) {
+				printf("%i @ (%i, %i) (#%i of %i): T%i #%i (", result.seed, s.x, s.y, i + 1, result.count, s.sType, s.count);
+				for (int n = 0; n < s.count; n++) printf("%i ", s.contents[n]);
+				printf("\b)\n");
 			}
 		}
 		freeSeedSpawnables(result);
+
+		if (seed % 1000000 == 0) printf("Seed %i\n", seed);
 	}
 }
 
@@ -73,22 +81,23 @@ int main()
 	const int map_h = 103;
 
 	MemBlockSizes memSizes = {
-		256,
+		1024,
 		3 * map_w * (map_h + 4),
 		sizeof(IntPair) * map_w * map_h,
 		map_w * map_h
 	};
 
-	GlobalConfig globalCfg = { 1, 1000000 };
+	GlobalConfig globalCfg = { 1, INT_MAX };
 	PrecheckConfig precheckCfg = {
+		false,
 		false, MATERIAL_NONE,
-		false, MATERIAL_NONE,
-		false, {}, {},
-		false, {FungalShift(GOLD, false, CHEESE_STATIC, false)},
+		false, URINE,
+		false, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
 		false, {},
-		false, {} };
-	WorldgenConfig worldCfg = { tiles_w, tiles_h, map_w, map_h, 34, 14, true, 10 };
-	LootConfig lootCfg = { 0, true };
+		false, {CONDUCTIVE, MODIFIER_NONE, CONDUCTIVE, MODIFIER_NONE, CONDUCTIVE, CONDUCTIVE},
+		false, {PERKS_LOTTERY, GAMBLE, EDIT_WANDS_EVERYWHERE, PROTECTION_EXPLOSION, PROTECTION_MELEE } };
+	WorldgenConfig worldCfg = { tiles_w, tiles_h, map_w, map_h, 34, 14, true, 5 };
+	LootConfig lootCfg = { 3, true };
 
 	size_t tileDataSize = 3 * tiles_w * tiles_h;
 	//size_t outputSize = (globalCfg.endSeed - globalCfg.startSeed) * memSizes.outputSize;
@@ -109,10 +118,10 @@ int main()
 	byte* dMiscMem;
 	byte* dVisitedMem;
 
-	printf("Memory Usage Statistics:\n");
-	printf("Output: %iMB  Map data: %iMB\n", outputSize / 1000000, mapDataSize / 1000000);
-	printf("Misc memory: %iMB  Visited cells: %iMB\n", miscMemSize / 1000000, visitedMemSize / 1000000);
-	printf("Total memory: %iMB\n",(tileDataSize + outputSize + mapDataSize + miscMemSize + visitedMemSize) / 1000000);
+	//printf("Memory Usage Statistics:\n");
+	//printf("Output: %iMB  Map data: %iMB\n", outputSize / 1000000, mapDataSize / 1000000);
+	//printf("Misc memory: %iMB  Visited cells: %iMB\n", miscMemSize / 1000000, visitedMemSize / 1000000);
+	//printf("Total memory: %iMB\n",(tileDataSize + outputSize + mapDataSize + miscMemSize + visitedMemSize) / 1000000);
 
 	checkCudaErrors(cudaMalloc(&dTileData, tileDataSize));
 	checkCudaErrors(cudaMalloc(&dOutput, outputSize));
@@ -127,6 +136,7 @@ int main()
 	//printf("kernel shared mem: %i\n", sharedMemSize);
 	Kernel << <NUMBLOCKS, BLOCKSIZE, sharedMemSize >> > (dOutput, dMapData, dMiscMem, dVisitedMem, memSizes, globalCfg, precheckCfg, worldCfg, lootCfg);
 	checkCudaErrors(cudaDeviceSynchronize());
+	//printf("exit kernel\n");
 	freeTS << <1, 1 >> > ();
 	checkCudaErrors(cudaDeviceSynchronize());
 

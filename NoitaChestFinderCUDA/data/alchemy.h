@@ -16,6 +16,14 @@ struct AlchemyRecipe {
 		mats[1] = mat2;
 		mats[2] = mat3;
 	}
+
+	__host__ __device__ bool operator==(AlchemyRecipe other) {
+		bool passed1 = other.mats[0] == MATERIAL_NONE || (other.mats[0] == mats[0] || other.mats[0] == mats[2]);
+		bool passed2 = other.mats[1] == MATERIAL_NONE || (other.mats[1] == mats[1]);
+		bool passed3 = other.mats[2] == MATERIAL_NONE || (other.mats[2] == mats[0] || other.mats[2] == mats[2]);
+
+		return passed1 && passed2 && passed3;
+	}
 };
 
 #define alchemyLiquidCount 30
@@ -112,15 +120,18 @@ __device__ AlchemyRecipe alchemyGetRecipe(uint seed, uint iseed) {
 	AlchemyRecipe recipe;
 	int index[] = { 0, 0, 0, 0 };
 
+	int i = 0;
 	int x = 0;
-	while (x < 3) {
+	while (x < 3 && i < 1000) {
 		alchemyLGMRandom(&iseed, 1);
 		int temp = (int)(((float)iseed / 2147483647.0f) * alchemyLiquidCount);
 		if (index[0] != temp && index[1] != temp && index[2] != temp && index[3] != temp) {
 			index[x] = temp;
 			x++;
 		}
+		i++;
 	}
+	if (i >= 1000) memset(recipe.mats, 0, 3);
 	alchemyLGMRandom(&iseed, 1);
 	index[3] = (int)(((float)iseed / 2147483647.0f) * alchemySolidCount);
 	for (int n = 0; n < 3; n++) {
@@ -134,4 +145,3 @@ __device__ AlchemyRecipe alchemyGetRecipe(uint seed, uint iseed) {
 	recipe.iseed = iseed;
 	return recipe;
 }
-

@@ -1,6 +1,6 @@
 #pragma once
 
-enum Material {
+enum Material : short {
 	MATERIAL_NONE,
 
 	//STATIC
