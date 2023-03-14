@@ -73,6 +73,10 @@ enum Item : byte {
 	BROKEN_WAND,
 	UNKNOWN_WAND,
 
+	MIMIC,
+	MIMIC_LEGGY,
+	MIMIC_SIGN,
+
 	WAND_T10NS,
 	WAND_T1B,
 	WAND_T2B,
@@ -80,10 +84,6 @@ enum Item : byte {
 	WAND_T4B,
 	WAND_T5B,
 	WAND_T6B,
-
-	MIMIC=128,
-	MIMIC_LEGGY,
-	MIMIC_SIGN,
 
 	SAMPO=253,
 	TRUE_ORB,
