@@ -9,6 +9,18 @@ struct FungalShift {
 	bool fromFlask;
 	Material to;
 	bool toFlask;
+	__host__ __device__ FungalShift() {
+		from = MATERIAL_NONE;
+		to = MATERIAL_NONE;
+		fromFlask = false;
+		toFlask = false;
+	}
+	__host__ __device__ FungalShift(Material _from, bool _fromFlask, Material _to, bool _toFlask) {
+		from = _from;
+		fromFlask = _fromFlask;
+		to = _to;
+		toFlask = _toFlask;
+	}
 };
 
 #define maxFungalShifts 20

@@ -9,6 +9,13 @@ struct AlchemyRecipe {
 	Material mats[4];
 	float prob;
 	uint iseed;
+
+	__host__ __device__ AlchemyRecipe() {}
+	__host__ __device__ AlchemyRecipe(Material mat1, Material mat2, Material mat3) {
+		mats[0] = mat1;
+		mats[1] = mat2;
+		mats[2] = mat3;
+	}
 };
 
 #define alchemyLiquidCount 30

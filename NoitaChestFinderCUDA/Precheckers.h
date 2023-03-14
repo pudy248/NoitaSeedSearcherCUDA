@@ -103,11 +103,11 @@ __device__ bool CheckAlchemy(NoitaRandom* random, AlchemyRecipe LC, AlchemyRecip
 }
 __device__ bool CheckFungalShifts(NoitaRandom* random, FungalShift shift[maxFungalShifts]) {
 	for (int i = 0; i < maxFungalShifts; i++) {
-		FungalShift result = { MATERIAL_NONE, false, MATERIAL_NONE, false };
+		FungalShift result;
 		random->SetRandomSeed(89346, 42345 + i);
 		IntPair rnd = { 9123,58925 + i };
-		result.from = (Material)pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, &rnd);
-		result.to = (Material)pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, &rnd);
+		result.from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, &rnd)];
+		result.to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, &rnd)];
 		if (random_nexti(1, 100, random, &rnd) <= 75) {
 			if (random_nexti(1, 100, random, &rnd) <= 50)
 				result.fromFlask = true;
@@ -120,7 +120,7 @@ __device__ bool CheckFungalShifts(NoitaRandom* random, FungalShift shift[maxFung
 		if (shift[i].fromFlask && !result.fromFlask) return false;
 		if (shift[i].toFlask && !result.toFlask) return false;
 	}
-	return false;
+	return true;
 }
 __device__ bool CheckBiomeModifiers(NoitaRandom* random, byte biomeModifiers[9]) {
 	return true;

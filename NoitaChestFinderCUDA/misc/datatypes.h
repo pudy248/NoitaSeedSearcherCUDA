@@ -9,6 +9,16 @@ typedef unsigned long long int ulong;
 struct IntPair {
 	int x;
 	int y;
+
+	__host__ __device__ IntPair() {
+		x = -1;
+		y = -1;
+	}
+
+	__host__ __device__ IntPair(int _x, int _y) {
+		x = _x;
+		y = _y;
+	}
 	
 	__host__ __device__ IntPair operator+(IntPair other) {
 		return { x + other.x, y + other.y };

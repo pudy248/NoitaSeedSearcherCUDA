@@ -14,7 +14,6 @@
 
 struct LootConfig {
 	int pwCount;
-	int blockSize;
 
 	bool searchChests;
 	bool searchPedestals;
@@ -43,12 +42,13 @@ __device__ int MakeRandomCard(NoitaRandom* random) {
 	return res;
 }
 
-__device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, byte** writeLoc)
+__device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte** writeLoc)
 {
 	writeByte(writeLoc, START_SPAWNABLE);
 	writeInt(writeLoc, x);
 	writeInt(writeLoc, y);
 	writeByte(writeLoc, TYPE_CHEST);
+	if (hasMimicSign) writeByte(writeLoc, MIMIC_SIGN);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
 	random.SetRandomSeed(x + 509.7, y + 683.1);
@@ -174,12 +174,13 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 	writeByte(writeLoc, END_SPAWNABLE);
 }
 
-__device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, byte** writeLoc)
+__device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte** writeLoc)
 {
 	writeByte(writeLoc, START_SPAWNABLE);
 	writeInt(writeLoc, x);
 	writeInt(writeLoc, y);
 	writeByte(writeLoc, TYPE_CHEST_GREATER);
+	if (hasMimicSign) writeByte(writeLoc, MIMIC_SIGN);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
 	random.SetRandomSeed(x, y);
@@ -302,10 +303,25 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte** write
 		if (rnd <= 90 || y < 512 * 3)
 		{
 			rnd = random.Random(1, 1000);
+			bool hasSign = false;
+			if (random.Random(1, 300) == 1) {
+				hasSign = true;
+			}
 			if (rnd >= 1000)
-				CheckGreatChestLoot(x, y, seed, cfg, writeLoc);
+				CheckGreatChestLoot(x, y, seed, cfg, hasSign, writeLoc);
 			else
-				CheckNormalChestLoot(x, y, seed, cfg, writeLoc);
+				CheckNormalChestLoot(x, y, seed, cfg, hasSign, writeLoc);
+		}
+		else {
+			writeByte(writeLoc, START_SPAWNABLE);
+			writeInt(writeLoc, x);
+			writeInt(writeLoc, y);
+			writeByte(writeLoc, TYPE_CHEST);
+			
+			rnd = random.Random(1, 100);
+			if(random.Random(1,30==1)) writeByte(writeLoc, MIMIC_SIGN);
+			if(rnd <= 95) writeByte(writeLoc, MIMIC);
+			else writeByte(writeLoc, MIMIC_LEGGY);
 		}
 	}
 }
@@ -318,9 +334,9 @@ __device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte** write
 	int rnd = random.Random(1, super_chest_spawn_rate);
 
 	if (rnd >= super_chest_spawn_rate - 1)
-		CheckGreatChestLoot(x, y, seed, cfg, writeLoc);
+		CheckGreatChestLoot(x, y, seed, cfg, false, writeLoc);
 	else
-		CheckNormalChestLoot(x, y, seed, cfg, writeLoc);
+		CheckNormalChestLoot(x, y, seed, cfg, false, writeLoc);
 }
 
 __device__ void spawnPotion(int x, int y, uint seed, LootConfig cfg, byte** writeLoc)
@@ -381,11 +397,10 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte** writeL
 	}
 }
 
-__device__ void CheckSpawnables(byte* origin, byte* res, uint seed, byte** writeLoc, byte* output, WorldgenConfig wCfg, LootConfig lCfg) {
+__device__ void CheckSpawnables(byte* res, uint seed, byte** writeLoc, byte* output, WorldgenConfig wCfg, LootConfig lCfg) {
 	static void (*spawnFuncs[5])(int, int, uint, LootConfig, byte**) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion };
+	byte* origin = *writeLoc;
 	byte* map = res + 4 * 3 * wCfg.map_w;
-	byte* bak = *writeLoc;
-	//printf("origin offset: %x\n", bak - origin);
 	writeByte(writeLoc, START_BLOCK);
 	writeInt(writeLoc, seed);
 
@@ -447,14 +462,15 @@ __device__ void CheckSpawnables(byte* origin, byte* res, uint seed, byte** write
 		}
 	}
 	writeByte(writeLoc, END_BLOCK);
-	//printf("offset: %i\n", *writeLoc - bak);
+	memcpy(output, origin, *writeLoc - origin);
 }
 
 __device__ Spawnable DecodeSpawnable(byte** bytes) {
-	Spawnable ret;
+	Spawnable ret = {};
 	ret.x = readInt(bytes);
 	ret.y = readInt(bytes);
 	ret.sType = (SpawnableType)(readByte(bytes) - (byte)SpawnableMetadata::TYPE_CHEST);
+
 	int i = 0;
 	while (*(SpawnableMetadata*)(*bytes + i) != END_SPAWNABLE) i++;
 	ret.count = i;
@@ -465,20 +481,18 @@ __device__ Spawnable DecodeSpawnable(byte** bytes) {
 }
 
 __device__ SeedSpawnables ParseSpawnableBlock(byte** bytes, byte* output, LootConfig cfg) {
-	byte* bak = *bytes;
 	(*bytes)++;
 	uint seed = readInt(bytes);
-	Spawnable* spawnables = (Spawnable*)malloc(sizeof(Spawnable) * cfg.blockSize);
+	Spawnable* spawnables = (Spawnable*)malloc(sizeof(Spawnable) * 20);
 	int idx = 0;
 	SpawnableMetadata b = *(SpawnableMetadata*)*bytes;
 	while (b != END_BLOCK) {
 		b = (SpawnableMetadata)readByte(bytes);
-		//printf("offset %i: %i\n", (int)(*bytes - bak), (byte)b);
 		if (b == START_SPAWNABLE) {
 			spawnables[idx++] = DecodeSpawnable(bytes);
 		}
 	}
-	memcpy(output, bak, *bytes - bak + 100);
+	//memcpy(output, bak, *bytes - bak);
 	SeedSpawnables ret{ seed, idx, spawnables };
 	return ret;
 }

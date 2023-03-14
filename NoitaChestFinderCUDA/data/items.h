@@ -81,6 +81,10 @@ enum Item : byte {
 	WAND_T5B,
 	WAND_T6B,
 
+	MIMIC=128,
+	MIMIC_LEGGY,
+	MIMIC_SIGN,
+
 	SAMPO=253,
 	TRUE_ORB,
 	ERR

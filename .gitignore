@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /NoitaChestFinderCUDA/output.bin
 /NoitaChestFinderCUDA/chests.hex
+/NoitaChestFinderCUDA/out.ncu-rep

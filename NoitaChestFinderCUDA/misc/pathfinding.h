@@ -5,38 +5,32 @@
 #include "datatypes.h"
 #include "worldgen_helpers.h"
 
-__device__ IntPair Pop(IntPair* stackMem, int* stackSize) {
-	return stackMem[--(*stackSize)];
-}
-
-__device__ void Push(IntPair* stackMem, IntPair* stackCache, byte* cacheSize, int* stackSize) {
-	memcpy(stackMem + *stackSize, stackCache, sizeof(IntPair) * *cacheSize);
-	*stackSize += *cacheSize;
-	*cacheSize = 0;
+/*
+__device__ void Push(IntPair* stackMem, IntPair* stackCache, int* cacheSize, int* stackSize) {
+	//memcpy(stackMem + *stackSize, stackCache, sizeof(IntPair) * *cacheSize);
+	//*stackSize += *cacheSize;
+	//*cacheSize = 0;
+	while (stackSize > 0) {
+		stackMem[(*stackSize)++] = stackCache[--(*cacheSize)];
+	}
 }
 
 __device__ bool traversable(byte* map, int x, int y, int rmw)
 {
 	long c = getPixelColor(map, rmw, x, y);
 
-	return c == COLOR_BLACK || c == COLOR_COFFEE;
+	return c == COLOR_BLACK;// || c == COLOR_COFFEE;
 }
 
-__device__ void tryNext(IntPair position, IntPair offset, byte* map, byte* visited, IntPair* stackCache, byte* cacheSize, int rmw, int rmh)
+__device__ void tryNext(IntPair position, byte *map, byte* visited, IntPair* stackCache, int& cacheSize, int rmw, int rmh)
 {
-	IntPair next = position + offset;
-	if (next.x >= 0 && next.y >= 0 && next.x < rmw && next.y < rmh) {
-		if (visited[next.y * rmw + next.x] == 0 && traversable(map, next.x, next.y, rmw))
+	if (position.x >= 0 && position.y >= 0 && position.x < rmw && position.y < rmh) {
+		if (visited[position.y * rmw + position.x] == 0 && traversable(map, position.x, position.y, rmw))
 		{
-			visited[next.y * rmw + next.x] = 1;
-			stackCache[(*cacheSize)++] = { next.x, next.y };
+			visited[position.y * rmw + position.x] = 1;
+			stackCache[cacheSize++] = position;
 		}
 	}
-}
-
-__device__ bool atTarget(int targetY, IntPair n)
-{
-	return targetY == n.y;
 }
 
 __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uint map_w, const uint map_h, int x, int y)
@@ -46,31 +40,87 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 	bool pathFound = false;
 
 	int stackSize = 1;
-	byte cacheSize = 0;
 	IntPair* stackMem = (IntPair*)stackMemArea;
-	IntPair stackCacke[4];
 	memset(visited, 0, map_w * map_h);
+	memset(stackMem, 0, sizeof(IntPair) * rmw * rmh);
 
 	stackMem[0] = { x , y };
 
 	while (stackSize > 0 && !pathFound)
 	{
-		cacheSize = 0;
-		IntPair n = Pop(stackMem, &stackSize);
-		//if((n.x + n.y) % 2 == 0) setPixelColor(map, register_mapW, n.x, n.y, COLOR_PURPLE);
+		if(blockDim.x * blockIdx.x + threadIdx.x == 55) printf("%i\n", stackSize);
+		IntPair n = stackMem[--stackSize];
+		//if((n.x + n.y) % 2 == 0) 
+			setPixelColor(map, rmw, n.x, n.y, COLOR_PURPLE);
 		if (n.x != -1) {
-			if (atTarget(map_h - 1, n))
+			if (n.y == rmh - 1)
 			{
 				pathFound = 1;
 			}
-			tryNext(n, { 0, 1 }, map, visited, stackCacke, &cacheSize, rmw, rmh);
-			tryNext(n, { -1, 0 }, map, visited, stackCacke, &cacheSize, rmw, rmh);
-			tryNext(n, { 1, 0 }, map, visited, stackCacke, &cacheSize, rmw, rmh);
-			tryNext(n, { 0, -1 }, map, visited, stackCacke, &cacheSize, rmw, rmh);
+			tryNext(n + IntPair(0, -1), map, visited, stackMem, stackSize, rmw, rmh);
+			tryNext(n + IntPair(-1, 0), map, visited, stackMem, stackSize, rmw, rmh);
+			tryNext(n + IntPair(1, 0), map, visited, stackMem, stackSize, rmw, rmh);
+			tryNext(n + IntPair(0, 1), map, visited, stackMem, stackSize, rmw, rmh);
 		}
-		Push(stackMem, stackCacke, &cacheSize, &stackSize);
 	}
 
+	return pathFound;
+}*/
+
+__device__ bool traversable(byte* map, int x, int y, int rmw)
+{
+	long c = getPixelColor(map, rmw, x, y);
+
+	return c == COLOR_BLACK || c == COLOR_COFFEE;
+}
+
+__device__
+void tryNext(int x, int y, byte* map, IntPair* stackCache, int& stackSize, byte* visited, int rmw, int rmh)
+{
+	if (x >= 0 && y >= 0 && x < rmw && y < rmh) {
+		if (visited[y * rmw + x] == 0 && traversable(map, x, y, rmw))
+		{
+			visited[y * rmw + x] = 1;
+			stackCache[stackSize++] = { x, y };
+		}
+	}
+}
+
+__device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uint map_w, const uint map_h, int x, int y)
+{
+	int rmw = map_w; //register map width
+	int rmh = map_h; //register map height
+
+	bool pathFound = false;
+
+	int stackSize = 1;
+	IntPair* stackMem = (IntPair*)stackMemArea;//(IntPair*)malloc(sizeof(IntPair) * (map_w + map_h));
+	memset(visited, 0, map_w * map_h);
+	//memset(stackMem, 0, sizeof(IntPair) * rmw * rmh);
+
+	stackMem[0] = { x , y };
+
+	while (stackSize > 0 && pathFound != 1)
+	{
+		//if (stackSize >= map_w + map_h) {
+		//	printf("Blew up stack!");
+		//	return false;
+		//}
+		IntPair n = stackMem[--stackSize];
+		//if((n.x + n.y) % 2 == 0) 
+			setPixelColor(map, rmw, n.x, n.y, COLOR_PURPLE);
+		if (n.x != -1) {
+			if (n.y == rmh - 1)
+			{
+				pathFound = 1;
+			}
+			tryNext(n.x, n.y - 1, map, stackMem, stackSize, visited, rmw, rmh);
+			tryNext(n.x - 1, n.y, map, stackMem, stackSize, visited, rmw, rmh);
+			tryNext(n.x + 1, n.y, map, stackMem, stackSize, visited, rmw, rmh);
+			tryNext(n.x, n.y + 1, map, stackMem, stackSize, visited, rmw, rmh);
+		}
+	}
+	//free(stackMem);
 	return pathFound;
 }
 

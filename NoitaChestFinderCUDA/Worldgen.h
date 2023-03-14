@@ -30,7 +30,7 @@ __global__ void freeTS()
 	stbhw_free_tileset();
 }
 
-__device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visited, byte* miscMem, WorldgenConfig c) {
+__device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visited, byte* miscMem, WorldgenConfig c, int idx) {
 	NollaPrng rng = GetRNG(worldSeed, c.map_w);
 	int tries = 0;
 	bool has_path = false;
@@ -51,5 +51,6 @@ __device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visi
 		tries++;
 	}
 	if (!has_path) memset(map, 0, 3 * c.map_w * c.map_h);
+	//printf("idx %i: took %i tries, map is %s\n", idx, tries, has_path ? "valid" : "invalid");
 	//memcpy(output, map, 3 * c.map_w * c.map_h);
 }
