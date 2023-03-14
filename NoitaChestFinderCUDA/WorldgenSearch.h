@@ -322,6 +322,7 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte** write
 			if(random.Random(1,30==1)) writeByte(writeLoc, MIMIC_SIGN);
 			if(rnd <= 95) writeByte(writeLoc, MIMIC);
 			else writeByte(writeLoc, MIMIC_LEGGY);
+			writeByte(writeLoc, END_SPAWNABLE);
 		}
 	}
 }
