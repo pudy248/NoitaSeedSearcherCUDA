@@ -131,3 +131,9 @@ __device__ void writeInt(byte** ptr, int val) {
 __device__ Material readMaterial(byte** ptr) {
 	return (Material)((readByte(ptr)) | (readByte(ptr) << 8));
 }
+
+__device__ Material writeMaterial(byte** ptr, Material mat) {
+	writeByte(ptr, ((short)mat) & 0xff);
+	writeByte(ptr, (((short)mat) >> 8) & 0xff);
+}
+

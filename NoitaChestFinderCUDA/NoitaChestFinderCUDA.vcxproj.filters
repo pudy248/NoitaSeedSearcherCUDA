@@ -58,6 +58,9 @@
     <ClInclude Include="data\items.h">
       <Filter>data</Filter>
     </ClInclude>
+    <ClInclude Include="data\potions.h">
+      <Filter>data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">

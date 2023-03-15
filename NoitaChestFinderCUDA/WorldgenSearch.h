@@ -7,6 +7,7 @@
 #include "misc/datatypes.h"
 #include "misc/utilities.h"
 #include "data/items.h"
+#include "data/potions.h"
 #include "data/spells.h"
 #include "data/wand_levels.h"
 
@@ -26,6 +27,39 @@ struct LootConfig {
 	bool checkCards;
 };
 
+__device__ void createPotion(int x, int y, Item type, uint worldSeed, LootConfig cfg, byte** bytes) {
+	if (!cfg.checkPotions) writeByte(bytes, type);
+	else {
+		writeByte(bytes, DATA_MATERIAL);
+		NoitaRandom rnd = NoitaRandom(worldSeed);
+		rnd.SetRandomSeed(x - 4.5, y - 4);
+		switch (type) {
+		case POTION_NORMAL:
+			if (rnd.Random(0, 100) <= 75) {
+				if (rnd.Random(0, 100000) <= 50)
+					writeMaterial(bytes, MAGIC_LIQUID_HP_REGENERATION);
+				else if (rnd.Random(200, 100000) <= 250)
+					writeMaterial(bytes, PURIFYING_POWDER);
+				else
+					writeMaterial(bytes, potionMaterialsMagic[rnd.Random(0, magicMaterialCount)]);
+			}
+			else
+				writeMaterial(bytes, potionMaterialsStandard[rnd.Random(0, standardMaterialCount)]);
+
+			break;
+		case POTION_SECRET:
+			writeMaterial(bytes, potionMaterialsSecret[rnd.Random(0, secretMaterialCount)]);
+			break;
+		case POTION_RANDOM_MATERIAL:
+			if (rnd.Random(0, 100) <= 50)
+				writeMaterial(bytes, potionLiquids[rnd.Random(0, liquidMaterialCount)]);
+			else
+				writeMaterial(bytes, potionSands[rnd.Random(0, sandMaterialCount)]);
+			break;
+		}
+	}
+}
+
 __device__ int MakeRandomCard(NoitaRandom* random) {
 	int res = 0;
 	char valid = 0;
@@ -42,13 +76,13 @@ __device__ int MakeRandomCard(NoitaRandom* random) {
 	return res;
 }
 
-__device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte** writeLoc)
+__device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte** bytes)
 {
-	writeByte(writeLoc, START_SPAWNABLE);
-	writeInt(writeLoc, x);
-	writeInt(writeLoc, y);
-	writeByte(writeLoc, TYPE_CHEST);
-	if (hasMimicSign) writeByte(writeLoc, MIMIC_SIGN);
+	writeByte(bytes, START_SPAWNABLE);
+	writeInt(bytes, x);
+	writeInt(bytes, y);
+	writeByte(bytes, TYPE_CHEST);
+	if (hasMimicSign) writeByte(bytes, MIMIC_SIGN);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
 	random.SetRandomSeed(x + 509.7, y + 683.1);
@@ -58,7 +92,7 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 	{
 		count--;
 		int rnd = random.Random(1, 100);
-		if (rnd <= 7) writeByte(writeLoc, BOMB);
+		if (rnd <= 7) writeByte(bytes, BOMB);
 		else if (rnd <= 40)
 		{
 			rnd = random.Random(0, 100);
@@ -93,21 +127,21 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 				random.Random(-10, 10);
 				random.Random(-10, 5);
 			}
-			writeByte(writeLoc, GOLD_NUGGETS);
+			writeByte(bytes, GOLD_NUGGETS);
 		}
 		else if (rnd <= 50)
 		{
 			rnd = random.Random(1, 100);
-			if (rnd <= 94) writeByte(writeLoc, POTION_NORMAL);
-			else if (rnd <= 98) writeByte(writeLoc, POWDER);
+			if (rnd <= 94) createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
+			else if (rnd <= 98) writeByte(bytes, POWDER);
 			else
 			{
 				rnd = random.Random(0, 100);
-				if (rnd <= 98) writeByte(writeLoc, POTION_SECRET);
-				else writeByte(writeLoc, POTION_RANDOM_MATERIAL);
+				if (rnd <= 98) createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
+				else createPotion(x, y, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes);
 			}
 		}
-		else if (rnd <= 54) writeByte(writeLoc, SPELL_REFRESH);
+		else if (rnd <= 54) writeByte(bytes, SPELL_REFRESH);
 		else if (rnd <= 60)
 		{
 			Item opts[8] = { KAMMI, KUU, UKKOSKIVI, PAHA_SILMA, KIUASKIVI, (Item)127, CHAOS_DIE, SHINY_ORB};
@@ -118,11 +152,11 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 				Item r_opts[7] = { RUNESTONE_LIGHT, RUNESTONE_FIRE, RUNESTONE_MAGMA, RUNESTONE_WEIGHT, RUNESTONE_EMPTINESS, RUNESTONE_EDGES, RUNESTONE_METAL };
 				rnd = random.Random(0, 6);
 				Item r_opt = r_opts[rnd];
-				writeByte(writeLoc, r_opt);
+				writeByte(bytes, r_opt);
 			}
 			else
 			{
-				writeByte(writeLoc, opt);
+				writeByte(bytes, opt);
 			}
 		}
 		else if (rnd <= 65)
@@ -139,48 +173,48 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 				random.Random(0, 1);
 				if (false) {
 					int randCTR = random.randomCTR;
-					//writeByte(writeLoc, (randCTR << 1) | 0x80;
+					//writeByte(bytes, (randCTR << 1) | 0x80;
 				}
 				MakeRandomCard(&random);
 			}
 
 			if (true)
-				writeByte(writeLoc, RANDOM_SPELL);
+				writeByte(bytes, RANDOM_SPELL);
 		}
 		else if (rnd <= 84)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) writeByte(writeLoc, WAND_T1);
-			else if (rnd <= 50) writeByte(writeLoc, WAND_T1NS);
-			else if (rnd <= 75) writeByte(writeLoc, WAND_T2);
-			else if (rnd <= 90) writeByte(writeLoc, WAND_T2NS);
-			else if (rnd <= 96) writeByte(writeLoc, WAND_T3);
-			else if (rnd <= 98) writeByte(writeLoc, WAND_T3NS);
-			else if (rnd <= 99) writeByte(writeLoc, WAND_T4);
-			else writeByte(writeLoc, WAND_T4NS);
+			if (rnd <= 25) writeByte(bytes, WAND_T1);
+			else if (rnd <= 50) writeByte(bytes, WAND_T1NS);
+			else if (rnd <= 75) writeByte(bytes, WAND_T2);
+			else if (rnd <= 90) writeByte(bytes, WAND_T2NS);
+			else if (rnd <= 96) writeByte(bytes, WAND_T3);
+			else if (rnd <= 98) writeByte(bytes, WAND_T3NS);
+			else if (rnd <= 99) writeByte(bytes, WAND_T4);
+			else writeByte(bytes, WAND_T4NS);
 		}
 		else if (rnd <= 95)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 88) writeByte(writeLoc, HEART_NORMAL);
-			else if (rnd <= 89) writeByte(writeLoc, HEART_MIMIC);
-			else if (rnd <= 99) writeByte(writeLoc, HEART_BIGGER);
-			else writeByte(writeLoc, FULL_HEAL);
+			if (rnd <= 88) writeByte(bytes, HEART_NORMAL);
+			else if (rnd <= 89) writeByte(bytes, HEART_MIMIC);
+			else if (rnd <= 99) writeByte(bytes, HEART_BIGGER);
+			else writeByte(bytes, FULL_HEAL);
 		}
-		else if (rnd <= 98) writeByte(writeLoc, CHEST_TO_GOLD);
+		else if (rnd <= 98) writeByte(bytes, CHEST_TO_GOLD);
 		else if (rnd <= 99) count += 2;
 		else count += 3;
 	}
-	writeByte(writeLoc, END_SPAWNABLE);
+	writeByte(bytes, END_SPAWNABLE);
 }
 
-__device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte** writeLoc)
+__device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte** bytes)
 {
-	writeByte(writeLoc, START_SPAWNABLE);
-	writeInt(writeLoc, x);
-	writeInt(writeLoc, y);
-	writeByte(writeLoc, TYPE_CHEST_GREATER);
-	if (hasMimicSign) writeByte(writeLoc, MIMIC_SIGN);
+	writeByte(bytes, START_SPAWNABLE);
+	writeInt(bytes, x);
+	writeInt(bytes, y);
+	writeByte(bytes, TYPE_CHEST_GREATER);
+	if (hasMimicSign) writeByte(bytes, MIMIC_SIGN);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
 	random.SetRandomSeed(x, y);
@@ -190,8 +224,8 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 	if (random.Random(0, 100000) >= 100000)
 	{
 		count = 0;
-		if (random.Random(0, 1000) == 999) writeByte(writeLoc, TRUE_ORB);
-		else writeByte(writeLoc, SAMPO);
+		if (random.Random(0, 1000) == 999) writeByte(bytes, TRUE_ORB);
+		else writeByte(bytes, SAMPO);
 	}
 
 	while (count != 0)
@@ -203,58 +237,58 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 		{
 			rnd = random.Random(0, 100);
 			if (rnd <= 30) {
-				writeByte(writeLoc, POTION_SECRET);
-				writeByte(writeLoc, POTION_SECRET);
-				writeByte(writeLoc, POTION_RANDOM_MATERIAL);
+				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
+				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
+				createPotion(x, y, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes);
 			}
 			else {
-				writeByte(writeLoc, POTION_NORMAL);
-				writeByte(writeLoc, POTION_NORMAL);
-				writeByte(writeLoc, POTION_SECRET);
+				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
+				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
+				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
 			}
 		}
 		else if (rnd <= 33)
 		{
-			writeByte(writeLoc, RAIN_GOLD);
+			writeByte(bytes, RAIN_GOLD);
 		}
 		else if (rnd <= 38)
 		{
 			rnd = random.Random(1, 30);
 			if (rnd == 30)
-				writeByte(writeLoc, KAKKAKIKKARE);
-			else writeByte(writeLoc, VUOKSIKIVI);
+				writeByte(bytes, KAKKAKIKKARE);
+			else writeByte(bytes, VUOKSIKIVI);
 		}
 		else if (rnd <= 39)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) writeByte(writeLoc, WAND_T3);
-			else if (rnd <= 50) writeByte(writeLoc, WAND_T3NS);
-			else if (rnd <= 75) writeByte(writeLoc, WAND_T4);
-			else if (rnd <= 90) writeByte(writeLoc, WAND_T4NS);
-			else if (rnd <= 96) writeByte(writeLoc, WAND_T5);
-			else if (rnd <= 98) writeByte(writeLoc, WAND_T5NS);
-			else if (rnd <= 99) writeByte(writeLoc, WAND_T6);
-			else writeByte(writeLoc, WAND_T6NS);
+			if (rnd <= 25) writeByte(bytes, WAND_T3);
+			else if (rnd <= 50) writeByte(bytes, WAND_T3NS);
+			else if (rnd <= 75) writeByte(bytes, WAND_T4);
+			else if (rnd <= 90) writeByte(bytes, WAND_T4NS);
+			else if (rnd <= 96) writeByte(bytes, WAND_T5);
+			else if (rnd <= 98) writeByte(bytes, WAND_T5NS);
+			else if (rnd <= 99) writeByte(bytes, WAND_T6);
+			else writeByte(bytes, WAND_T6NS);
 		}
 		else if (rnd <= 60)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 89) writeByte(writeLoc, HEART_NORMAL);
-			else if (rnd <= 99) writeByte(writeLoc, HEART_BIGGER);
-			else writeByte(writeLoc, FULL_HEAL);
+			if (rnd <= 89) writeByte(bytes, HEART_NORMAL);
+			else if (rnd <= 99) writeByte(bytes, HEART_BIGGER);
+			else writeByte(bytes, FULL_HEAL);
 		}
 		else if (rnd <= 99) count += 2;
 		else count += 3;
 	}
-	writeByte(writeLoc, END_SPAWNABLE);
+	writeByte(bytes, END_SPAWNABLE);
 }
 
-__device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte** writeLoc)
+__device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte** bytes)
 {
-	writeByte(writeLoc, START_SPAWNABLE);
-	writeInt(writeLoc, x);
-	writeInt(writeLoc, y);
-	writeByte(writeLoc, TYPE_ITEM_PEDESTAL);
+	writeByte(bytes, START_SPAWNABLE);
+	writeInt(bytes, x);
+	writeInt(bytes, y);
+	writeByte(bytes, TYPE_ITEM_PEDESTAL);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
 	random.SetRandomSeed(x + 425, y - 243);
@@ -262,35 +296,35 @@ __device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig c
 	int rnd = random.Random(1, 91);
 
 	if (rnd <= 65)
-		writeByte(writeLoc, POTION_NORMAL);
+		createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
 	else if (rnd <= 70)
-		writeByte(writeLoc, POWDER);
+		writeByte(bytes, POWDER);
 	else if (rnd <= 71)
-		writeByte(writeLoc, CHAOS_DIE);
+		writeByte(bytes, CHAOS_DIE);
 	else if (rnd <= 72) {
 		Item r_opts[7] = { RUNESTONE_LIGHT, RUNESTONE_FIRE, RUNESTONE_MAGMA, RUNESTONE_WEIGHT, RUNESTONE_EMPTINESS, RUNESTONE_EDGES, RUNESTONE_METAL };
 		rnd = random.Random(0, 6);
 		Item r_opt = r_opts[rnd];
-		writeByte(writeLoc, r_opt);
+		writeByte(bytes, r_opt);
 	}
 	else if (rnd <= 73)
-		writeByte(writeLoc, EGG_PURPLE);
+		writeByte(bytes, EGG_PURPLE);
 	else if (rnd <= 77)
-		writeByte(writeLoc, EGG_SLIME);
+		writeByte(bytes, EGG_SLIME);
 	else if (rnd <= 79)
-		writeByte(writeLoc, EGG_MONSTER);
+		writeByte(bytes, EGG_MONSTER);
 	else if (rnd <= 83)
-		writeByte(writeLoc, KIUASKIVI);
+		writeByte(bytes, KIUASKIVI);
 	else if (rnd <= 85)
-		writeByte(writeLoc, UKKOSKIVI);
+		writeByte(bytes, UKKOSKIVI);
 	else if (rnd <= 89)
-		writeByte(writeLoc, BROKEN_WAND);
+		writeByte(bytes, BROKEN_WAND);
 	else
-		writeByte(writeLoc, SHINY_ORB);
-	writeByte(writeLoc, END_SPAWNABLE);
+		writeByte(bytes, SHINY_ORB);
+	writeByte(bytes, END_SPAWNABLE);
 }
 
-__device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte** writeLoc)
+__device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte** bytes)
 {
 	NoitaRandom random = NoitaRandom(seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
@@ -308,26 +342,26 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte** write
 				hasSign = true;
 			}
 			if (rnd >= 1000)
-				CheckGreatChestLoot(x, y, seed, cfg, hasSign, writeLoc);
+				CheckGreatChestLoot(x, y, seed, cfg, hasSign, bytes);
 			else
-				CheckNormalChestLoot(x, y, seed, cfg, hasSign, writeLoc);
+				CheckNormalChestLoot(x, y, seed, cfg, hasSign, bytes);
 		}
 		else {
-			writeByte(writeLoc, START_SPAWNABLE);
-			writeInt(writeLoc, x);
-			writeInt(writeLoc, y);
-			writeByte(writeLoc, TYPE_CHEST);
+			writeByte(bytes, START_SPAWNABLE);
+			writeInt(bytes, x);
+			writeInt(bytes, y);
+			writeByte(bytes, TYPE_CHEST);
 			
 			rnd = random.Random(1, 100);
-			if(random.Random(1,30==1)) writeByte(writeLoc, MIMIC_SIGN);
-			if(rnd <= 95) writeByte(writeLoc, MIMIC);
-			else writeByte(writeLoc, MIMIC_LEGGY);
-			writeByte(writeLoc, END_SPAWNABLE);
+			if(random.Random(1,30==1)) writeByte(bytes, MIMIC_SIGN);
+			if(rnd <= 95) writeByte(bytes, MIMIC);
+			else writeByte(bytes, MIMIC_LEGGY);
+			writeByte(bytes, END_SPAWNABLE);
 		}
 	}
 }
 
-__device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte** writeLoc)
+__device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte** bytes)
 {
 	NoitaRandom random = NoitaRandom(seed);
 	random.SetRandomSeed(x, y);
@@ -335,21 +369,21 @@ __device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte** write
 	int rnd = random.Random(1, super_chest_spawn_rate);
 
 	if (rnd >= super_chest_spawn_rate - 1)
-		CheckGreatChestLoot(x, y, seed, cfg, false, writeLoc);
+		CheckGreatChestLoot(x, y, seed, cfg, false, bytes);
 	else
-		CheckNormalChestLoot(x, y, seed, cfg, false, writeLoc);
+		CheckNormalChestLoot(x, y, seed, cfg, false, bytes);
 }
 
-__device__ void spawnPotion(int x, int y, uint seed, LootConfig cfg, byte** writeLoc)
+__device__ void spawnPotion(int x, int y, uint seed, LootConfig cfg, byte** bytes)
 {
 	NoitaRandom random = NoitaRandom(seed);
 	float rnd = random.ProceduralRandomf(x, y, 0, 1);
 
 	if (rnd > 0.65f)
-		CheckItemPedestalLoot(x + 5, y - 4, seed, cfg, writeLoc);
+		CheckItemPedestalLoot(x + 5, y - 4, seed, cfg, bytes);
 }
 
-__device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, LootConfig cfg, byte** writeLoc)
+__device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, LootConfig cfg, byte** bytes)
 {
 	NoitaRandom random = NoitaRandom(seed);
 	random.SetRandomSeed(x, y);
@@ -357,20 +391,20 @@ __device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, LootConfi
 	if (rnd <= 50 && oiltank == 0 || rnd > 50 && oiltank > 0) {
 		float rnd2 = random.ProceduralRandomf(x, y, 0, 1) * 3;
 		if (0.5f < rnd2 && rnd2 < 1) {
-			spawnChest(x + 94, y + 224, seed, cfg, writeLoc);
+			spawnChest(x + 94, y + 224, seed, cfg, bytes);
 		}
 	}
 }
 
-__device__ void spawnPixelScene1(int x, int y, uint seed, LootConfig cfg, byte** writeLoc) {
-	spawnPixelScene(x, y, seed, 0, cfg, writeLoc);
+__device__ void spawnPixelScene1(int x, int y, uint seed, LootConfig cfg, byte** bytes) {
+	spawnPixelScene(x, y, seed, 0, cfg, bytes);
 }
 
-__device__ void spawnOilTank(int x, int y, uint seed, LootConfig cfg, byte** writeLoc) {
-	spawnPixelScene(x, y, seed, 1, cfg, writeLoc);
+__device__ void spawnOilTank(int x, int y, uint seed, LootConfig cfg, byte** bytes) {
+	spawnPixelScene(x, y, seed, 1, cfg, bytes);
 }
 
-__device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte** writeLoc) {
+__device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte** bytes) {
 	NoitaRandom random = NoitaRandom(seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	if (r < 0.47) return;
@@ -386,24 +420,24 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte** writeL
 	for (int i = 0; i < wandSet.count; i++) {
 		if (r <= wandSet.levels[i].prob) {
 
-			writeByte(writeLoc, START_SPAWNABLE);
-			writeInt(writeLoc, nx + 5);
-			writeInt(writeLoc, ny + 5);
-			writeByte(writeLoc, TYPE_WAND_PEDESTAL);
-			writeByte(writeLoc, wandSet.levels[i].id);
-			writeByte(writeLoc, END_SPAWNABLE);
+			writeByte(bytes, START_SPAWNABLE);
+			writeInt(bytes, nx + 5);
+			writeInt(bytes, ny + 5);
+			writeByte(bytes, TYPE_WAND_PEDESTAL);
+			writeByte(bytes, wandSet.levels[i].id);
+			writeByte(bytes, END_SPAWNABLE);
 			return;
 		}
 		r -= wandSet.levels[i].prob;
 	}
 }
 
-__device__ void CheckSpawnables(byte* res, uint seed, byte** writeLoc, byte* output, WorldgenConfig wCfg, LootConfig lCfg) {
+__device__ void CheckSpawnables(byte* res, uint seed, byte** bytes, byte* output, WorldgenConfig wCfg, LootConfig lCfg) {
 	static void (*spawnFuncs[5])(int, int, uint, LootConfig, byte**) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion };
-	byte* origin = *writeLoc;
+	byte* origin = *bytes;
 	byte* map = res + 4 * 3 * wCfg.map_w;
-	writeByte(writeLoc, START_BLOCK);
-	writeInt(writeLoc, seed);
+	writeByte(bytes, START_BLOCK);
+	writeInt(bytes, seed);
 
 	for (int px = 0; px < wCfg.map_w; px++)
 	{
@@ -459,11 +493,11 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte** writeLoc, byte* out
 			}
 
 			for (int i = -lCfg.pwCount; i <= lCfg.pwCount; i++)
-				func(gp.x + PWSize * i, gp.y, seed, lCfg, writeLoc);
+				func(gp.x + PWSize * i, gp.y, seed, lCfg, bytes);
 		}
 	}
-	writeByte(writeLoc, END_BLOCK);
-	//memcpy(output, origin, *writeLoc - origin);
+	writeByte(bytes, END_BLOCK);
+	//memcpy(output, origin, *bytes - origin);
 }
 
 __device__ Spawnable DecodeSpawnable(byte** bytes) {

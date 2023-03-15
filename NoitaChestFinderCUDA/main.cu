@@ -51,23 +51,24 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 		for (int i = 0; i < result.count; i++) {
 			Spawnable s = result.spawnables[i];
 			bool printSpawnable = false;
-			int pahaSilmaCount = 0;
 			for (int j = 0; j < s.count; j++) {
-				if(s.contents[j] == PAHA_SILMA) {
-					pahaSilmaCount++;
+				if(s.contents[j] == TRUE_ORB) {
+					printSpawnable = true;
+					//byte* ptr = (byte*)(s.contents) + j + 1;
+					//Material m = readMaterial(&ptr);
+					//if (m == MONSTER_POWDER_TEST)
 				}
 			}
-			printSpawnable = pahaSilmaCount >= 3;
 
 			if (printSpawnable) {
-				printf("%i @ (%i, %i) (#%i of %i): T%i #%i (", result.seed, s.x, s.y, i + 1, result.count, s.sType, s.count);
-				for (int n = 0; n < s.count; n++) printf("%i ", s.contents[n]);
+				printf("%i @ (%i, %i) (#%i of %i): T%i, %i bytes: (", result.seed, s.x, s.y, i + 1, result.count, s.sType, s.count);
+				for (int n = 0; n < s.count; n++) printf("%x ", s.contents[n]);
 				printf("\b)\n");
 			}
 		}
 		freeSeedSpawnables(result);
 
-		if (seed % 1000000 == 0) printf("Seed %i\n", seed);
+		if (seed % 10'000'000 == 0) printf("Seed %i\n", seed);
 	}
 }
 
@@ -87,7 +88,7 @@ int main()
 		map_w * map_h
 	};
 
-	GlobalConfig globalCfg = { 1, INT_MAX };
+	GlobalConfig globalCfg = { 1, 100000 };
 	PrecheckConfig precheckCfg = {
 		false,
 		false, MATERIAL_NONE,
@@ -97,7 +98,7 @@ int main()
 		false, {CONDUCTIVE, MODIFIER_NONE, CONDUCTIVE, MODIFIER_NONE, CONDUCTIVE, CONDUCTIVE},
 		false, {PERKS_LOTTERY, GAMBLE, EDIT_WANDS_EVERYWHERE, PROTECTION_EXPLOSION, PROTECTION_MELEE } };
 	WorldgenConfig worldCfg = { tiles_w, tiles_h, map_w, map_h, 34, 14, true, 5 };
-	LootConfig lootCfg = { 3, true };
+	LootConfig lootCfg = { 0, true, false, false, false, false, false, false, false };
 
 	size_t tileDataSize = 3 * tiles_w * tiles_h;
 	//size_t outputSize = (globalCfg.endSeed - globalCfg.startSeed) * memSizes.outputSize;

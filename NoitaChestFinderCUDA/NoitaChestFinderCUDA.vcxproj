@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClInclude Include="data\items.h" />
     <ClInclude Include="misc\utilities.h" />
+    <ClInclude Include="data\potions.h" />
     <ClInclude Include="Precheckers.h" />
     <ClInclude Include="Worldgen.h" />
     <ClInclude Include="data\alchemy.h" />
