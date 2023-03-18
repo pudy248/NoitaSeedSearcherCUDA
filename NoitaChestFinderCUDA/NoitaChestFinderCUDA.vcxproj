@@ -20,6 +20,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -75,6 +76,11 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
+      <GPUDebugInfo>false</GPUDebugInfo>
+      <HostDebugInfo>true</HostDebugInfo>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <GenerateLineInfo>true</GenerateLineInfo>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -82,9 +88,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\items.h" />
+    <ClInclude Include="Filters.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
     <ClInclude Include="Precheckers.h" />
+    <ClInclude Include="misc\wandgen.h" />
     <ClInclude Include="Worldgen.h" />
     <ClInclude Include="data\alchemy.h" />
     <ClInclude Include="data\coalhax.h" />

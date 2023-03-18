@@ -11,6 +11,8 @@
 #include "data/spells.h"
 #include "data/wand_levels.h"
 
+#include "Worldgen.h"
+
 #include <iostream>
 
 struct LootConfig {
@@ -25,6 +27,17 @@ struct LootConfig {
 	bool checkPotions;
 	bool checkWands;
 	bool checkCards;
+	LootConfig(int _pwCount, bool _chests, bool _pedestals, bool _wandAltars, bool _pixelScenes, bool _greed, bool _potions, bool _wands, bool _spells) {
+		pwCount = _pwCount;
+		searchChests = _chests;
+		searchPedestals = _pedestals;
+		searchWandAltars = _wandAltars;
+		searchPixelScenes = _pixelScenes;
+		greedCurse = _greed;
+		checkPotions = _potions;
+		checkWands = _wands;
+		checkCards = _spells;
+	}
 };
 
 __device__ void createPotion(int x, int y, Item type, uint worldSeed, LootConfig cfg, byte** bytes) {
@@ -37,31 +50,31 @@ __device__ void createPotion(int x, int y, Item type, uint worldSeed, LootConfig
 		case POTION_NORMAL:
 			if (rnd.Random(0, 100) <= 75) {
 				if (rnd.Random(0, 100000) <= 50)
-					writeMaterial(bytes, MAGIC_LIQUID_HP_REGENERATION);
+					writeShort(bytes, MAGIC_LIQUID_HP_REGENERATION);
 				else if (rnd.Random(200, 100000) <= 250)
-					writeMaterial(bytes, PURIFYING_POWDER);
+					writeShort(bytes, PURIFYING_POWDER);
 				else
-					writeMaterial(bytes, potionMaterialsMagic[rnd.Random(0, magicMaterialCount)]);
+					writeShort(bytes, potionMaterialsMagic[rnd.Random(0, magicMaterialCount - 1)]);
 			}
 			else
-				writeMaterial(bytes, potionMaterialsStandard[rnd.Random(0, standardMaterialCount)]);
+				writeShort(bytes, potionMaterialsStandard[rnd.Random(0, standardMaterialCount - 1)]);
 
 			break;
 		case POTION_SECRET:
-			writeMaterial(bytes, potionMaterialsSecret[rnd.Random(0, secretMaterialCount)]);
+			writeShort(bytes, potionMaterialsSecret[rnd.Random(0, secretMaterialCount - 1)]);
 			break;
 		case POTION_RANDOM_MATERIAL:
 			if (rnd.Random(0, 100) <= 50)
-				writeMaterial(bytes, potionLiquids[rnd.Random(0, liquidMaterialCount)]);
+				writeShort(bytes, potionLiquids[rnd.Random(0, liquidMaterialCount - 1)]);
 			else
-				writeMaterial(bytes, potionSands[rnd.Random(0, sandMaterialCount)]);
+				writeShort(bytes, potionSands[rnd.Random(0, sandMaterialCount - 1)]);
 			break;
 		}
 	}
 }
 
-__device__ int MakeRandomCard(NoitaRandom* random) {
-	int res = 0;
+__device__ Spell MakeRandomCard(NoitaRandom* random) {
+	Spell res = SPELL_NONE;
 	char valid = 0;
 	while (valid == 0) {
 		int itemno = random->Random(0, 392);
@@ -70,7 +83,7 @@ __device__ int MakeRandomCard(NoitaRandom* random) {
 		for (int i = 0; i < 11; i++) sum += item.spawn_probabilities[i];
 		if (sum > 0) {
 			valid = 1;
-			res = itemno;
+			res = (Spell)(itemno + 1);
 		}
 	}
 	return res;
@@ -171,14 +184,14 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 
 			for (int i = 0; i < amount; i++) {
 				random.Random(0, 1);
-				if (false) {
-					int randCTR = random.randomCTR;
-					//writeByte(bytes, (randCTR << 1) | 0x80;
+				Spell s = MakeRandomCard(&random);
+				if (cfg.checkCards) {
+					writeByte(bytes, DATA_SPELL);
+					writeShort(bytes, s);
 				}
-				MakeRandomCard(&random);
 			}
 
-			if (true)
+			if (!cfg.checkCards)
 				writeByte(bytes, RANDOM_SPELL);
 		}
 		else if (rnd <= 84)
@@ -237,14 +250,14 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 		{
 			rnd = random.Random(0, 100);
 			if (rnd <= 30) {
+				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
+				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
+				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
+			}
+			else {
 				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
 				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
 				createPotion(x, y, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes);
-			}
-			else {
-				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
-				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes);
-				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes);
 			}
 		}
 		else if (rnd <= 33)
@@ -413,7 +426,7 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte** bytes)
 
 	int nx = x - 5;
 	int ny = y - 14;
-	BiomeWands wandSet = wandLevels[0]; //biomeIndex
+	BiomeWands wandSet = wandLevels[10]; //biomeIndex
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
 	r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
@@ -433,8 +446,8 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte** bytes)
 }
 
 __device__ void CheckSpawnables(byte* res, uint seed, byte** bytes, byte* output, WorldgenConfig wCfg, LootConfig lCfg) {
-	static void (*spawnFuncs[5])(int, int, uint, LootConfig, byte**) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion };
-	byte* origin = *bytes;
+	static void (*spawnFuncs[6])(int, int, uint, LootConfig, byte**) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand };
+	//byte* origin = *bytes;
 	byte* map = res + 4 * 3 * wCfg.map_w;
 	writeByte(bytes, START_BLOCK);
 	writeInt(bytes, seed);
@@ -457,43 +470,57 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte** bytes, byte* output
 			auto func = spawnFuncs[0];
 			long pix = createRGB(map[pixelPos], map[pixelPos + 1], map[pixelPos + 2]);
 
+			bool check = false;
 			switch (pix) {
 			case 0x78ffff:
-				if (lCfg.searchChests)
+				if (lCfg.searchChests) {
 					func = spawnFuncs[0];
+					check = true;
+				}
 				else continue;
 				break;
 			case 0x55ff8c:
-				if (lCfg.searchChests)
+				if (lCfg.searchChests) {
 					func = spawnFuncs[1];
+					check = true;
+				}
 				else continue;
 				break;
 			case 0xff0aff:
-				if (lCfg.searchPixelScenes)
+				if (lCfg.searchPixelScenes) {
 					func = spawnFuncs[2];
+					check = true;
+				}
 				else continue;
 				break;
 			case 0xc35700:
-				if (lCfg.searchPixelScenes)
+				if (lCfg.searchPixelScenes){
 					func = spawnFuncs[3];
+					check = true;
+				}
 				else continue;
 				break;
 			case 0x50a000:
-				if (lCfg.searchPedestals)
+				if (lCfg.searchPedestals) {
 					func = spawnFuncs[4];
+					check = true;
+				}
 				else continue;
 				break;
 			case 0x00ff00:
-				if (lCfg.searchWandAltars)
+				if (lCfg.searchWandAltars) {
 					func = spawnFuncs[5];
+					check = true;
+				}
 				else continue;
 				break;
 			default:
 				continue;
 			}
 
-			for (int i = -lCfg.pwCount; i <= lCfg.pwCount; i++)
-				func(gp.x + PWSize * i, gp.y, seed, lCfg, bytes);
+			if(check)
+				for (int i = -lCfg.pwCount; i <= lCfg.pwCount; i++)
+					func(gp.x + PWSize * i, gp.y, seed, lCfg, bytes);
 		}
 	}
 	writeByte(bytes, END_BLOCK);
@@ -519,7 +546,7 @@ __device__ SeedSpawnables ParseSpawnableBlock(byte** bytes, byte* output, LootCo
 	(*bytes)++;
 	uint seed = readInt(bytes);
 	//int i = 0;
-	int spawnableCount = 100;
+	int spawnableCount = 200;
 	//while (*(*bytes + i) != END_BLOCK) {
 	//	if (*(*bytes + i) == START_SPAWNABLE) {
 	//		spawnableCount++;
@@ -533,7 +560,10 @@ __device__ SeedSpawnables ParseSpawnableBlock(byte** bytes, byte* output, LootCo
 	while (b != END_BLOCK) {
 		b = (SpawnableMetadata)readByte(bytes);
 		if (b == START_SPAWNABLE) {
-			if (idx >= spawnableCount) printf("Stack blown!");
+			if (idx >= spawnableCount) {
+				printf("Stack blown!");
+				break;
+			}
 			else spawnables[idx++] = DecodeSpawnable(bytes);
 		}
 	}

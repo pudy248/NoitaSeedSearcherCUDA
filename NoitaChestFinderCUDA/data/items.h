@@ -19,11 +19,13 @@ enum SpawnableMetadata : byte
 	TYPE_EOE_DROP,
 
 	DATA_MATERIAL,
-	DATA_WAND,
 	DATA_SPELL,
+	DATA_WAND,
 };
 
 enum Item : byte {
+	ITEM_NONE,
+
 	GOLD_NUGGETS=16,
 	CHEST_TO_GOLD,
 	RAIN_GOLD,
@@ -90,6 +92,69 @@ enum Item : byte {
 	ERR
 };
 
+__device__ const char* ItemStrings[] = {
+	"GOLD_NUGGETS",
+	"CHEST_TO_GOLD",
+	"RAIN_GOLD",
+	"BOMB",
+	"POWDER",
+	"POTION_NORMAL",
+	"POTION_SECRET",
+	"POTION_RANDOM_MATERIAL",
+	"KAMMI",
+	"KUU",
+	"PAHA_SILMA",
+	"CHAOS_DIE",
+	"SHINY_ORB",
+	"UKKOSKIVI",
+	"KIUASKIVI",
+	"VUOKSIKIVI",
+	"KAKKAKIKKARE",
+	"RUNESTONE_LIGHT",
+	"RUNESTONE_FIRE",
+	"RUNESTONE_MAGMA",
+	"RUNESTONE_WEIGHT",
+	"RUNESTONE_EMPTINESS",
+	"RUNESTONE_EDGES",
+	"RUNESTONE_METAL",
+	"RANDOM_SPELL",
+	"SPELL_REFRESH",
+	"HEART_NORMAL",
+	"HEART_MIMIC",
+	"HEART_BIGGER",
+	"FULL_HEAL",
+	"WAND_T1",
+	"WAND_T1NS",
+	"WAND_T2",
+	"WAND_T2NS",
+	"WAND_T3",
+	"WAND_T3NS",
+	"WAND_T4",
+	"WAND_T4NS",
+	"WAND_T5",
+	"WAND_T5NS",
+	"WAND_T6",
+	"WAND_T6NS",
+
+	"EGG_PURPLE",
+	"EGG_SLIME",
+	"EGG_MONSTER",
+	"BROKEN_WAND",
+	"UNKNOWN_WAND",
+
+	"MIMIC",
+	"MIMIC_LEGGY",
+	"MIMIC_SIGN",
+
+	"WAND_T10NS",
+	"WAND_T1B",
+	"WAND_T2B",
+	"WAND_T3B",
+	"WAND_T4B",
+	"WAND_T5B",
+	"WAND_T6B",
+};
+
 struct Spawnable {
 	int x;
 	int y;
@@ -128,12 +193,12 @@ __device__ void writeInt(byte** ptr, int val) {
 	writeByte(ptr, (val >> 24) & 0xff);
 }
 
-__device__ Material readMaterial(byte** ptr) {
-	return (Material)((readByte(ptr)) | (readByte(ptr) << 8));
+__device__ short readShort(byte** ptr) {
+	return ((readByte(ptr)) | (readByte(ptr) << 8));
 }
 
-__device__ Material writeMaterial(byte** ptr, Material mat) {
-	writeByte(ptr, ((short)mat) & 0xff);
-	writeByte(ptr, (((short)mat) >> 8) & 0xff);
+__device__ void writeShort(byte** ptr, short s) {
+	writeByte(ptr, ((short)s) & 0xff);
+	writeByte(ptr, (((short)s) >> 8) & 0xff);
 }
 

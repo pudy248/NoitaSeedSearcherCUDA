@@ -85,9 +85,9 @@ __device__ __constant__ Material alchemySolids[] = {
 __device__ uint* alchemyLGMRandom(uint* iseed, uint count) {
 	while (count > 0) {
 		*iseed = 16807 * (*iseed % 127773) - 2836 * (*iseed / 127773);
-		if (*iseed < 0) {
-			*iseed = *iseed + 2147483647U;
-		};
+		//if (*iseed < 0) {
+		//	*iseed = *iseed + 2147483647U;
+		//};
 		count--;
 	}
 	return iseed;

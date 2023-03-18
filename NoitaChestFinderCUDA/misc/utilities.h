@@ -40,11 +40,11 @@ __device__ ulong createRGB(const byte r, const byte g, const byte b)
 
 __device__ IntPair GetGlobalPos(int x, int y, int px, int py)
 {
-	//if (y == 14 && py > 400 && py < 600)
-	//{
-	//	py += 10;
-	//}
+	if (y == 14 && (py < 400 || py > 600))
+	{
+		py -= 10;
+	}
 	int gx = (int)(((x - 35) * 512) / 10) * 10 + px - 15;
-	int gy = (int)(((y - 14) * 512) / 10) * 10 + py - 13;
+	int gy = (int)(((y - 14) * 512) / 10) * 10 + py - 3;
 	return { gx, gy };
 }

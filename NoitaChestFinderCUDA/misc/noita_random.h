@@ -4,6 +4,8 @@
 #include "device_launch_parameters.h"
 #include "datatypes.h"
 
+#include <cmath>
+
 // Thanks to kaliuresis!
 // Check out his orb atlas repository: https://github.com/kaliuresis/noa
 // #include <stdint.h>
@@ -229,6 +231,7 @@ public:
 			}
 			return i & 0xffffffff;
 		}
+		return 0;
 	}
 
 	__host__ __device__
@@ -284,6 +287,8 @@ public:
 	__host__ __device__
 	void SetRandomSeed(double x, double y)
 	{
+		randomCTR = 0;
+
 		uint ws = world_seed;
 		uint a = ws ^ 0x93262e6f;
 		uint b = a & 0xfff;
@@ -346,6 +351,7 @@ public:
 	__host__ __device__
 	double Next()
 	{
+		randomCTR++;
 		int v4 = (int)Seed * 0x41a7 + ((int)Seed / 0x1f31d) * -0x7fffffff;
 		if (v4 < 0)
 		{
@@ -358,7 +364,6 @@ public:
 	__host__ __device__
 	int Random(int a, int b)
 	{
-		randomCTR++;
 		return a + (int)((b + 1 - a) * Next());
 	}
 
@@ -380,5 +385,65 @@ public:
 	{
 		SetRandomSeed(x, y);
 		return Random((int)a, (int)b);
+	}
+
+	__host__ __device__
+	float GetDistribution(float mean, float sharpness, float baseline)
+	{
+		int i = 0;
+		do
+		{
+			float r1 = (float)Next();
+			float r2 = (float)Next();
+			float div = fabsf(r1 - mean);
+			if (r2 < ((1.0 - div) * baseline))
+			{
+				return r1;
+			}
+			if (div < 0.5)
+			{
+				// double v11 = sin(((0.5f - mean) + r1) * M_PI);
+				float v11 = sinf(((0.5f - mean) + r1) * 3.1415f);
+				float v12 = powf(v11, sharpness);
+				if (v12 > r2)
+				{
+					return r1;
+				}
+			}
+			i++;
+		} while (i < 100);
+		return (float)Next();
+	}
+
+	__host__ __device__
+	int RandomDistribution(int min, int max, int mean, float sharpness)
+	{
+		if (sharpness == 0)
+		{
+			return Random(min, max);
+		}
+
+		float adjMean = (mean - min) / (float)(max - min);
+		float v7 = GetDistribution(adjMean, sharpness, 0.005f); // Baseline is always this
+		int d = (int)roundf((max - min) * v7);
+		return min + d;
+	}
+
+	__host__ __device__
+	int RandomDistribution(float min, float max, float mean, float sharpness)
+	{
+		return RandomDistribution((int)min, (int)max, (int)mean, (int)sharpness);
+	}
+
+	__host__ __device__
+	float RandomDistributionf(float min, float max, float mean, float sharpness)
+	{
+		if (sharpness == 0.0)
+		{
+			float r = (float)Next();
+			return (r * (max - min)) + min;
+		}
+		float adjMean = (mean - min) / (max - min);
+		return min + (max - min) * GetDistribution(adjMean, sharpness, 0.005f); // Baseline is always this
 	}
 };

@@ -88,7 +88,7 @@ struct FungalShift {
 	}
 };
 
-#define maxFungalShifts 20
+#define maxFungalShifts 3
 
 #define fungalMaterialsFromCount 18
 __device__ __constant__ ShiftSource fungalMaterialsFrom[] = {
