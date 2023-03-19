@@ -247,21 +247,22 @@ __device__ bool CheckPerks(NoitaRandom* random, byte perks[130]) {
 	return passed;
 }
 __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg) {
-	byte writeLoc[500];
-	byte* writeLocPtr = writeLoc;
-	byte* ptr = writeLocPtr;
-	spawnChest(315, 17, random->world_seed, lCfg, &ptr);
-	ptr = writeLocPtr + 1;
-	Spawnable s = DecodeSpawnable(&ptr);
-	bool passed = SpawnablePassed(random->world_seed, s, fCfg);
-	free(s.contents);
+	byte bytes[500];
+	int offset = 0;
+	spawnChest(315, 17, random->world_seed, lCfg, bytes, offset);
+	offset = 1;
+	Spawnable s = DecodeSpawnable(bytes, offset);
+	SpawnableBlock b = MakeDummyBlock(random->world_seed, s);
+	bool passed = SpawnablesPassed(b, fCfg);
+	freeSeedSpawnables(b);
 
-	ptr = writeLocPtr;
-	spawnChest(75, 117, random->world_seed, lCfg, &ptr);
-	ptr = writeLocPtr + 1;
-	s = DecodeSpawnable(&ptr);
-	bool passed2 = SpawnablePassed(random->world_seed, s, fCfg);
-	free(s.contents);
+	offset = 0;
+	spawnChest(75, 117, random->world_seed, lCfg, bytes, offset);
+	offset = 1;
+	s = DecodeSpawnable(bytes, offset);
+	b = MakeDummyBlock(random->world_seed, s);
+	bool passed2 = SpawnablesPassed(b, fCfg);
+	freeSeedSpawnables(b);
 
 	return passed || passed2;
 }

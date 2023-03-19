@@ -448,7 +448,6 @@ __device__ void AddRandomCardsBetter(Wand* gun, uint seed, double x, double y, i
 	int cardCount = random->Random(1, 3);
 	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
 	Spell card = SPELL_NONE;
-	int randomBullets = 0;
 	int good_card_count = 0;
 
 	if (random->Random(0, 100) < 50 && cardCount < 3) cardCount++;
@@ -458,7 +457,7 @@ __device__ void AddRandomCardsBetter(Wand* gun, uint seed, double x, double y, i
 	cardCount = random->Random((int)(0.51f * capacity), capacity);
 	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
 
-	if (random->Random(0, 100) < (orig_level * 10) - 5) randomBullets = 1;
+	if (random->Random(0, 100) < (orig_level * 10) - 5) {}
 
 	if (random->Random(0, 100) < 4 || is_rare)
 	{

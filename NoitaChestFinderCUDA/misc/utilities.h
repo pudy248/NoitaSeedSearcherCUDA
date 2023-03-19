@@ -32,13 +32,13 @@ __device__ int pick_random_from_table_weighted(const float* probs, float sum, in
 	return 0;
 }
 
-__device__ ulong createRGB(const byte r, const byte g, const byte b)
+__device__ uint createRGB(const byte r, const byte g, const byte b)
 {
-	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+	return (r << 16) | (g << 8) | b;
 }
 
 
-__device__ IntPair GetGlobalPos(int x, int y, int px, int py)
+__device__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
 {
 	if (y == 14 && (py < 400 || py > 600))
 	{

@@ -6,6 +6,9 @@
 
 #include <cmath>
 
+//Don't ask me why the code has so many warnings, I didn't write it
+#pragma warning(disable 4244 4293 4319) //Casting from ulong to uint, Shift count too large, Zero extending uint to ulong
+
 // Thanks to kaliuresis!
 // Check out his orb atlas repository: https://github.com/kaliuresis/noa
 // #include <stdint.h>
@@ -25,14 +28,14 @@ public:
 	}
 
 	__host__ __device__
-		uint H2(unsigned int a, unsigned int b, unsigned int ws)
+		uint H2(uint a, uint b, uint ws)
 	{
-		unsigned int v3;
-		unsigned int v4;
-		unsigned int v5;
+		uint v3;
+		uint v4;
+		uint v5;
 		int v6;
-		unsigned int v7;
-		unsigned int v8;
+		uint v7;
+		uint v8;
 		int v9;
 
 		v3 = (ws >> 13) ^ (b - a - ws);

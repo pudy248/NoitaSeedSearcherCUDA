@@ -78,9 +78,11 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
       <GPUDebugInfo>false</GPUDebugInfo>
-      <HostDebugInfo>true</HostDebugInfo>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <HostDebugInfo>false</HostDebugInfo>
+      <DebugInformationFormat>None</DebugInformationFormat>
       <GenerateLineInfo>true</GenerateLineInfo>
+      <AdditionalCompilerOptions>
+      </AdditionalCompilerOptions>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>

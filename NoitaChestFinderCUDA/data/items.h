@@ -163,42 +163,41 @@ struct Spawnable {
 	Item* contents;
 };
 
-struct SeedSpawnables {
+struct SpawnableBlock {
 	uint seed;
 	int count;
 	Spawnable* spawnables;
 };
 
-__device__ void freeSeedSpawnables(SeedSpawnables s) {
-	for (int i = 0; i < s.count; i++) free(s.spawnables[i].contents);
+__device__ void freeSeedSpawnables(SpawnableBlock s) {
 	free(s.spawnables);
 }
 
-__device__ byte readByte(byte** ptr) {
-	return *(byte*)((*ptr)++);
+__device__ byte readByte(byte* ptr, int& offset) {
+	return ptr[offset++];
 }
 
-__device__ void writeByte(byte** ptr, byte b) {
-	*(byte*)((*ptr)++) = b;
+__device__ void writeByte(byte* ptr, int& offset, byte b) {
+	ptr[offset++] = b;
 }
 
-__device__ int readInt(byte** ptr) {
-	return (readByte(ptr)) | (readByte(ptr) << 8) | (readByte(ptr) << 16) | (readByte(ptr) << 24);
+__device__ int readInt(byte* ptr, int& offset) {
+	return (readByte(ptr, offset)) | (readByte(ptr, offset) << 8) | (readByte(ptr, offset) << 16) | (readByte(ptr, offset) << 24);
 }
 
-__device__ void writeInt(byte** ptr, int val) {
-	writeByte(ptr, val & 0xff);
-	writeByte(ptr, (val >> 8) & 0xff);
-	writeByte(ptr, (val >> 16) & 0xff);
-	writeByte(ptr, (val >> 24) & 0xff);
+__device__ void writeInt(byte* ptr, int& offset, int val) {
+	writeByte(ptr, offset, val & 0xff);
+	writeByte(ptr, offset, (val >> 8) & 0xff);
+	writeByte(ptr, offset, (val >> 16) & 0xff);
+	writeByte(ptr, offset, (val >> 24) & 0xff);
 }
 
-__device__ short readShort(byte** ptr) {
-	return ((readByte(ptr)) | (readByte(ptr) << 8));
+__device__ short readShort(byte* ptr, int& offset) {
+	return (readByte(ptr, offset) | (readByte(ptr, offset) << 8));
 }
 
-__device__ void writeShort(byte** ptr, short s) {
-	writeByte(ptr, ((short)s) & 0xff);
-	writeByte(ptr, (((short)s) >> 8) & 0xff);
+__device__ void writeShort(byte* ptr, int& offset, short s) {
+	writeByte(ptr, offset, ((short)s) & 0xff);
+	writeByte(ptr, offset, (((short)s) >> 8) & 0xff);
 }
 

@@ -41,6 +41,7 @@ struct ItemFilter {
 };
 
 struct FilterConfig {
+	bool aggregate;
 	int itemFilterCount;
 	ItemFilter itemFilters[10];
 	int materialFilterCount;
@@ -49,7 +50,8 @@ struct FilterConfig {
 	Spell spellFilters[10];
 	bool checkBigWands;
 	int howBig;
-	FilterConfig(int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, Material* _materialFilters, int _spellFilterCount, Spell* _spellFilters, bool _checkBigWands, int _howBig) {
+	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, Material* _materialFilters, int _spellFilterCount, Spell* _spellFilters, bool _checkBigWands, int _howBig) {
+		aggregate = _aggregate;
 		itemFilterCount = _itemFilterCount;
 		materialFilterCount = _materialFilterCount;
 		spellFilterCount = _spellFilterCount;
@@ -87,8 +89,8 @@ __device__ bool ItemFilterPassed(Spawnable s, ItemFilter f) {
 __device__ bool MaterialFilterPassed(Spawnable s, Material m) {
 	for (int n = 0; n < s.count; n++) {
 		if (s.contents[n] == DATA_MATERIAL) {
-			byte* ptr = (byte*)s.contents + n + 1;
-			Material m2 = (Material)readShort(&ptr);
+			int offset = n + 1;
+			Material m2 = (Material)readShort((byte*)s.contents, offset);
 			if (m == m2) return true;
 		}
 	}
@@ -98,8 +100,8 @@ __device__ bool MaterialFilterPassed(Spawnable s, Material m) {
 __device__ bool SpellFilterPassed(Spawnable s, Spell sp) {
 	for (int n = 0; n < s.count; n++) {
 		if (s.contents[n] == DATA_SPELL) {
-			byte* ptr = (byte*)s.contents + n + 1;
-			Spell sp2 = (Spell)readShort(&ptr);
+			int offset = n + 1;
+			Spell sp2 = (Spell)readShort((byte*)s.contents, offset);
 			if (sp == sp2) return true;
 		}
 	}
@@ -125,13 +127,99 @@ __device__ bool WandFilterPassed(uint seed, Spawnable s, int howBig) {
 	return passed;
 }
 
-__device__ bool SpawnablePassed(uint seed, Spawnable s, FilterConfig cfg) {
-	for (int i = 0; i < cfg.itemFilterCount; i++)
-		if (!ItemFilterPassed(s, cfg.itemFilters[i])) return false;
-	for (int i = 0; i < cfg.materialFilterCount; i++)
-		if (!MaterialFilterPassed(s, cfg.materialFilters[i])) return false;
-	for (int i = 0; i < cfg.spellFilterCount; i++)
-		if (!SpellFilterPassed(s, cfg.spellFilters[i])) return false;
-	if (cfg.checkBigWands && !WandFilterPassed(seed, s, cfg.howBig)) return false;
+__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg) {
+	bool* itemsPassed = (bool*)malloc(cfg.itemFilterCount);
+	bool* materialsPassed = (bool*)malloc(cfg.materialFilterCount);
+	bool* spellsPassed = (bool*)malloc(cfg.spellFilterCount);
+
+	for (int i = 0; i < cfg.itemFilterCount; i++) itemsPassed[i] = false;
+	for (int i = 0; i < cfg.materialFilterCount; i++) materialsPassed[i] = false;
+	for (int i = 0; i < cfg.spellFilterCount; i++) spellsPassed[i] = false;
+
+	int relevantSpawnableCount = 0;
+	Spawnable** relevantSpawnables = (Spawnable**)malloc(sizeof(Spawnable*) * b.count);
+
+	for (int j = 0; j < b.count; j++) {
+		Spawnable s = b.spawnables[j];
+
+		bool failed = false;
+		for (int i = 0; i < cfg.itemFilterCount; i++) {
+			if (ItemFilterPassed(s, cfg.itemFilters[i])) {
+				if (cfg.aggregate) {
+					itemsPassed[i] = true;
+					relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
+				}
+			}
+			else {
+				failed = true;
+				break;
+			}
+		}
+		if (failed && !cfg.aggregate) continue;
+
+		for (int i = 0; i < cfg.materialFilterCount; i++) {
+			if (MaterialFilterPassed(s, cfg.materialFilters[i])) {
+				if (cfg.aggregate) {
+					materialsPassed[i] = true;
+					relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
+				}
+			}
+			else {
+				failed = true;
+				break;
+			}
+		}
+		if (failed && !cfg.aggregate) continue;
+
+		for (int i = 0; i < cfg.spellFilterCount; i++) {
+			if (SpellFilterPassed(s, cfg.spellFilters[i])) {
+				if (cfg.aggregate) {
+					spellsPassed[i] = true;
+					relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
+				}
+			}
+			else {
+				failed = true;
+				break;
+			}
+		}
+		if (failed && !cfg.aggregate) continue;
+
+		if (!cfg.aggregate) {
+			relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
+		}
+
+		if (cfg.checkBigWands && !WandFilterPassed(b.seed, s, cfg.howBig)) return false;
+	}
+
+	if (!cfg.aggregate) {
+		if (relevantSpawnableCount == 0) return false;
+	}
+	else {
+		for (int i = 0; i < cfg.itemFilterCount; i++) if (!itemsPassed[i]) return false;
+		for (int i = 0; i < cfg.materialFilterCount; i++) if (!materialsPassed[i]) return false;
+		for (int i = 0; i < cfg.spellFilterCount; i++) if (!spellsPassed[i]) return false;
+	}
+
+	for (int i = 0; i < relevantSpawnableCount; i++) {
+		Spawnable s = *relevantSpawnables[i];
+		printf("%i @ (%i, %i): T%i, %i bytes: (", b.seed, s.x, s.y, s.sType, s.count);
+		for (int n = 0; n < s.count; n++)
+			if (s.contents[n] >= SAMPO)
+				printf("%x ", s.contents[n]);
+			else if (s.contents[n] == DATA_MATERIAL) {
+				int offset = n + 1;
+				short m = readShort((byte*)s.contents, offset);
+				printf("%s ", MaterialNames[m]);
+				n += 2;
+				continue;
+			}
+			else {
+				int idx = s.contents[n] - GOLD_NUGGETS;
+				printf("%s ", ItemStrings[idx]);
+			}
+		printf(")\n");
+	}
+
 	return true;
 }
