@@ -189,16 +189,46 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg) {
 			relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
 		}
 
-		if (cfg.checkBigWands && !WandFilterPassed(b.seed, s, cfg.howBig)) return false;
+		if (cfg.checkBigWands && !WandFilterPassed(b.seed, s, cfg.howBig)) {
+			free(itemsPassed);
+			free(materialsPassed);
+			free(spellsPassed);
+			free(relevantSpawnables);
+			return false;
+		}
 	}
 
 	if (!cfg.aggregate) {
-		if (relevantSpawnableCount == 0) return false;
+		if (relevantSpawnableCount == 0) {
+			free(itemsPassed);
+			free(materialsPassed);
+			free(spellsPassed);
+			free(relevantSpawnables);
+			return false;
+		}
 	}
 	else {
-		for (int i = 0; i < cfg.itemFilterCount; i++) if (!itemsPassed[i]) return false;
-		for (int i = 0; i < cfg.materialFilterCount; i++) if (!materialsPassed[i]) return false;
-		for (int i = 0; i < cfg.spellFilterCount; i++) if (!spellsPassed[i]) return false;
+		for (int i = 0; i < cfg.itemFilterCount; i++) if (!itemsPassed[i]) {
+			free(itemsPassed);
+			free(materialsPassed);
+			free(spellsPassed);
+			free(relevantSpawnables);
+			return false;
+		}
+		for (int i = 0; i < cfg.materialFilterCount; i++) if (!materialsPassed[i]) {
+			free(itemsPassed);
+			free(materialsPassed);
+			free(spellsPassed);
+			free(relevantSpawnables);
+			return false;
+		}
+		for (int i = 0; i < cfg.spellFilterCount; i++) if (!spellsPassed[i]) {
+			free(itemsPassed);
+			free(materialsPassed);
+			free(spellsPassed);
+			free(relevantSpawnables);
+			return false;
+		}
 	}
 
 	for (int i = 0; i < relevantSpawnableCount; i++) {
@@ -221,5 +251,9 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg) {
 		printf(")\n");
 	}
 
+	free(itemsPassed);
+	free(materialsPassed);
+	free(spellsPassed);
+	free(relevantSpawnables);
 	return true;
 }

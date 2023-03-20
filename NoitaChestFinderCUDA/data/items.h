@@ -8,7 +8,7 @@
 enum SpawnableMetadata : byte
 {
 	BYTE_NONE,
-	START_BLOCK,
+	START_BLOCK = 8,
 	END_BLOCK,
 	START_SPAWNABLE,
 	END_SPAWNABLE,
@@ -26,7 +26,7 @@ enum SpawnableMetadata : byte
 enum Item : byte {
 	ITEM_NONE,
 
-	GOLD_NUGGETS=16,
+	GOLD_NUGGETS=32,
 	CHEST_TO_GOLD,
 	RAIN_GOLD,
 	BOMB,
@@ -170,6 +170,7 @@ struct SpawnableBlock {
 };
 
 __device__ void freeSeedSpawnables(SpawnableBlock s) {
+	//for (int i = 0; i < s.count; i++) free(s.spawnables[i].contents);
 	free(s.spawnables);
 }
 

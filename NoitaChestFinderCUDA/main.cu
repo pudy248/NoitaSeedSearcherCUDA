@@ -36,14 +36,15 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 		byte* map = dMapData + index * memSizes.mapDataSize;
 		byte* miscMem = dMiscMem + index * memSizes.miscMemSize;
 		byte* visited = dVisitedMem + index * memSizes.visitedMemSize;
+		byte* spawnableMem = miscMem;//dMiscMem + index * 256;
 
 		if (!PrecheckSeed(seed, precheckCfg)) continue;
 
 		GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
 
-		CheckSpawnables(map, seed, miscMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
+		CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
 
-		SpawnableBlock result = ParseSpawnableBlock(miscMem, output, lootCfg);
+		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, output, lootCfg);
 		bool seedPassed = SpawnablesPassed(result, filterCfg);
 		freeSeedSpawnables(result);
 
@@ -59,7 +60,7 @@ int main()
 		//MINES
 		WorldgenConfig worldCfg = { 348, 448, 256, 103, 34, 14, true, 100 };
 		const char* fileName = "minesDump.bin";
-		constexpr auto NUMBLOCKS = 1;
+		constexpr auto NUMBLOCKS = 128;
 		constexpr auto BLOCKSIZE = 64;
 
 		//CRYPT
@@ -69,20 +70,21 @@ int main()
 		//constexpr auto BLOCKSIZE = 32;
 
 		MemBlockSizes memSizes = {
-			3 * worldCfg.map_w * worldCfg.map_h,
+			//3 * worldCfg.map_w * worldCfg.map_h,
+			256,
 			3 * worldCfg.map_w * (worldCfg.map_h + 4),
 			8 * worldCfg.map_w * worldCfg.map_h,
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 10000, 35000 };
-		LootConfig lootCfg = LootConfig(0, true, false, false, false, false, true, false, false);
+		GlobalConfig globalCfg = { 1, INT_MAXX };
+		LootConfig lootCfg = LootConfig(0, true, false, false, false, false, false, false, false);
 
 		ItemFilter filters[] = { ItemFilter(SAMPO) };
 		Material mFilters[] = { SOIL, MAGIC_LIQUID_HP_REGENERATION };
 		Spell sFilters[] = { SPELL_REGENERATION_FIELD, SPELL_GAMMA };
 
-		FilterConfig filterCfg = FilterConfig(true, 0, filters, 2, mFilters, 0, sFilters, false, 40);
+		FilterConfig filterCfg = FilterConfig(true, 1, filters, 0, mFilters, 0, sFilters, false, 40);
 
 		PrecheckConfig precheckCfg = {
 			false,
@@ -99,9 +101,10 @@ int main()
 			return;
 		}
 
-		size_t tileDataSize = 3 * worldCfg.tiles_w * worldCfg.tiles_h;
+		int sharedMemSize = 0;
 		//size_t outputSize = (globalCfg.endSeed - globalCfg.startSeed) * memSizes.outputSize;
 		size_t outputSize = NUMBLOCKS * BLOCKSIZE * memSizes.outputSize;
+		size_t tileDataSize = 3 * worldCfg.tiles_w * worldCfg.tiles_h;
 		size_t mapDataSize = NUMBLOCKS * BLOCKSIZE * memSizes.mapDataSize;
 		size_t miscMemSize = NUMBLOCKS * BLOCKSIZE * memSizes.miscMemSize;
 		size_t visitedMemSize = NUMBLOCKS * BLOCKSIZE * memSizes.visitedMemSize;
@@ -130,17 +133,13 @@ int main()
 		checkCudaErrors(cudaMalloc(&dVisitedMem, visitedMemSize));
 
 		checkCudaErrors(cudaMemcpy(dTileData, tileData, 3 * worldCfg.tiles_w * worldCfg.tiles_h, cudaMemcpyHostToDevice));
-		buildTS << <1, 1 >> > (dTileData, worldCfg.tiles_w, worldCfg.tiles_h);
+		buildTS<<<1, 1>>>(dTileData, worldCfg.tiles_w, worldCfg.tiles_h);
 		checkCudaErrors(cudaDeviceSynchronize());
-		int sharedMemSize = 0;
-		//printf("kernel shared mem: %i\n", sharedMemSize);
-		Kernel << <NUMBLOCKS, BLOCKSIZE, sharedMemSize >> > (dOutput, dMapData, dMiscMem, dVisitedMem, memSizes, globalCfg, precheckCfg, worldCfg, lootCfg, filterCfg);
+		Kernel<<<NUMBLOCKS, BLOCKSIZE, sharedMemSize>>>(dOutput, dMapData, dMiscMem, dVisitedMem, memSizes, globalCfg, precheckCfg, worldCfg, lootCfg, filterCfg);
 		checkCudaErrors(cudaDeviceSynchronize());
-		//printf("exit kernel\n");
-		freeTS << <1, 1 >> > ();
+		freeTS<<<1, 1>>>();
 		checkCudaErrors(cudaDeviceSynchronize());
 
-		//checkCudaErrors(cudaMemcpy(output + 3 * map_w * map_h * (globalCfg.startSeed / 5), dOutput + 3 * map_w * map_h * (globalCfg.startSeed / 5), 3 * map_w * map_h, cudaMemcpyDeviceToHost));
 		checkCudaErrors(cudaMemcpy(output, dOutput, outputSize, cudaMemcpyDeviceToHost));
 
 		checkCudaErrors(cudaFree(dTileData));

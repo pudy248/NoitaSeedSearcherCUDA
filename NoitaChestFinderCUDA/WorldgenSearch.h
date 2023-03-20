@@ -524,23 +524,30 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 		}
 	}
 	writeByte(bytes, offset, END_BLOCK);
-	writeByte(bytes, offset, END_BLOCK);
-	writeByte(bytes, offset, END_BLOCK);
 	//printf("%i, %i\n", (int)(*bytes - origin), maxMemory);
 	//memcpy(output, origin, *bytes - origin);
 }
 
 __device__ Spawnable DecodeSpawnable(byte* bytes, int& offset) {
+	int origin = offset;
 	Spawnable ret = {};
 	ret.x = readInt(bytes, offset);
 	ret.y = readInt(bytes, offset);
 	ret.sType = (SpawnableMetadata)(readByte(bytes, offset));
 
-	int i = offset;
-	while (bytes[i] != END_SPAWNABLE) i++;
-	ret.count = i;
+	int i = origin;
+	//if (bytes[i] == 0) printf("bad spawnable; offset %i\n", offset);
+	while (bytes[i] != END_SPAWNABLE && i < 100) {
+		//printf("%i ", bytes[i]);
+		i++;
+	}
+	//printf("%i ", bytes[i]);
+	ret.count = i - offset;
+	//printf("- count %i\n", ret.count);
 	ret.contents = (Item*)(bytes + offset);
-	offset += i - 1;
+	//ret.contents = (Item*)malloc(ret.count);
+	//memcpy(ret.contents, bytes + offset, ret.count);
+	offset += ret.count + 1;
 	return ret;
 }
 
@@ -559,16 +566,16 @@ __device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* output, LootCon
 	}
 	int byteCount = offset;
 	offset = 5;
-	printf("%i spawnables in %i bytes for seed %i\n", spawnableCount, byteCount, seed);
 	Spawnable* spawnables = (Spawnable*)malloc(sizeof(Spawnable) * spawnableCount);
 	int idx = 0;
-	while (offset < byteCount) {
-		if (readByte(bytes, offset) == START_SPAWNABLE) {
-			printf("spawnable %i of %i, byte %i of %i\n", idx + 1, spawnableCount, offset - 5, byteCount);
+	byte b = readByte(bytes, offset);
+	while (b != END_BLOCK) {
+		if (b == START_SPAWNABLE) {
 			spawnables[idx++] = DecodeSpawnable(bytes, offset);
 		}
+		b = readByte(bytes, offset);
 	}
-	//memcpy(output, bak, *bytes - bak);
+	//memcpy(output, bytes, 256);
 	SpawnableBlock ret{ seed, idx, spawnables };
 	return ret;
 }
