@@ -69,6 +69,14 @@ enum Item : byte {
 	WAND_T6,
 	WAND_T6NS,
 
+	WAND_T10NS,
+	WAND_T1B,
+	WAND_T2B,
+	WAND_T3B,
+	WAND_T4B,
+	WAND_T5B,
+	WAND_T6B,
+
 	EGG_PURPLE,
 	EGG_SLIME,
 	EGG_MONSTER,
@@ -79,17 +87,16 @@ enum Item : byte {
 	MIMIC_LEGGY,
 	MIMIC_SIGN,
 
-	WAND_T10NS,
-	WAND_T1B,
-	WAND_T2B,
-	WAND_T3B,
-	WAND_T4B,
-	WAND_T5B,
-	WAND_T6B,
-
 	SAMPO=253,
 	TRUE_ORB,
 	ERR
+};
+
+__device__ const char* SpawnableTypeNames[] = {
+	"CHEST",
+	"GREAT_CHEST",
+	"ITEM_PEDESTAL",
+	"WAND_PEDESTAL"
 };
 
 __device__ const char* ItemStrings[] = {
@@ -136,6 +143,14 @@ __device__ const char* ItemStrings[] = {
 	"WAND_T6",
 	"WAND_T6NS",
 
+	"WAND_T10NS",
+	"WAND_T1B",
+	"WAND_T2B",
+	"WAND_T3B",
+	"WAND_T4B",
+	"WAND_T5B",
+	"WAND_T6B",
+
 	"EGG_PURPLE",
 	"EGG_SLIME",
 	"EGG_MONSTER",
@@ -145,14 +160,6 @@ __device__ const char* ItemStrings[] = {
 	"MIMIC",
 	"MIMIC_LEGGY",
 	"MIMIC_SIGN",
-
-	"WAND_T10NS",
-	"WAND_T1B",
-	"WAND_T2B",
-	"WAND_T3B",
-	"WAND_T4B",
-	"WAND_T5B",
-	"WAND_T6B",
 };
 
 struct Spawnable {

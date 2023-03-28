@@ -48,3 +48,10 @@ __device__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
 	int gy = (int)(((y - 14) * 512) / 10) * 10 + py - 3;
 	return { gx, gy };
 }
+
+__device__ int roundRNGPos(int num) {
+	if (-1000000 < num && num < 1000000) return num;
+	else if (-10000000 < num && num < 10000000) return roundf(num / 10.0) * 10;
+	else if (-100000000 < num && num < 100000000) return roundf(num / 100.0) * 100;
+	return num;
+}

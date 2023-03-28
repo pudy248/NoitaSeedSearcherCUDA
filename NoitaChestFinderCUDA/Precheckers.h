@@ -253,7 +253,7 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 	offset = 1;
 	Spawnable s = DecodeSpawnable(bytes, offset);
 	SpawnableBlock b = MakeDummyBlock(random->world_seed, s);
-	bool passed = SpawnablesPassed(b, fCfg);
+	bool passed = SpawnablesPassed(b, fCfg, false);
 	freeSeedSpawnables(b);
 
 	offset = 0;
@@ -261,7 +261,7 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 	offset = 1;
 	s = DecodeSpawnable(bytes, offset);
 	b = MakeDummyBlock(random->world_seed, s);
-	bool passed2 = SpawnablesPassed(b, fCfg);
+	bool passed2 = SpawnablesPassed(b, fCfg, false);
 	freeSeedSpawnables(b);
 
 	return passed || passed2;

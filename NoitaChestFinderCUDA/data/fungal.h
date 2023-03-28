@@ -111,7 +111,7 @@ __device__ __constant__ ShiftSource fungalMaterialsFrom[] = {
 	SS_ROCK_STATIC,
 	SS_GOLD
 };
-#define fungalSumFrom 11.4053f
+#define fungalSumFrom 11.4503f
 __device__ __constant__ const float fungalProbsFrom[] = {
 	1,
 	1,
@@ -129,7 +129,7 @@ __device__ __constant__ const float fungalProbsFrom[] = {
 	0.2f,
 	0.4f,
 	0.4f,
-	0.005f,
+	0.05f,
 	0.0003f,
 };
 

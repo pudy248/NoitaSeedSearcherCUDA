@@ -40,7 +40,7 @@ struct LootConfig {
 	}
 };
 
-__device__ void createPotion(int x, int y, Item type, uint worldSeed, LootConfig cfg, byte* bytes, int& offset) {
+__device__ void createPotion(double x, double y, Item type, uint worldSeed, LootConfig cfg, byte* bytes, int& offset) {
 	if (!cfg.checkPotions) writeByte(bytes, offset, type);
 	else {
 		writeByte(bytes, offset, DATA_MATERIAL);
@@ -98,7 +98,7 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 	if (hasMimicSign) writeByte(bytes, offset, MIMIC_SIGN);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
-	random.SetRandomSeed(x + 509.7, y + 683.1);
+	random.SetRandomSeed(roundRNGPos(x) + 509.7, y + 683.1);
 
 	int count = 1;
 	while (count > 0)
@@ -145,13 +145,13 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 		else if (rnd <= 50)
 		{
 			rnd = random.Random(1, 100);
-			if (rnd <= 94) createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes, offset);
+			if (rnd <= 94) createPotion(roundRNGPos(x) + 510, y + 683, POTION_NORMAL, worldSeed, cfg, bytes, offset);
 			else if (rnd <= 98) writeByte(bytes, offset, POWDER);
 			else
 			{
 				rnd = random.Random(0, 100);
-				if (rnd <= 98) createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes, offset);
-				else createPotion(x, y, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes, offset);
+				if (rnd <= 98) createPotion(roundRNGPos(x) + 510, y + 683, POTION_SECRET, worldSeed, cfg, bytes, offset);
+				else createPotion(roundRNGPos(x) + 510, y + 683, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes, offset);
 			}
 		}
 		else if (rnd <= 54) writeByte(bytes, offset, SPELL_REFRESH);
@@ -230,7 +230,7 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 	if (hasMimicSign) writeByte(bytes, offset, MIMIC_SIGN);
 
 	NoitaRandom random = NoitaRandom(worldSeed);
-	random.SetRandomSeed(x, y);
+	random.SetRandomSeed(roundRNGPos(x), y);
 
 	int count = 1;
 
@@ -524,6 +524,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 		}
 	}
 	writeByte(bytes, offset, END_BLOCK);
+	if (offset > maxMemory) printf("ran out of misc memory: %i of %i bytes used\n", offset, maxMemory);
 	//printf("%i, %i\n", (int)(*bytes - origin), maxMemory);
 	//memcpy(output, origin, *bytes - origin);
 }
@@ -536,22 +537,16 @@ __device__ Spawnable DecodeSpawnable(byte* bytes, int& offset) {
 	ret.sType = (SpawnableMetadata)(readByte(bytes, offset));
 
 	int i = origin;
-	//if (bytes[i] == 0) printf("bad spawnable; offset %i\n", offset);
-	while (bytes[i] != END_SPAWNABLE && i < 100) {
-		//printf("%i ", bytes[i]);
+	while (bytes[i] != END_SPAWNABLE) {
 		i++;
 	}
-	//printf("%i ", bytes[i]);
 	ret.count = i - offset;
-	//printf("- count %i\n", ret.count);
 	ret.contents = (Item*)(bytes + offset);
-	//ret.contents = (Item*)malloc(ret.count);
-	//memcpy(ret.contents, bytes + offset, ret.count);
 	offset += ret.count + 1;
 	return ret;
 }
 
-__device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* output, LootConfig cfg) {
+__device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* putSpawnablesHere, byte* output, LootConfig cfg, int maxMemory) {
 	int offset = 1;
 	uint seed = readInt(bytes, offset);
 	int spawnableCount = 0;
@@ -566,7 +561,8 @@ __device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* output, LootCon
 	}
 	int byteCount = offset;
 	offset = 5;
-	Spawnable* spawnables = (Spawnable*)malloc(sizeof(Spawnable) * spawnableCount);
+	Spawnable* spawnables = (Spawnable*)putSpawnablesHere;//malloc(sizeof(Spawnable) * spawnableCount);
+	if ((sizeof(Spawnable) * spawnableCount) > maxMemory) printf("ran out of map memory: %i of %i bytes used\n", (int)(sizeof(Spawnable) * spawnableCount), maxMemory);
 	int idx = 0;
 	byte b = readByte(bytes, offset);
 	while (b != END_BLOCK) {

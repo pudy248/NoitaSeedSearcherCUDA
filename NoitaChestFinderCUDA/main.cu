@@ -30,6 +30,7 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 	uint stride = blockDim.x * gridDim.x;
 
 	for (int seed = globalCfg.startSeed + index; seed < globalCfg.endSeed; seed += stride) {
+		if (seed % 10'000'000 == 0) printf("Increment: %i\n", seed);
 
 		//byte* output = outputBlock + (seed - globalCfg.startSeed) * memSizes.outputSize;
 		byte* output = outputBlock + index * memSizes.outputSize;
@@ -44,13 +45,11 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 
 		CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
 
-		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, output, lootCfg);
-		bool seedPassed = SpawnablesPassed(result, filterCfg);
-		freeSeedSpawnables(result);
-
-		if (seed % 10'000'000 == 0) printf("Increment: %i\n", seed);
+		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
+		bool seedPassed = SpawnablesPassed(result, filterCfg, true);
 	}
 }
+
 
 int main() 
 {
@@ -72,28 +71,28 @@ int main()
 		MemBlockSizes memSizes = {
 			//3 * worldCfg.map_w * worldCfg.map_h,
 			256,
-			3 * worldCfg.map_w * (worldCfg.map_h + 4),
+			2 * 3 * worldCfg.map_w * (worldCfg.map_h + 4),
 			8 * worldCfg.map_w * worldCfg.map_h,
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAXX };
-		LootConfig lootCfg = LootConfig(0, true, false, false, false, false, false, false, false);
+		GlobalConfig globalCfg = { 1, INT_MAX };
+		LootConfig lootCfg = LootConfig(25, true, false, true, false, false, false, false, false);
 
-		ItemFilter filters[] = { ItemFilter(SAMPO) };
-		Material mFilters[] = { SOIL, MAGIC_LIQUID_HP_REGENERATION };
+		ItemFilter filters[] = { ItemFilter(HEART_MIMIC, 1) };
+		Material mFilters[] = { FUNGUS_POWDER };
 		Spell sFilters[] = { SPELL_REGENERATION_FIELD, SPELL_GAMMA };
 
-		FilterConfig filterCfg = FilterConfig(true, 1, filters, 0, mFilters, 0, sFilters, false, 40);
+		FilterConfig filterCfg = FilterConfig(false, 0, filters, 0, mFilters, 0, sFilters, true, 27);
 
 		PrecheckConfig precheckCfg = {
 			false,
 			false, ACID,
 			false, URINE,
 			false, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
-			false, true, {FungalShift(SS_NONE, true, SD_WATER, false), FungalShift(SS_WATER, false, SD_NONE, true)},
+			false, true, {FungalShift(SS_ACID_GAS, false, SD_NONE, true)},
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
-			false, {PERKS_LOTTERY, IRON_STOMACH, FOOD_CLOCK },
+			false, {PERK_PERKS_LOTTERY, PERK_IRON_STOMACH, PERK_FOOD_CLOCK },
 			false, filterCfg, lootCfg };
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg)) {
