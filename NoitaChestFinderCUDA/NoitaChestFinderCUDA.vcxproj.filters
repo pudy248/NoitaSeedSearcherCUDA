@@ -5,7 +5,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Precheckers.h" />
-    <ClInclude Include="Worldgen.h" />
     <ClInclude Include="data\alchemy.h">
       <Filter>data</Filter>
     </ClInclude>
@@ -62,7 +61,10 @@
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="Filters.h" />
-    <ClInclude Include="misc\wandgen.h" />
+    <ClInclude Include="Worldgen.h" />
+    <ClInclude Include="misc\wandgen.h">
+      <Filter>misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">

@@ -14,7 +14,7 @@ struct BiomeWands {
 	wandLevel levels[6];
 };
 
-__device__ const static BiomeWands wandLevels[] = {
+__device__ __constant__ const static BiomeWands wandLevels[] = {
 { //coalmine
 	2,
 	{{17, UNKNOWN_WAND},

@@ -5,11 +5,13 @@
 #include "stb_hbwang.h"
 #include "datatypes.h"
 
-#define COLOR_PURPLE 0x7f007fU
-#define COLOR_BLACK 0x000000U
-#define COLOR_WHITE 0xffffffU
-#define COLOR_YELLOW 0xffff00U
-#define COLOR_COFFEE 0xc0ffeeU
+constexpr uint COLOR_PURPLE = 0x7f007fU;
+constexpr uint COLOR_BLACK = 0x000000U;
+constexpr uint COLOR_WHITE = 0xffffffU;
+constexpr uint COLOR_YELLOW = 0xffff00U;
+constexpr uint COLOR_COFFEE = 0xc0ffeeU;
+constexpr uint COLOR_FROZEN_VAULT_MINT = 0xcff7c8;
+constexpr uint COLOR_HELL_GREEN = 0x8aff80;
 
 #define BIOME_PATH_FIND_WORLD_POS_MIN_X 159
 #define BIOME_PATH_FIND_WORLD_POS_MAX_X 223

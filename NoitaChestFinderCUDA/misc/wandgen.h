@@ -8,7 +8,8 @@
 #include "noita_random.h"
 #include "../data/spells.h"
 
-enum WandStat {
+enum WandStat
+{
 	RELOAD,
 	CAST_DELAY,
 	SPREAD,
@@ -54,7 +55,8 @@ struct StatProb
 	float sharpness;
 };
 
-struct StatProbBlock {
+struct StatProbBlock
+{
 	WandStat stat;
 	int count;
 	StatProb probs[10];
@@ -167,23 +169,24 @@ __device__ StatProbBlock statProbabilitiesBetter[] = {
 
 __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int level, ACTION_TYPE type, int offset)
 {
-	/*NoitaRandom random = NoitaRandom((uint)(seed + offset));
+	NoitaRandom random = NoitaRandom((uint)(seed + offset));
 	random.SetRandomSeed(x, y);
 	double sum = 0;
 	level = min(level, 10);
-	SpellData spellsOfType[] = spellsByType[type];
 	// all_spells length is 393
-	for (int i = 0; i < spellsOfType.Length; i++)
+	for (int i = 0; i < 393; i++)
 	{
-		sum += spellsOfType[i].spawn_probabilities[level];
+		if (all_spells[i].type == type)
+			sum += all_spells[i].spawn_probabilities[level];
 	}
 
 	double multiplier = random.Next();
 	double accumulated = sum * multiplier;
 
-	for (int i = 0; i < spellsOfType.Length; i++)
+	for (int i = 0; i < 393; i++)
 	{
-		SpellData spell2 = spellsOfType[i];
+		SpellData spell2 = all_spells[i];
+		if (spell2.type != type) continue;
 
 		double probability = 0;
 		probability = spell2.spawn_probabilities[level];
@@ -202,13 +205,14 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 			return (Spell)(((j + rand) % 393) + 1);
 		}
 		j++;
-	}*/
+	}
 	return SPELL_NONE;
 }
 
-__device__ StatProb getGunProbs(WandStat s, StatProbBlock dict[7], NoitaRandom* random) {
+__device__ StatProb getGunProbs(WandStat s, StatProbBlock dict[7], NoitaRandom* random)
+{
 	StatProbBlock probs = dict[0];
-	for (int i = 0; i < 7; i++) if(s == dict[i].stat) probs = dict[i];
+	for (int i = 0; i < 7; i++) if (s == dict[i].stat) probs = dict[i];
 	if (probs.count == 0) return {};
 	float sum = 0;
 	for (int i = 0; i < probs.count; i++) sum += probs.probs[i].prob;
@@ -232,13 +236,14 @@ __device__ void shuffleTable(WandStat table[4], int length, NoitaRandom* random)
 	}
 }
 
-__device__ void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock dict[7], NoitaRandom* random) {
+__device__ void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock dict[7], NoitaRandom* random)
+{
 	float cost = gun->cost;
 	StatProb prob = getGunProbs(s, dict, random);
 	float min, max;
 	int rnd;
 	float temp_cost;
-	
+
 	float actionCosts[] = {
 			0,
 			5 + (gun->capacity * 2),
@@ -578,7 +583,7 @@ __device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NoitaRa
 	applyRandomVariable(&gun, CAPACITY, statProbabilities, random);
 	for (int i = 0; i < 2; i++)
 		applyRandomVariable(&gun, variables_03[i], statProbabilities, random);
-	
+
 	if (gun.cost > 5 && random->Random(0, 1000) < 995)
 	{
 		if (gun.shuffle)
@@ -587,7 +592,7 @@ __device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NoitaRa
 			gun.capacity += (gun.cost / 10.0f);
 		gun.cost = 0;
 	}
-	gun.capacity = (float)floor(gun.capacity - 0.1f);
+	//gun.capacity = (float)floor(gun.capacity - 0.1f);
 
 	if (force_unshuffle) gun.shuffle = false;
 	if (random->Random(0, 10000) <= 9999)
@@ -690,7 +695,7 @@ __device__ Wand GetWandStatsBetter(int _cost, int level, NoitaRandom* random)
 			gun.capacity += (gun.cost / 10.0f);
 		gun.cost = 0;
 	}
-	gun.capacity = floor(gun.capacity - 0.1f);
+	//gun.capacity = floor(gun.capacity - 0.1f);
 
 	if (random->Random(0, 10000) <= 9999)
 	{
@@ -732,7 +737,6 @@ __device__ Wand GetWand(uint seed, double x, double y, int cost, int level, bool
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStats(cost, level, force_unshuffle, &random);
 	AddRandomCards(&wand, seed, x, y, level, &random);
-
 	return wand;
 }
 
@@ -781,6 +785,8 @@ __device__ Wand GetWandWithLevel(uint seed, double x, double y, int level, bool 
 			return GetWandBetter(seed, x, y, 100, 5);
 		case 6:
 			return GetWandBetter(seed, x, y, 120, 6);
+		default:
+			return GetWandBetter(seed, x, y, 180, 11);
 		}
 	else
 		switch (level)
@@ -797,6 +803,8 @@ __device__ Wand GetWandWithLevel(uint seed, double x, double y, int level, bool 
 			return GetWand(seed, x, y, 100, 5, false);
 		case 6:
 			return GetWand(seed, x, y, 120, 6, false);
+		default:
+			return GetWand(seed, x, y, 200, 11, false);
 		}
 	return GetWand(seed, x, y, 10, 1, false);
 }

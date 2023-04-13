@@ -455,7 +455,7 @@ enum Material : short {
 	SPARK_TEAL
 };
 
-__device__ const char* MaterialNames[] = {
+__device__ __constant__ const char* MaterialNames[] = {
 	"MATERIAL_NONE",
 
 	//STATIC

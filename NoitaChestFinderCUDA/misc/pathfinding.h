@@ -71,7 +71,7 @@ __device__ bool traversable(byte* map, int x, int y, int rmw)
 {
 	long c = getPixelColor(map, rmw, x, y);
 
-	return c == COLOR_BLACK || c == COLOR_COFFEE;
+	return c == COLOR_BLACK || c == COLOR_COFFEE || c == COLOR_HELL_GREEN || c == COLOR_FROZEN_VAULT_MINT;
 }
 
 __device__

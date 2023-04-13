@@ -10,47 +10,93 @@
 #include "WorldgenSearch.h"
 #include "misc/wandgen.h"
 
-struct ItemFilter {
-	Item item;
-	bool isBlacklist;
+#define FILTER_OR_COUNT 5
+#define TOTAL_FILTER_COUNT 10
+struct ItemFilter
+{
+	Item items[FILTER_OR_COUNT];
 	int duplicates;
 
-	ItemFilter() {
-		item = ITEM_NONE;
+	ItemFilter()
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = ITEM_NONE;
 		duplicates = 0;
-		isBlacklist = false;
 	}
 
-	ItemFilter(Item _item) {
-		item = _item;
+	ItemFilter(Item _items[FILTER_OR_COUNT])
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = _items[i];
 		duplicates = 1;
-		isBlacklist = false;
 	}
 
-	ItemFilter(Item _item, int _dupes) {
-		item = _item;
-		duplicates = _dupes;
-		isBlacklist = false;
-	}
-
-	ItemFilter(Item _item, int _dupes, bool _blacklist ) {
-		item = _item;
-		isBlacklist = _blacklist;
+	ItemFilter(Item _items[FILTER_OR_COUNT], int _dupes)
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = _items[i];
 		duplicates = _dupes;
 	}
 };
 
-struct FilterConfig {
+struct MaterialFilter
+{
+	Material materials[FILTER_OR_COUNT];
+	int duplicates;
+
+	MaterialFilter()
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = MATERIAL_NONE;
+		duplicates = 0;
+	}
+
+	MaterialFilter(Material _materials[FILTER_OR_COUNT])
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = _materials[i];
+		duplicates = 1;
+	}
+
+	MaterialFilter(Material _materials[FILTER_OR_COUNT], int _dupes)
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = _materials[i];
+		duplicates = _dupes;
+	}
+};
+
+struct SpellFilter
+{
+	Spell spells[FILTER_OR_COUNT];
+	int duplicates;
+
+	SpellFilter()
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = SPELL_NONE;
+		duplicates = 0;
+	}
+
+	SpellFilter(Spell _spells[FILTER_OR_COUNT])
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
+		duplicates = 1;
+	}
+
+	SpellFilter(Spell _spells[FILTER_OR_COUNT], int _dupes)
+	{
+		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
+		duplicates = _dupes;
+	}
+};
+
+struct FilterConfig
+{
 	bool aggregate;
 	int itemFilterCount;
-	ItemFilter itemFilters[10];
+	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
 	int materialFilterCount;
-	Material materialFilters[10];
+	MaterialFilter materialFilters[TOTAL_FILTER_COUNT];
 	int spellFilterCount;
-	Spell spellFilters[10];
+	SpellFilter spellFilters[TOTAL_FILTER_COUNT];
 	bool checkBigWands;
 	int howBig;
-	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, Material* _materialFilters, int _spellFilterCount, Spell* _spellFilters, bool _checkBigWands, int _howBig) {
+	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, Material* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, bool _checkBigWands, int _howBig)
+	{
 		aggregate = _aggregate;
 		itemFilterCount = _itemFilterCount;
 		materialFilterCount = _materialFilterCount;
@@ -59,259 +105,439 @@ struct FilterConfig {
 		howBig = _howBig;
 		memcpy(itemFilters, _itemFilters, sizeof(ItemFilter) * itemFilterCount);
 		memcpy(materialFilters, _materialFilters, sizeof(Material) * materialFilterCount);
-		memcpy(spellFilters, _spellFilters, sizeof(Spell) * spellFilterCount);
+		memcpy(spellFilters, _spellFilters, sizeof(SpellFilter) * spellFilterCount);
 	}
 };
 
-__device__ bool ItemFilterPassed(Spawnable s, ItemFilter f) {
-	int foundCount = 0;
-	for (int n = 0; n < s.count; n++) {
-		if (s.contents[n] - DATA_MATERIAL < 2) {
+__device__ void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
+{
+	int count = readMisaligned(&(s->count));
+	for (int n = 0; n < count; n++)
+	{
+		Item c = (&s->contents)[n];
+		if (c == DATA_MATERIAL || c == DATA_SPELL)
+		{
 			n += 2;
+			continue;
 		}
-		else if (s.contents[n] == DATA_WAND) {
-			n += 0;//wand_size
-		}
-		else {
-			//for (int i = 0; i < f.; i++) {
-				if (s.contents[n] == f.item) {
-					if (f.isBlacklist)
-						return false;
-					else
-						foundCount++;
+		else
+		{
+			for (int i = 0; i < FILTER_OR_COUNT; i++)
+			{
+				if (f.items[i] != ITEM_NONE && c == f.items[i])
+				{
+					foundCount++;
+					break;
 				}
-			//}
+			}
 		}
 	}
-	return foundCount >= f.duplicates;
 }
 
-__device__ bool MaterialFilterPassed(Spawnable s, Material m) {
-	for (int n = 0; n < s.count; n++) {
-		if (s.contents[n] == DATA_MATERIAL) {
+__device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& foundCount)
+{
+	int count = readMisaligned(&(s->count));
+	for (int n = 0; n < count; n++)
+	{
+		Item c = (&s->contents)[n];
+		if (c == DATA_MATERIAL)
+		{
 			int offset = n + 1;
-			Material m2 = (Material)readShort((byte*)s.contents, offset);
-			if (m == m2) return true;
+			Material m2 = (Material)readShort((byte*)(&s->contents), offset);
+
+
+			for (int i = 0; i < FILTER_OR_COUNT; i++)
+			{
+				if (mf.materials[i] != MATERIAL_NONE && m2 == mf.materials[i])
+				{
+					foundCount++;
+					break;
+				}
+			}
+
+			n += 2;
+			continue;
+		}
+
+		if (c == DATA_SPELL)
+		{
+			n += 2;
+			continue;
 		}
 	}
-	return false;
 }
 
-__device__ bool SpellFilterPassed(Spawnable s, Spell sp) {
-	for (int n = 0; n < s.count; n++) {
-		if (s.contents[n] == DATA_SPELL) {
+__device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& foundCount)
+{
+	int count = readMisaligned(&(s->count));
+	for (int n = 0; n < count; n++)
+	{
+		Item c = (&s->contents)[n];
+		if (c == DATA_SPELL)
+		{
 			int offset = n + 1;
-			Spell sp2 = (Spell)readShort((byte*)s.contents, offset);
-			if (sp == sp2) return true;
-		}
-	}
-	return false;
-}
+			Spell sp2 = (Spell)readShort((byte*)(&s->contents), offset);
 
-__device__ bool WandFilterPassed(uint seed, Spawnable s, int howBig, bool print) {
-	bool passed = false;
-	for (int i = 0; i < s.count; i++) {
-		if (s.contents[i] - DATA_MATERIAL < 2) {
-			i += 2;
+
+			for (int i = 0; i < FILTER_OR_COUNT; i++)
+			{
+				if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i])
+				{
+					foundCount++;
+					break;
+				}
+			}
+
+			n += 2;
+			continue;
 		}
-		int rand_x = s.x;
-		int rand_y = s.y;
-		if (s.sType == TYPE_CHEST) {
+
+		if (c == DATA_MATERIAL)
+		{
+			n += 2;
+			continue;
+		}
+		
+		/*
+		int rand_x = readMisaligned(&(s->x));
+		int rand_y = readMisaligned(&(s->y));
+
+		if (s->sType == TYPE_CHEST)
+		{
 			rand_x += 510;
 			rand_y += 683;
 		}
+
 		Wand w;
-		if (s.contents[i] == WAND_T6)
+		if (c == WAND_T6)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, false);
-		else if (s.contents[i] == WAND_T6NS)
+		else if (c == WAND_T6NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 6, true, false);
-		else if (s.contents[i] == WAND_T6B)
+		else if (c == WAND_T6B)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, true);
 
-		if (s.contents[i] == WAND_T5)
+		if (c == WAND_T5)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, false);
-		else if (s.contents[i] == WAND_T5NS)
+		else if (c == WAND_T5NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 5, true, false);
-		else if (s.contents[i] == WAND_T5B)
+		else if (c == WAND_T5B)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, true);
 
-		if (s.contents[i] == WAND_T4)
+		if (c == WAND_T4)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, false);
-		else if (s.contents[i] == WAND_T4NS)
+		else if (c == WAND_T4NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 4, true, false);
-		else if (s.contents[i] == WAND_T4B)
+		else if (c == WAND_T4B)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, true);
 
-		if (s.contents[i] == WAND_T3)
+		if (c == WAND_T3)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, false);
-		else if (s.contents[i] == WAND_T3NS)
+		else if (c == WAND_T3NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 3, true, false);
-		else if (s.contents[i] == WAND_T3B)
+		else if (c == WAND_T3B)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, true);
 
-		if (s.contents[i] == WAND_T2)
+		if (c == WAND_T2)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, false);
-		else if (s.contents[i] == WAND_T2NS)
+		else if (c == WAND_T2NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 2, true, false);
-		else if (s.contents[i] == WAND_T2B)
+		else if (c == WAND_T2B)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, true);
 
-		if (s.contents[i] == WAND_T1)
+		if (c == WAND_T1)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, false);
-		else if (s.contents[i] == WAND_T1NS)
+		else if (c == WAND_T1NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 1, true, false);
-		else if (s.contents[i] == WAND_T1B)
+		else if (c == WAND_T1B)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);
 		else continue;
-		if (w.capacity >= howBig) {
+		for (int i = 0; i < FILTER_OR_COUNT; i++)
+		{
+			if (sf.spells[i] != SPELL_NONE && w.alwaysCast == sf.spells[i])
+			{
+				foundCount++;
+				if (foundCount >= sf.duplicates) return true;
+				else break;
+			}
+		}
+		for (int j = 0; j < w.spellIdx; j++)
+		{
+			for (int i = 0; i < FILTER_OR_COUNT; i++)
+			{
+				if (sf.spells[i] != SPELL_NONE && w.spells[j] == sf.spells[i])
+				{
+					foundCount++;
+					if (foundCount >= sf.duplicates) return true;
+					else break;
+				}
+			}
+		}*/
+	}
+}
+
+__device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print)
+{
+	bool passed = false;
+	for (int i = 0; i < readMisaligned(&(s->count)); i++)
+	{
+		if ((&s->contents)[i] == DATA_MATERIAL || (&s->contents)[i] == DATA_SPELL)
+		{
+			i += 2;
+			continue;
+		}
+		int rand_x = readMisaligned(&(s->x));
+		int rand_y = readMisaligned(&(s->y));
+
+		if (s->sType == TYPE_CHEST)
+		{
+			rand_x += 510;
+			rand_y += 683;
+		}
+
+		Wand w;
+		if ((&s->contents)[i] == WAND_T6)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, false);
+		else if ((&s->contents)[i] == WAND_T6NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 6, true, false);
+		else if ((&s->contents)[i] == WAND_T6B)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, true);
+
+		if ((&s->contents)[i] == WAND_T5)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, false);
+		else if ((&s->contents)[i] == WAND_T5NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 5, true, false);
+		else if ((&s->contents)[i] == WAND_T5B)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, true);
+
+		if ((&s->contents)[i] == WAND_T4)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, false);
+		else if ((&s->contents)[i] == WAND_T4NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 4, true, false);
+		else if ((&s->contents)[i] == WAND_T4B)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, true);
+
+		if ((&s->contents)[i] == WAND_T3)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, false);
+		else if ((&s->contents)[i] == WAND_T3NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 3, true, false);
+		else if ((&s->contents)[i] == WAND_T3B)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, true);
+
+		if ((&s->contents)[i] == WAND_T2)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, false);
+		else if ((&s->contents)[i] == WAND_T2NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 2, true, false);
+		else if ((&s->contents)[i] == WAND_T2B)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, true);
+
+		if ((&s->contents)[i] == WAND_T1)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, false);
+		else if ((&s->contents)[i] == WAND_T1NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 1, true, false);
+		else if ((&s->contents)[i] == WAND_T1B)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);
+		else continue;
+		if (w.capacity >= howBig)
+		{
 			passed = true;
 		}
-		if (print) printf("WAND %i @ (%i %i) %i %i %i %i %i %i %i %f\n", seed, s.x, s.y, (int)w.capacity, w.multicast, w.delay, w.reload, w.mana, w.regen, w.spread, w.speed);
+		if (print) printf("WAND %i @ (%i %i) %.1f %i %i %i %i %i %i %.4f\n", seed, readMisaligned(&(s->x)), readMisaligned(&(s->y)), w.capacity, w.multicast, w.delay, w.reload, w.mana, w.regen, w.spread, w.speed);
 	}
 	return passed;
 }
 
-__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print) {
+__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
+{
 	int relevantSpawnableCount = 0;
 	Spawnable** relevantSpawnables = (Spawnable**)malloc(sizeof(Spawnable*) * b.count);
 
-	if (cfg.aggregate) {
-		bool* itemsPassed = (bool*)malloc(cfg.itemFilterCount);
-		bool* materialsPassed = (bool*)malloc(cfg.materialFilterCount);
-		bool* spellsPassed = (bool*)malloc(cfg.spellFilterCount);
+	if (cfg.aggregate)
+	{
+		int itemsPassed[TOTAL_FILTER_COUNT];
+		int materialsPassed[TOTAL_FILTER_COUNT];
+		int spellsPassed[TOTAL_FILTER_COUNT];
 
-		for (int i = 0; i < cfg.itemFilterCount; i++) itemsPassed[i] = false;
-		for (int i = 0; i < cfg.materialFilterCount; i++) materialsPassed[i] = false;
-		for (int i = 0; i < cfg.spellFilterCount; i++) spellsPassed[i] = false;
+		for (int i = 0; i < cfg.itemFilterCount; i++) itemsPassed[i] = 0;
+		for (int i = 0; i < cfg.materialFilterCount; i++) materialsPassed[i] = 0;
+		for (int i = 0; i < cfg.spellFilterCount; i++) spellsPassed[i] = 0;
 
-		for (int j = 0; j < b.count; j++) {
-			Spawnable s = b.spawnables[j];
+		for (int j = 0; j < b.count; j++)
+		{
+			Spawnable* s = b.spawnables[j];
+			bool added = false;
 
-			for (int i = 0; i < cfg.itemFilterCount; i++) {
-				if (itemsPassed[i]) continue;
-				if (ItemFilterPassed(s, cfg.itemFilters[i])) {
-					itemsPassed[i] = true;
-					relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
-					break;
+			for (int i = 0; i < cfg.itemFilterCount; i++)
+			{
+				int prevPassCount = itemsPassed[i];
+				ItemFilterPassed(s, cfg.itemFilters[i], itemsPassed[i]);
+				if (itemsPassed[i] > prevPassCount && !added)
+				{
+					added = true;
+					relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
 				}
 			}
 
-			for (int i = 0; i < cfg.materialFilterCount; i++) {
-				if (materialsPassed[i]) continue;
-				if (MaterialFilterPassed(s, cfg.materialFilters[i])) {
-					materialsPassed[i] = true;
-					relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
-					break;
+			for (int i = 0; i < cfg.materialFilterCount; i++)
+			{
+				int prevPassCount = materialsPassed[i];
+				MaterialFilterPassed(s, cfg.materialFilters[i], materialsPassed[i]);
+				if (materialsPassed[i] > prevPassCount && !added)
+				{
+					added = true;
+					relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
 				}
 			}
 
-			for (int i = 0; i < cfg.spellFilterCount; i++) {
-				if (spellsPassed[i]) continue;
-				if (SpellFilterPassed(s, cfg.spellFilters[i])) {
-					spellsPassed[i] = true;
-					relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
-					break;
+			for (int i = 0; i < cfg.spellFilterCount; i++)
+			{
+				int prevPassCount = spellsPassed[i];
+				SpellFilterPassed(b.seed, s, cfg.spellFilters[i], spellsPassed[i]);
+				if (spellsPassed[i] > prevPassCount && !added)
+				{
+					added = true;
+					relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
 				}
 			}
 		}
 
-		for (int i = 0; i < cfg.itemFilterCount; i++) if (!itemsPassed[i]) {
-			free(itemsPassed);
-			free(materialsPassed);
-			free(spellsPassed);
-			free(relevantSpawnables);
-			return false;
-		}
-		for (int i = 0; i < cfg.materialFilterCount; i++) if (!materialsPassed[i]) {
-			free(itemsPassed);
-			free(materialsPassed);
-			free(spellsPassed);
-			free(relevantSpawnables);
-			return false;
-		}
-		for (int i = 0; i < cfg.spellFilterCount; i++) if (!spellsPassed[i]) {
-			free(itemsPassed);
-			free(materialsPassed);
-			free(spellsPassed);
-			free(relevantSpawnables);
-			return false;
-		}
+		bool failed = false;
+		for (int i = 0; i < cfg.itemFilterCount; i++)
+			if (itemsPassed[i] < cfg.itemFilters[i].duplicates)
+				failed = true;
 
-		free(itemsPassed);
-		free(materialsPassed);
-		free(spellsPassed);
+		for (int i = 0; i < cfg.materialFilterCount; i++)
+			if (materialsPassed[i] < cfg.materialFilters[i].duplicates)
+				failed = true;
+
+		for (int i = 0; i < cfg.spellFilterCount; i++)
+			if (spellsPassed[i] < cfg.spellFilters[i].duplicates)
+				failed = true;
+
+		if (failed)
+		{
+			free(relevantSpawnables);
+			return false;
+		}
 	}
-	else {
-		for (int j = 0; j < b.count; j++) {
-			Spawnable s = b.spawnables[j];
+	else
+	{
+		for (int j = 0; j < b.count; j++)
+		{
+			Spawnable* s = b.spawnables[j];
 
 			bool failed = false;
-			for (int i = 0; i < cfg.itemFilterCount; i++) {
-				if (!ItemFilterPassed(s, cfg.itemFilters[i])) {
+			for (int i = 0; i < cfg.itemFilterCount; i++)
+			{
+				int passCount = 0;
+				ItemFilterPassed(s, cfg.itemFilters[i], passCount);
+				if (passCount < cfg.itemFilters[i].duplicates)
+				{
 					failed = true;
 					break;
 				}
 			}
 			if (failed) continue;
 
-			for (int i = 0; i < cfg.materialFilterCount; i++) {
-				if (!MaterialFilterPassed(s, cfg.materialFilters[i])) {
+			for (int i = 0; i < cfg.materialFilterCount; i++)
+			{
+				int passCount = 0;
+				MaterialFilterPassed(s, cfg.materialFilters[i], passCount);
+				if (passCount < cfg.materialFilters[i].duplicates)
+				{
 					failed = true;
 					break;
 				}
 			}
 			if (failed) continue;
 
-			for (int i = 0; i < cfg.spellFilterCount; i++) {
-				if (!SpellFilterPassed(s, cfg.spellFilters[i])) {
+			for (int i = 0; i < cfg.spellFilterCount; i++)
+			{
+				int passCount = 0;
+				SpellFilterPassed(b.seed, s, cfg.spellFilters[i], passCount);
+				if (passCount < cfg.spellFilters[i].duplicates)
+				{
 					failed = true;
 					break;
 				}
 			}
 			if (failed) continue;
 
-			if (cfg.checkBigWands && !WandFilterPassed(b.seed, s, cfg.howBig, false)) continue;
+			//if (cfg.checkBigWands) {
+			//	if (!WandFilterPassed(b.seed, s, cfg.howBig, false)) continue;
+			//}
 
-			relevantSpawnables[relevantSpawnableCount++] = b.spawnables + j;
+			relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
 		}
-	
-		if (relevantSpawnableCount == 0) {
+
+		if (relevantSpawnableCount == 0)
+		{
 			free(relevantSpawnables);
 			return false;
 		}
 	}
 
-	if (print) {
-		for (int i = 0; i < relevantSpawnableCount; i++) {
-			Spawnable s = *relevantSpawnables[i];
+	if (print)
+	{
+		for (int i = 0; i < relevantSpawnableCount; i++)
+		{
+			Spawnable* s = relevantSpawnables[i];
+			int count = readMisaligned(&(s->count));
 
-			for (int n = 0; n < s.count; n++) {
-				if (s.contents[n] == DATA_MATERIAL) {
+			//if(cfg.checkBigWands)
+			//	WandFilterPassed(b.seed, s, cfg.howBig, true);
+
+			char buffer[1000];
+			int offset = 0;
+
+			_itoa_offset(b.seed, buffer, 10, offset);
+			_putstr_offset(" @ (", buffer, offset);
+			_itoa_offset(readMisaligned(&(s->x)), buffer, 10, offset);
+			_putstr_offset(", ", buffer, offset);
+			_itoa_offset(readMisaligned(&(s->y)), buffer, 10, offset);
+			_putstr_offset("): ", buffer, offset);
+			_putstr_offset(SpawnableTypeNames[s->sType - TYPE_CHEST], buffer, offset);
+			_putstr_offset(", ", buffer, offset);
+			_itoa_offset(count, buffer, 10, offset);
+			_putstr_offset(" bytes: (", buffer, offset);
+
+			for (int n = 0; n < count; n++)
+			{
+				Item item = *(&s->contents + n);
+				if (item == DATA_MATERIAL)
+				{
+					int offset2 = n + 1;
+					short m = readShort((byte*)(&s->contents), offset2);
+					_putstr_offset("POTION_", buffer, offset);
+					_putstr_offset(MaterialNames[m], buffer, offset);
+					_putstr_offset(" ", buffer, offset);
 					n += 2;
 					continue;
 				}
-				if (s.contents[n] >= WAND_T1 && s.contents[n] <= WAND_T6B)
-					WandFilterPassed(b.seed, s, cfg.howBig, true);
-			}
-
-			printf("%i @ (%i[%i], %i): %s, %i bytes: (", b.seed, s.x, roundRNGPos(s.x), s.y, SpawnableTypeNames[s.sType - TYPE_CHEST], s.count);
-
-			for (int n = 0; n < s.count; n++) {
-				if (s.contents[n] >= SAMPO)
-					printf("%x ", s.contents[n]);
-				else if (s.contents[n] == DATA_MATERIAL) {
-					int offset = n + 1;
-					short m = readShort((byte*)s.contents, offset);
-					printf("%s ", MaterialNames[m]);
+				else if (item == DATA_SPELL)
+				{
+					int offset2 = n + 1;
+					short m = readShort((byte*)(&s->contents), offset2);
+					_putstr_offset(SpellNames[m], buffer, offset);
+					_putstr_offset(" ", buffer, offset);
 					n += 2;
 					continue;
 				}
-				else {
-					int idx = s.contents[n] - GOLD_NUGGETS;
-					printf("%s ", ItemStrings[idx]);
+				else if (GOLD_NUGGETS > item || item > MIMIC_SIGN)
+				{
+					_putstr_offset("0x", buffer, offset);
+					_itoa_offset(item, buffer, 16, offset);
+					_putstr_offset(" ", buffer, offset);
+				}
+				else
+				{
+					int idx = item - GOLD_NUGGETS;
+					_putstr_offset(ItemNames[idx], buffer, offset);
+					_putstr_offset(" ", buffer, offset);
 				}
 			}
-			printf(")\n");
+			_putstr_offset(")\n", buffer, offset);
+			buffer[offset] = '\0';
+			printf("%s", buffer);
 		}
 	}
 
