@@ -23,6 +23,7 @@ struct GlobalConfig
 	uint startSeed;
 	uint endSeed;
 	int printInterval;
+	bool doWorldgen;
 };
 
 struct MemBlockSizes
@@ -57,12 +58,17 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 			continue;
 		}
 
-		GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
+		bool seedPassed = true;
 
-		CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
+		if (globalCfg.doWorldgen)
+		{
+			GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
 
-		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
-		bool seedPassed = SpawnablesPassed(result, filterCfg, true);
+			CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
+
+			SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
+			seedPassed = SpawnablesPassed(result, filterCfg, true);
+		}
 
 		atomicAdd(checkedSeeds, 1);
 		if (seedPassed)
@@ -148,28 +154,28 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, 1 };
+		GlobalConfig globalCfg = { 1, INT_MAX, -1, false };
 
-		Item iF1[FILTER_OR_COUNT] = { TRUE_ORB, SAMPO };
+		Item iF1[FILTER_OR_COUNT] = { TRUE_ORB };
 		Spell sF1[FILTER_OR_COUNT] = { SPELL_GAMMA, SPELL_ALPHA, SPELL_OMEGA };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_EXPLOSIVE_PROJECTILE };
 		Spell sF3[FILTER_OR_COUNT] = { SPELL_NUKE_GIGA };
 
-		ItemFilter iFilters[] = { ItemFilter(iF1, 2) };
+		ItemFilter iFilters[] = { ItemFilter(iF1) };
 		Material mFilters[] = { FUNGUS_POWDER };
 		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2), SpellFilter(sF3) };
 
-		FilterConfig filterCfg = FilterConfig(true, 0, iFilters, 0, mFilters, 2, sFilters, false, 26);
+		FilterConfig filterCfg = FilterConfig(true, 0, iFilters, 0, mFilters, 0, sFilters, false, 26);
 		LootConfig lootCfg = LootConfig(0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, filterCfg.spellFilterCount > 0);
 
 		PrecheckConfig precheckCfg = {
-			false,
+			true,
 			false, ACID,
 			false, MAGIC_LIQUID_MOVEMENT_FASTER,
 			false, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
 			false, true, {FungalShift(SS_ACID_GAS, false, SD_NONE, true)},
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
-			false, {PERK_PROTECTION_EXPLOSION, PERK_PROTECTION_FIRE, PERK_PROTECTION_RADIOACTIVITY },
+			true, {PERK_PERKS_LOTTERY, PERK_EXTRA_PERK, PERK_NO_MORE_SHUFFLE, PERK_EDIT_WANDS_EVERYWHERE},
 			false, filterCfg, lootCfg
 		};
 

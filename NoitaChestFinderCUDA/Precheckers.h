@@ -165,9 +165,9 @@ __device__ bool CheckPerks(NoitaRandom* random, byte perks[130])
 
 	random->SetRandomSeed(1, 2);
 
-	byte* perkDeck = (byte*)malloc(130 * sizeof(sbyte));
-	short* stackable_distances = (short*)malloc(perkCount * sizeof(short));
-	short* stackable_count = (short*)malloc(perkCount * sizeof(short));
+	byte perkDeck[130];
+	short stackable_distances[perkCount];
+	short stackable_count[perkCount];
 
 	int perkDeckIdx = 0;
 	for (int i = 0; i < 130; i++) perkDeck[i] = PERK_NONE;
@@ -258,25 +258,24 @@ __device__ bool CheckPerks(NoitaRandom* random, byte perks[130])
 		perkDeck[i] = 0;
 	}
 
-	free(stackable_count);
-	free(stackable_distances);
+	constexpr int perkBlock = 3;
 
-	bool passed = true;
-	for (int i = 0; i < 130; i += 3)
+	for (int i = 0; i < 6; i += perkBlock)
 	{
-		bool found[3] = { false, false, false };
-		for (int j = 0; j < 3; j++)
+		bool found[perkBlock];
+		for (int j = 0; j < perkBlock; j++) found[j] = perks[i + j] == PERK_NONE;
+
+		for (int j = 0; j < perkBlock; j++)
 		{
-			for (int k = 0; k < 3; k++)
+			for (int k = 0; k < perkBlock; k++)
 			{
-				if (perks[i + j] != PERK_NONE && perks[i + j] != perkDeck[i + k])
+				if (perks[i + j] != PERK_NONE && perks[i + j] == perkDeck[i + k])
 					found[j] = true;
 			}
 		}
-		if (!(found[0] && found[1] && found[2])) passed = false;
+		for (int j = 0; j < perkBlock; j++) if (!found[j]) return false;
 	}
-	free(perkDeck);
-	return passed;
+	return true;
 }
 __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg)
 {
@@ -305,12 +304,12 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 		if (!CheckRain(&sharedRandom, config.rain)) return false;
 	if (config.checkStartingFlask)
 		if (!CheckStartingFlask(&sharedRandom, config.startingFlask)) return false;
-	//if (config.checkAlchemy)
-	//	if (!CheckAlchemy(&sharedRandom, config.LC, config.AP)) return false;
-	//if (config.checkFungalShifts)
-	//	if (!CheckFungalShifts(&sharedRandom, config.orderedShifts, config.shifts)) return false;
-	//if (config.checkBiomeModifiers)
-	//	if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;
+	if (config.checkAlchemy)
+		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP)) return false;
+	if (config.checkFungalShifts)
+		if (!CheckFungalShifts(&sharedRandom, config.orderedShifts, config.shifts)) return false;
+	if (config.checkBiomeModifiers)
+		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;
 	if (config.checkUpwarps)
 		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
 	if (config.checkPerks)
