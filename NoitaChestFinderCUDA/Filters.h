@@ -197,7 +197,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 			n += 2;
 			continue;
 		}
-		
+
 		/*
 		int rand_x = readMisaligned(&(s->x));
 		int rand_y = readMisaligned(&(s->y));
@@ -299,9 +299,9 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print
 			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, false);
 		else if ((&s->contents)[i] == WAND_T6NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 6, true, false);
-		else if ((&s->contents)[i] == WAND_T6B)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, true);
-
+		//else if ((&s->contents)[i] == WAND_T6B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, true);
+		/*
 		if ((&s->contents)[i] == WAND_T5)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, false);
 		else if ((&s->contents)[i] == WAND_T5NS)
@@ -335,7 +335,7 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print
 		else if ((&s->contents)[i] == WAND_T1NS)
 			w = GetWandWithLevel(seed, rand_x, rand_y, 1, true, false);
 		else if ((&s->contents)[i] == WAND_T1B)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);
+			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);*/
 		else continue;
 		if (w.capacity >= howBig)
 		{
@@ -349,8 +349,9 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print
 __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 {
 	int relevantSpawnableCount = 0;
-	Spawnable** relevantSpawnables = (Spawnable**)malloc(sizeof(Spawnable*) * b.count);
+	Spawnable* relevantSpawnables[10];
 
+	
 	if (cfg.aggregate)
 	{
 		int itemsPassed[TOTAL_FILTER_COUNT];
@@ -373,7 +374,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 				if (itemsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
-					relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
+					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
 
@@ -384,7 +385,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 				if (materialsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
-					relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
+					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
 
@@ -395,7 +396,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 				if (spellsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
-					relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
+					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
 		}
@@ -462,11 +463,11 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 			}
 			if (failed) continue;
 
-			//if (cfg.checkBigWands) {
-			//	if (!WandFilterPassed(b.seed, s, cfg.howBig, false)) continue;
-			//}
+			if (cfg.checkBigWands) {
+				if (!WandFilterPassed(b.seed, s, cfg.howBig, false)) continue;
+			}
 
-			relevantSpawnables[relevantSpawnableCount++] = b.spawnables[j];
+			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
 		if (relevantSpawnableCount == 0)
@@ -483,61 +484,63 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 			Spawnable* s = relevantSpawnables[i];
 			int count = readMisaligned(&(s->count));
 
-			//if(cfg.checkBigWands)
-			//	WandFilterPassed(b.seed, s, cfg.howBig, true);
-
-			char buffer[1000];
-			int offset = 0;
-
-			_itoa_offset(b.seed, buffer, 10, offset);
-			_putstr_offset(" @ (", buffer, offset);
-			_itoa_offset(readMisaligned(&(s->x)), buffer, 10, offset);
-			_putstr_offset(", ", buffer, offset);
-			_itoa_offset(readMisaligned(&(s->y)), buffer, 10, offset);
-			_putstr_offset("): ", buffer, offset);
-			_putstr_offset(SpawnableTypeNames[s->sType - TYPE_CHEST], buffer, offset);
-			_putstr_offset(", ", buffer, offset);
-			_itoa_offset(count, buffer, 10, offset);
-			_putstr_offset(" bytes: (", buffer, offset);
-
-			for (int n = 0; n < count; n++)
+			if (cfg.checkBigWands)
+				WandFilterPassed(b.seed, s, cfg.howBig, true);
+			else
 			{
-				Item item = *(&s->contents + n);
-				if (item == DATA_MATERIAL)
+				char buffer[1000];
+				int offset = 0;
+
+				_itoa_offset(b.seed, buffer, 10, offset);
+				_putstr_offset(" @ (", buffer, offset);
+				_itoa_offset(readMisaligned(&(s->x)), buffer, 10, offset);
+				_putstr_offset(", ", buffer, offset);
+				_itoa_offset(readMisaligned(&(s->y)), buffer, 10, offset);
+				_putstr_offset("): ", buffer, offset);
+				_putstr_offset(SpawnableTypeNames[s->sType - TYPE_CHEST], buffer, offset);
+				_putstr_offset(", ", buffer, offset);
+				_itoa_offset(count, buffer, 10, offset);
+				_putstr_offset(" bytes: (", buffer, offset);
+
+				for (int n = 0; n < count; n++)
 				{
-					int offset2 = n + 1;
-					short m = readShort((byte*)(&s->contents), offset2);
-					_putstr_offset("POTION_", buffer, offset);
-					_putstr_offset(MaterialNames[m], buffer, offset);
-					_putstr_offset(" ", buffer, offset);
-					n += 2;
-					continue;
+					Item item = *(&s->contents + n);
+					if (item == DATA_MATERIAL)
+					{
+						int offset2 = n + 1;
+						short m = readShort((byte*)(&s->contents), offset2);
+						_putstr_offset("POTION_", buffer, offset);
+						_putstr_offset(MaterialNames[m], buffer, offset);
+						_putstr_offset(" ", buffer, offset);
+						n += 2;
+						continue;
+					}
+					else if (item == DATA_SPELL)
+					{
+						int offset2 = n + 1;
+						short m = readShort((byte*)(&s->contents), offset2);
+						_putstr_offset(SpellNames[m], buffer, offset);
+						_putstr_offset(" ", buffer, offset);
+						n += 2;
+						continue;
+					}
+					else if (GOLD_NUGGETS > item || item > MIMIC_SIGN)
+					{
+						_putstr_offset("0x", buffer, offset);
+						_itoa_offset(item, buffer, 16, offset);
+						_putstr_offset(" ", buffer, offset);
+					}
+					else
+					{
+						int idx = item - GOLD_NUGGETS;
+						_putstr_offset(ItemNames[idx], buffer, offset);
+						_putstr_offset(" ", buffer, offset);
+					}
 				}
-				else if (item == DATA_SPELL)
-				{
-					int offset2 = n + 1;
-					short m = readShort((byte*)(&s->contents), offset2);
-					_putstr_offset(SpellNames[m], buffer, offset);
-					_putstr_offset(" ", buffer, offset);
-					n += 2;
-					continue;
-				}
-				else if (GOLD_NUGGETS > item || item > MIMIC_SIGN)
-				{
-					_putstr_offset("0x", buffer, offset);
-					_itoa_offset(item, buffer, 16, offset);
-					_putstr_offset(" ", buffer, offset);
-				}
-				else
-				{
-					int idx = item - GOLD_NUGGETS;
-					_putstr_offset(ItemNames[idx], buffer, offset);
-					_putstr_offset(" ", buffer, offset);
-				}
+				_putstr_offset(")\n", buffer, offset);
+				buffer[offset] = '\0';
+				printf("%s", buffer);
 			}
-			_putstr_offset(")\n", buffer, offset);
-			buffer[offset] = '\0';
-			printf("%s", buffer);
 		}
 	}
 

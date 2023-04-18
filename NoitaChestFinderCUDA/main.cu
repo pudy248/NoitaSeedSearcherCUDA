@@ -77,16 +77,16 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 }
 
 /*
-__global__ void wandExperiment(int* buckets)
+__global__ void wandExperiment(int* buckets, const int level, const bool nonShuffle)
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 	uint stride = blockDim.x * gridDim.x;
 
-	constexpr int radius = 50000;
+	constexpr int radius = 10000;
 	for (int x = -radius + index; x < radius; x += stride) {
 		if (x % 1000 == 0) printf("%i done\n", x);
 		for (int y = -radius; y < radius; y++) {
-			Wand w = GetWandWithLevel(1234, x, y, 11, false, false);
+			Wand w = GetWandWithLevel(1234, x, y, level, nonShuffle, false);
 			if (((int)w.capacity) > 26) atomicAdd(&(buckets[(int)w.capacity]), 1);
 		}
 	}
@@ -116,18 +116,32 @@ int main()
 		chrono::steady_clock::time_point time1 = chrono::steady_clock::now();
 
 		//MINES
-		WorldgenConfig worldCfg = { 348, 448, 256, 103, 34, 14, true, false, 100 };
-		const char* fileName = "minesDump.bin";
-		constexpr auto NUMBLOCKS = 128;
-		constexpr auto BLOCKSIZE = 64;
-		constexpr auto biomeIdx = 0;
+		//WorldgenConfig worldCfg = { 348, 448, 256, 103, 34, 14, true, false, 100 };
+		//const char* fileName = "minesDump.bin";
+		//constexpr auto NUMBLOCKS = 128;
+		//constexpr auto BLOCKSIZE = 64;
+		//constexpr auto biomeIdx = 0;
 
-		//CRYPT
-		//WorldgenConfig worldCfg = { 282, 342, 717, 204, 26, 35, false, false, 100 };
-		//const char* fileName = "cryptDump.bin";
+		//EXCAVATION SITE
+		//WorldgenConfig worldCfg = { 344, 440, 409, 102, 31, 17, false, false, 100 };
+		//const char* fileName = "excavationsiteDump.bin";
+		//constexpr auto NUMBLOCKS = 64;
+		//constexpr auto BLOCKSIZE = 64;
+		//constexpr auto biomeIdx = 1;
+
+		//SNOWCAVE
+		//WorldgenConfig worldCfg = { 440, 560, 512, 153, 30, 20, false, false, 100 };
+		//const char* fileName = "snowcaveDump.bin";
 		//constexpr auto NUMBLOCKS = 64;
 		//constexpr auto BLOCKSIZE = 32;
-		//constexpr auto biomeIdx = 10;
+		//constexpr auto biomeIdx = 1;
+
+		//CRYPT
+		WorldgenConfig worldCfg = { 282, 342, 717, 204, 26, 35, false, false, 100 };
+		const char* fileName = "cryptDump.bin";
+		constexpr auto NUMBLOCKS = 64;
+		constexpr auto BLOCKSIZE = 32;
+		constexpr auto biomeIdx = 10;
 
 		//OVERGROWN CAVERNS
 		//WorldgenConfig worldCfg = { 144, 235, 359, 461, 59, 16, false, false, 1 };
@@ -154,28 +168,29 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, -1, false };
+		GlobalConfig globalCfg = { 1, INT_MAX, 600, true };
 
-		Item iF1[FILTER_OR_COUNT] = { TRUE_ORB };
+		Item iF1[FILTER_OR_COUNT] = { MIMIC_SIGN };
+		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Spell sF1[FILTER_OR_COUNT] = { SPELL_GAMMA, SPELL_ALPHA, SPELL_OMEGA };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_EXPLOSIVE_PROJECTILE };
 		Spell sF3[FILTER_OR_COUNT] = { SPELL_NUKE_GIGA };
 
-		ItemFilter iFilters[] = { ItemFilter(iF1) };
+		ItemFilter iFilters[] = { ItemFilter(iF1), ItemFilter(iF2)};
 		Material mFilters[] = { FUNGUS_POWDER };
 		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2), SpellFilter(sF3) };
 
-		FilterConfig filterCfg = FilterConfig(true, 0, iFilters, 0, mFilters, 0, sFilters, false, 26);
-		LootConfig lootCfg = LootConfig(0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, filterCfg.spellFilterCount > 0);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, true, 46);
+		LootConfig lootCfg = LootConfig(1, false, false, true, false, false, filterCfg.materialFilterCount > 0, true, biomeIdx, filterCfg.spellFilterCount > 0);
 
 		PrecheckConfig precheckCfg = {
-			true,
+			false,
 			false, ACID,
 			false, MAGIC_LIQUID_MOVEMENT_FASTER,
 			false, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
 			false, true, {FungalShift(SS_ACID_GAS, false, SD_NONE, true)},
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
-			true, {PERK_PERKS_LOTTERY, PERK_EXTRA_PERK, PERK_NO_MORE_SHUFFLE, PERK_EDIT_WANDS_EVERYWHERE},
+			false, {{PERK_PERKS_LOTTERY, true}, {PERK_EXTRA_PERK, false}, {PERK_EDIT_WANDS_EVERYWHERE, true}},
 			false, filterCfg, lootCfg
 		};
 

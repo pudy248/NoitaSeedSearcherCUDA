@@ -35,7 +35,7 @@ struct PrecheckConfig
 	bool checkBiomeModifiers;
 	BiomeModifier biomeModifiers[9];
 	bool checkPerks;
-	byte perks[130];
+	PerkInfo perks[130];
 	bool checkUpwarps;
 	FilterConfig fCfg;
 	LootConfig lCfg;
@@ -158,7 +158,7 @@ __device__ bool CheckBiomeModifiers(NoitaRandom* random, BiomeModifier biomeModi
 	for (int i = 0; i < 9; i++) if (biomeModifiers[i] != BM_NONE && modifiers[i] != biomeModifiers[i]) return false;
 	return true;
 }
-__device__ bool CheckPerks(NoitaRandom* random, byte perks[130])
+__device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[130])
 {
 	const int MIN_DISTANCE_BETWEEN_DUPLICATE_PERKS = 4;
 	const short DEFAULT_MAX_STACKABLE_PERK_COUNT = 128;
@@ -259,21 +259,34 @@ __device__ bool CheckPerks(NoitaRandom* random, byte perks[130])
 	}
 
 	constexpr int perkBlock = 3;
-
-	for (int i = 0; i < 6; i += perkBlock)
+	int perkIdx = 0;
+	NoitaRandom rnd = NoitaRandom(random->world_seed);
+	for (int i = 0; i < 3; i++)
 	{
 		bool found[perkBlock];
-		for (int j = 0; j < perkBlock; j++) found[j] = perks[i + j] == PERK_NONE;
+		for (int j = 0; j < perkBlock; j++) found[j] = perks[perkIdx + j].p == PERK_NONE;
 
 		for (int j = 0; j < perkBlock; j++)
 		{
 			for (int k = 0; k < perkBlock; k++)
 			{
-				if (perks[i + j] != PERK_NONE && perks[i + j] == perkDeck[i + k])
-					found[j] = true;
+				if (perks[perkIdx + j].p != PERK_NONE && perks[perkIdx + j].p == perkDeck[perkIdx + k])
+				{
+					if (perks[perkIdx + j].lottery)
+					{
+						int x = temple_x[i] + (int)roundf((k + 0.5f) * (60 / perkBlock));
+						int y = temple_y[i];
+						rnd.SetRandomSeed(x, y);
+						if (rnd.Random(1, 100) > 50)
+							found[j] = true;
+					}
+					else
+						found[j] = true;
+				}
 			}
 		}
 		for (int j = 0; j < perkBlock; j++) if (!found[j]) return false;
+		perkIdx += perkBlock;
 	}
 	return true;
 }

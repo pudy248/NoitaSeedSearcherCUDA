@@ -406,7 +406,7 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 		}
 		else
 		{
-			/*sCount++;
+			sCount++;
 			writeByte(bytes, offset, START_SPAWNABLE);
 			writeInt(bytes, offset, x);
 			writeInt(bytes, offset, y);
@@ -422,7 +422,7 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 			if(rnd <= 95) writeByte(bytes, offset, MIMIC);
 			else writeByte(bytes, offset, MIMIC_LEGGY);
 			int tmp = 0;
-			writeInt(itemCount, tmp, totalBytes);*/
+			writeInt(itemCount, tmp, totalBytes);
 		}
 	}
 }
@@ -580,7 +580,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 			//avoids having to switch every loop
 			auto func = spawnFuncs[0];
 			long pix = createRGB(map[pixelPos], map[pixelPos + 1], map[pixelPos + 2]);
-
+			
 			bool check = false;
 			switch (pix)
 			{
