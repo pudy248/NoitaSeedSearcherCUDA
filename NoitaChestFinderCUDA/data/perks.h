@@ -378,4 +378,6 @@ struct PerkInfo
 {
 	Perk p;
 	bool lottery;
+	int minPosition;
+	int maxPosition;
 };

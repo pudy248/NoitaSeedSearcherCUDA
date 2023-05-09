@@ -47,7 +47,7 @@ __device__ uint createRGB(const byte r, const byte g, const byte b)
 __device__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
 {
 	int gx = (int)(((x - 35) * 512) / 10) * 10 + px - 15;
-	int gy = (int)(((y - 14) * 512) / 10) * 10 + py - 3;
+	int gy = (int)(((y - 14) * 512) / 10) * 10 + py - 13;
 	return { gx, gy };
 }
 
@@ -81,7 +81,71 @@ __device__ void _itoa_offset(int num, char* buffer, int base, int& offset)
 	{
 		int rem = num % base;
 
-		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
+
+		num = num / base;
+	}
+
+	if (isNegative)
+		internal_buffer[i--] = '-';
+
+	for (int j = i + 1; j < 11; j++)
+		buffer[offset++] = internal_buffer[j];
+}
+
+__device__ void _itoa_offset_decimal(int num, char* buffer, int base, int fixedPoint, int& offset)
+{
+	char internal_buffer[11]; //ints can't be bigger than this!
+	int i = 10;
+	bool isNegative = false;
+
+	if (num == 0)
+	{
+		buffer[offset++] = '0';
+		return;
+	}
+
+	if (num < 0 && base == 10)
+	{
+		isNegative = true;
+		num = -num;
+	}
+
+	while (num != 0)
+	{
+		int rem = num % base;
+
+		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
+
+		if (10 - i == fixedPoint) internal_buffer[i--] = '.';
+
+		num = num / base;
+	}
+
+	if (isNegative)
+		internal_buffer[i--] = '-';
+
+	for (int j = i + 1; j < 11; j++)
+		buffer[offset++] = internal_buffer[j];
+}
+
+__device__ void _itoa_offset_zeroes(int num, char* buffer, int base, int leadingZeroes, int& offset)
+{
+	char internal_buffer[11]; //ints can't be bigger than this!
+	int i = 10;
+	bool isNegative = false;
+
+	if (num < 0 && base == 10)
+	{
+		isNegative = true;
+		num = -num;
+	}
+
+	while (num != 0 || 10 - i < leadingZeroes)
+	{
+		int rem = num % base;
+
+		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
 
 		num = num / base;
 	}

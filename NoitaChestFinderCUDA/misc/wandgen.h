@@ -40,11 +40,29 @@ struct Wand
 	bool force_unshuffle;
 	bool is_rare;
 
-	Spell alwaysCast;
 	int spellIdx;
-	Spell spells[69];
+	Spell alwaysCast;
+	Spell spells[67];
 };
 
+//DON'T REARRANGE CONTENTS! THE ORDER IS HARDCODED
+#pragma pack(push, 1)
+struct WandData
+{
+	float capacity;
+	int multicast;
+	int mana;
+	int regen;
+	int delay;
+	int reload;
+	float speed;
+	int spread;
+	bool shuffle;
+	byte spellCount;
+	Spell alwaysCast;
+	Spell spells;
+};
+#pragma pack(pop)
 
 struct StatProb
 {
@@ -369,7 +387,6 @@ __device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _le
 			extraLevel++;
 			bulletCard = GetRandomActionWithType(seed, x, y, extraLevel, PROJECTILE, 0);
 		}
-
 		if (cardCount < 3)
 		{
 			if (cardCount < 1 && random->Random(0, 100) < 20)
@@ -384,7 +401,9 @@ __device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _le
 		}
 		else
 		{
-			if (random->Random(0, 100) < 40)
+			int temp = random->Random(0, 100);
+			printf("%i\n", temp);
+			if (temp < 40)
 			{
 				card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
 				gun->spells[gun->spellIdx++] = card;
@@ -583,7 +602,6 @@ __device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NoitaRa
 	applyRandomVariable(&gun, CAPACITY, statProbabilities, random);
 	for (int i = 0; i < 2; i++)
 		applyRandomVariable(&gun, variables_03[i], statProbabilities, random);
-
 	if (gun.cost > 5 && random->Random(0, 1000) < 995)
 	{
 		if (gun.shuffle)

@@ -47,13 +47,13 @@ struct LootConfig
 	}
 };
 
-__device__ void createPotion(double x, double y, Item type, uint worldSeed, LootConfig cfg, byte* bytes, int& offset)
+__device__ void createPotion(double x, double y, Item type, uint seed, LootConfig cfg, byte* bytes, int& offset)
 {
 	if (!cfg.checkPotions) writeByte(bytes, offset, type);
 	else
 	{
 		writeByte(bytes, offset, DATA_MATERIAL);
-		NoitaRandom rnd = NoitaRandom(worldSeed);
+		NoitaRandom rnd = NoitaRandom(seed);
 		rnd.SetRandomSeed(x - 4.5, y - 4);
 		switch (type)
 		{
@@ -84,6 +84,92 @@ __device__ void createPotion(double x, double y, Item type, uint worldSeed, Loot
 	}
 }
 
+__device__ void createWand(double x, double y, Item type, bool addOffset, uint seed, LootConfig cfg, byte* bytes, int& offset)
+{
+	writeByte(bytes, offset, type);
+	if (!cfg.checkWands ||
+		type == WAND_T1B ||
+		type == WAND_T2B ||
+		type == WAND_T3B ||
+		type == WAND_T4B ||
+		type == WAND_T5B ||
+		type == WAND_T6B
+		);
+	else
+	{
+		int rand_x = (int)x;
+		int rand_y = (int)y;
+
+		if (addOffset)
+		{
+			rand_x += 510;
+			rand_y += 683;
+		}
+
+		Wand w;
+		if (type == WAND_T6)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, false);
+		else if (type == WAND_T6NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 6, true, false);
+		//else if (type == WAND_T6B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, true);
+		
+		else if (type == WAND_T5)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, false);
+		else if (type == WAND_T5NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 5, true, false);
+		//else if (type == WAND_T5B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, true);
+
+		else if (type == WAND_T4)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, false);
+		else if (type == WAND_T4NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 4, true, false);
+		//else if (type == WAND_T4B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, true);
+
+		else if (type == WAND_T3)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, false);
+		else if (type == WAND_T3NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 3, true, false);
+		//else if (type == WAND_T3B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, true);
+
+		else if (type == WAND_T2)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, false);
+		else if (type == WAND_T2NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 2, true, false);
+		//else if (type == WAND_T2B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, true);
+
+		else if (type == WAND_T1)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, false);
+		else if (type == WAND_T1NS)
+			w = GetWandWithLevel(seed, rand_x, rand_y, 1, true, false);
+		//else if (type == WAND_T1B)
+		//	w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);
+
+		writeByte(bytes, offset, DATA_WAND); //-1
+		writeInt(bytes, offset, *(int*)&w.capacity); //0
+		writeInt(bytes, offset, w.multicast); //4
+		writeInt(bytes, offset, w.mana); //8
+		writeInt(bytes, offset, w.regen); //12
+		writeInt(bytes, offset, w.delay); //16
+		writeInt(bytes, offset, w.reload); //20
+		writeInt(bytes, offset, *(int*)&w.speed); //24
+		writeInt(bytes, offset, w.spread); //28
+		writeByte(bytes, offset, (byte)w.shuffle); //32
+		writeByte(bytes, offset, (byte)w.spellIdx); //33
+		writeByte(bytes, offset, DATA_SPELL);
+		writeShort(bytes, offset, (short)w.alwaysCast); //34
+		for (int i = 0; i < w.spellIdx; i++)
+		{
+			writeByte(bytes, offset, DATA_SPELL);
+			writeShort(bytes, offset, (short)w.spells[i]);
+		} //36 + 2 * spellCount
+	}
+}
+
 __device__ Spell MakeRandomCard(NoitaRandom* random)
 {
 	Spell res = SPELL_NONE;
@@ -106,7 +192,6 @@ __device__ Spell MakeRandomCard(NoitaRandom* random)
 __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
-	writeByte(bytes, offset, START_SPAWNABLE);
 	writeInt(bytes, offset, x);
 	writeInt(bytes, offset, y);
 	writeByte(bytes, offset, TYPE_CHEST);
@@ -222,14 +307,14 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 		else if (rnd <= 84)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) writeByte(bytes, offset, WAND_T1);
-			else if (rnd <= 50) writeByte(bytes, offset, WAND_T1NS);
-			else if (rnd <= 75) writeByte(bytes, offset, WAND_T2);
-			else if (rnd <= 90) writeByte(bytes, offset, WAND_T2NS);
-			else if (rnd <= 96) writeByte(bytes, offset, WAND_T3);
-			else if (rnd <= 98) writeByte(bytes, offset, WAND_T3NS);
-			else if (rnd <= 99) writeByte(bytes, offset, WAND_T4);
-			else writeByte(bytes, offset, WAND_T4NS);
+			if (rnd <= 25) createWand(x, y, WAND_T1, true, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 50) createWand(x, y, WAND_T1NS, true, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 75) createWand(x, y, WAND_T2, true, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 90) createWand(x, y, WAND_T2NS, true, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 96) createWand(x, y, WAND_T3, true, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 98) createWand(x, y, WAND_T3NS, true, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 99)createWand(x, y, WAND_T4, true, worldSeed, cfg, bytes, offset);
+			else createWand(x, y, WAND_T4NS, true, worldSeed, cfg, bytes, offset);
 		}
 		else if (rnd <= 95)
 		{
@@ -252,7 +337,6 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
-	writeByte(bytes, offset, START_SPAWNABLE);
 	writeInt(bytes, offset, x);
 	writeInt(bytes, offset, y);
 	writeByte(bytes, offset, TYPE_CHEST_GREATER);
@@ -309,14 +393,14 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 		else if (rnd <= 39)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) writeByte(bytes, offset, WAND_T3);
-			else if (rnd <= 50) writeByte(bytes, offset, WAND_T3NS);
-			else if (rnd <= 75) writeByte(bytes, offset, WAND_T4);
-			else if (rnd <= 90) writeByte(bytes, offset, WAND_T4NS);
-			else if (rnd <= 96) writeByte(bytes, offset, WAND_T5);
-			else if (rnd <= 98) writeByte(bytes, offset, WAND_T5NS);
-			else if (rnd <= 99) writeByte(bytes, offset, WAND_T6);
-			else writeByte(bytes, offset, WAND_T6NS);
+			if (rnd <= 25) createWand(x, y, WAND_T3, false, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 50) createWand(x, y, WAND_T3NS, false, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 75) createWand(x, y, WAND_T4, false, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 90) createWand(x, y, WAND_T4NS, false, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 96) createWand(x, y, WAND_T5, false, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 98) createWand(x, y, WAND_T5NS, false, worldSeed, cfg, bytes, offset);
+			else if (rnd <= 99)createWand(x, y, WAND_T6, false, worldSeed, cfg, bytes, offset);
+			else createWand(x, y, WAND_T6NS, false, worldSeed, cfg, bytes, offset);
 		}
 		else if (rnd <= 60)
 		{
@@ -337,7 +421,6 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 __device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
-	writeByte(bytes, offset, START_SPAWNABLE);
 	writeInt(bytes, offset, x);
 	writeInt(bytes, offset, y);
 	writeByte(bytes, offset, TYPE_ITEM_PEDESTAL);
@@ -407,7 +490,6 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 		else
 		{
 			sCount++;
-			writeByte(bytes, offset, START_SPAWNABLE);
 			writeInt(bytes, offset, x);
 			writeInt(bytes, offset, y);
 			writeByte(bytes, offset, TYPE_CHEST);
@@ -477,29 +559,27 @@ __device__ void spawnOilTank(int x, int y, uint seed, LootConfig cfg, byte* byte
 __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
 	NoitaRandom random = NoitaRandom(seed);
-	float r = random.ProceduralRandomf(x, y, 0, 1);
-	if (r < 0.47) return;
-	r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-	if (r < 0.755) return;
+
+	if (!wandChecks[cfg.biomeIdx](random, x, y)) return;
 
 	int nx = x - 5;
 	int ny = y - 14;
 	BiomeWands wandSet = wandLevels[cfg.biomeIdx]; //biomeIndex
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
-	r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
+	float r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
 	for (int i = 0; i < wandSet.count; i++)
 	{
 		if (r <= wandSet.levels[i].prob)
 		{
 
 			sCount++;
-			writeByte(bytes, offset, START_SPAWNABLE);
 			writeInt(bytes, offset, nx + 5);
 			writeInt(bytes, offset, ny + 5);
 			writeByte(bytes, offset, TYPE_WAND_PEDESTAL);
 			writeInt(bytes, offset, 1);
-			writeByte(bytes, offset, wandSet.levels[i].id);
+			createWand(nx + 5, ny + 5, wandSet.levels[i].id, false, seed, cfg, bytes, offset);
+			//writeByte(bytes, offset, wandSet.levels[i].id);
 			return;
 		}
 		r -= wandSet.levels[i].prob;
@@ -533,7 +613,6 @@ __device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, b
 	if (random.Random(1, 100) >= 50) return;
 
 	sCount++;
-	writeByte(bytes, offset, START_SPAWNABLE);
 	writeInt(bytes, offset, pos_x);
 	writeInt(bytes, offset, pos_y);
 	writeByte(bytes, offset, TYPE_NIGHTMARE_WAND);
@@ -558,7 +637,6 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 	static void (*spawnFuncs[7])(int, int, uint, LootConfig, byte*, int&, int&) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand, spawnNightmareEnemy };
 	int offset = 0;
 	byte* map = res + 4 * 3 * wCfg.map_w;
-	writeByte(bytes, offset, START_BLOCK);
 	writeInt(bytes, offset, seed);
 	byte* count = getIntPtr(bytes, offset);
 	int sCount = 0;
@@ -654,34 +732,19 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 
 __device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* putSpawnablesHere, byte* output, LootConfig cfg, int maxMemory)
 {
-	int offset = 1;
+	int offset = 0;
 	uint seed = readInt(bytes, offset);
 	uint sCount = readInt(bytes, offset);
 
-
-	//char buffer[400];
-	//int offset2 = 0;
-	//_putstr_offset("seed ", buffer, offset2);
-	//_itoa_offset(seed, buffer, 10, offset2);
-	//_putstr_offset(":  ", buffer, offset2);
-	//for (int i = 0; i < 100; i++) {
-	//	_itoa_offset((int)bytes[i], buffer, 16, offset2);
-	//	_putstr_offset(" ", buffer, offset2);
-	//}
-	//buffer[offset2] = '\0';
-	//printf("%s\n", buffer);
-
-	//printf("spawnables for seed %i: %i\n", seed, count);
 	Spawnable** spawnables = (Spawnable**)putSpawnablesHere;
-	offset++;
+	if (sCount * sizeof(Spawnable*) > maxMemory) printf("ran out of map memory: %i of %i bytes used\n", (int)(sCount * sizeof(Spawnable*)), maxMemory);
 	for (int i = 0; i < sCount; i++)
 	{
 		Spawnable* s = (Spawnable*)(bytes + offset);
 		spawnables[i] = s;
 		offset += 9;
 		int count = readInt(bytes, offset);
-		//printf("Seed %i: %i of %i (%i)\n", seed, i + 1, sCount, count);
-		offset += count + 1;
+		offset += count;
 	}
 
 	SpawnableBlock ret{ seed, sCount, spawnables };

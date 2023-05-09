@@ -5,14 +5,12 @@
 
 #include "../misc/datatypes.h"
 
-#define BIG_ENDIAN
+#define BYTE_ALIGN_BIG_ENDIAN
 
 enum SpawnableMetadata : byte
 {
 	BYTE_NONE,
-	START_BLOCK = 8,
-	START_SPAWNABLE,
-	TYPE_CHEST,
+	TYPE_CHEST = 8,
 	TYPE_CHEST_GREATER,
 	TYPE_ITEM_PEDESTAL,
 	TYPE_WAND_PEDESTAL,
@@ -71,15 +69,15 @@ enum Item : byte
 	WAND_T6,
 	WAND_T6NS,
 
-	WAND_T10,
-	WAND_T10NS,
-
 	WAND_T1B,
 	WAND_T2B,
 	WAND_T3B,
 	WAND_T4B,
 	WAND_T5B,
 	WAND_T6B,
+
+	WAND_T10,
+	WAND_T10NS,
 
 	EGG_PURPLE,
 	EGG_SLIME,
@@ -149,14 +147,15 @@ __device__ __constant__ const char* ItemNames[] = {
 	"WAND_T6",
 	"WAND_T6NS",
 
-	"WAND_T10",
-	"WAND_T10NS",
 	"WAND_T1B",
 	"WAND_T2B",
 	"WAND_T3B",
 	"WAND_T4B",
 	"WAND_T5B",
 	"WAND_T6B",
+
+	"WAND_T10",
+	"WAND_T10NS",
 
 	"EGG_PURPLE",
 	"EGG_SLIME",
@@ -206,7 +205,7 @@ __device__ void writeByte(byte* ptr, int& offset, byte b)
 
 __device__ int readInt(byte* ptr, int& offset)
 {
-#ifdef BIG_ENDIAN
+#ifdef BYTE_ALIGN_BIG_ENDIAN
 	return (readByte(ptr, offset) << 24) | (readByte(ptr, offset) << 16) | (readByte(ptr, offset) << 8) | (readByte(ptr, offset));
 #else
 	return (readByte(ptr, offset)) | (readByte(ptr, offset) << 8) | (readByte(ptr, offset) << 16) | (readByte(ptr, offset) << 24);
@@ -222,7 +221,7 @@ __device__ byte* getIntPtr(byte* ptr, int& offset)
 
 __device__ void writeInt(byte* ptr, int& offset, int val)
 {
-#ifdef BIG_ENDIAN
+#ifdef BYTE_ALIGN_BIG_ENDIAN
 	writeByte(ptr, offset, (val >> 24) & 0xff);
 	writeByte(ptr, offset, (val >> 16) & 0xff);
 	writeByte(ptr, offset, (val >> 8) & 0xff);

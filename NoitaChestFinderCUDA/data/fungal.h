@@ -88,9 +88,9 @@ struct FungalShift {
 	}
 };
 
-#define maxFungalShifts 3
+constexpr auto maxFungalShifts = 3;
 
-#define fungalMaterialsFromCount 18
+constexpr auto fungalMaterialsFromCount = 18;
 __device__ __constant__ ShiftSource fungalMaterialsFrom[] = {
 	SS_WATER,
 	SS_LAVA,
@@ -111,7 +111,7 @@ __device__ __constant__ ShiftSource fungalMaterialsFrom[] = {
 	SS_ROCK_STATIC,
 	SS_GOLD
 };
-#define fungalSumFrom 11.4503f
+constexpr auto fungalSumFrom = 11.4503f;
 __device__ __constant__ const float fungalProbsFrom[] = {
 	1,
 	1,
@@ -133,7 +133,7 @@ __device__ __constant__ const float fungalProbsFrom[] = {
 	0.0003f,
 };
 
-#define fungalMaterialsToCount 31
+constexpr auto fungalMaterialsToCount = 31;
 __device__ __constant__ ShiftDest fungalMaterialsTo[] = {
 	SD_WATER,
 	SD_LAVA,
@@ -167,7 +167,7 @@ __device__ __constant__ ShiftDest fungalMaterialsTo[] = {
 	SD_VOID_LIQUID,
 	SD_CHEESE_STATIC,
 };
-#define fungalSumTo 20.63f
+constexpr auto fungalSumTo = 20.63f;
 __device__ __constant__ float fungalProbsTo[] = {
 	1,
 	1,

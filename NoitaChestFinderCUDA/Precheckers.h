@@ -35,7 +35,7 @@ struct PrecheckConfig
 	bool checkBiomeModifiers;
 	BiomeModifier biomeModifiers[9];
 	bool checkPerks;
-	PerkInfo perks[130];
+	PerkInfo perks[20];
 	bool checkUpwarps;
 	FilterConfig fCfg;
 	LootConfig lCfg;
@@ -49,10 +49,8 @@ __device__ bool CheckRain(NoitaRandom* random, Material rain)
 	{
 		int seedRainIndex = pick_random_from_table_backwards(rainProbs, rainCount, random, &rnd);
 		Material seedRain = rainMaterials[seedRainIndex];
-		//printf("wanted %i, got %i\n", rain, seedRain);
 		return (Material)seedRain == rain;
 	}
-	//printf("wanted %i, got %i\n", rain, MATERIAL_NONE);
 	return rain == MATERIAL_NONE;
 }
 __device__ bool CheckStartingFlask(NoitaRandom* random, Material starting_flask)
@@ -158,7 +156,7 @@ __device__ bool CheckBiomeModifiers(NoitaRandom* random, BiomeModifier biomeModi
 	for (int i = 0; i < 9; i++) if (biomeModifiers[i] != BM_NONE && modifiers[i] != biomeModifiers[i]) return false;
 	return true;
 }
-__device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[130])
+__device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 {
 	const int MIN_DISTANCE_BETWEEN_DUPLICATE_PERKS = 4;
 	const short DEFAULT_MAX_STACKABLE_PERK_COUNT = 128;
@@ -258,35 +256,27 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[130])
 		perkDeck[i] = 0;
 	}
 
-	constexpr int perkBlock = 3;
-	int perkIdx = 0;
 	NoitaRandom rnd = NoitaRandom(random->world_seed);
-	for (int i = 0; i < 3; i++)
+	for (int i = 0; i < 20; i++)
 	{
-		bool found[perkBlock];
-		for (int j = 0; j < perkBlock; j++) found[j] = perks[perkIdx + j].p == PERK_NONE;
-
-		for (int j = 0; j < perkBlock; j++)
-		{
-			for (int k = 0; k < perkBlock; k++)
+		PerkInfo perkToCkeck = perks[i];
+		bool found = perks[i].p == PERK_NONE;
+		for(int j = perkToCkeck.minPosition; j < perkToCkeck.maxPosition; j++) {
+			if (perkToCkeck.p == perkDeck[j])
 			{
-				if (perks[perkIdx + j].p != PERK_NONE && perks[perkIdx + j].p == perkDeck[perkIdx + k])
+				if (perkToCkeck.lottery)
 				{
-					if (perks[perkIdx + j].lottery)
-					{
-						int x = temple_x[i] + (int)roundf((k + 0.5f) * (60 / perkBlock));
-						int y = temple_y[i];
-						rnd.SetRandomSeed(x, y);
-						if (rnd.Random(1, 100) > 50)
-							found[j] = true;
-					}
-					else
-						found[j] = true;
+					int x = temple_x[(j / 3)] + (int)roundf(((j % 3) + 0.5f) * 20);
+					int y = temple_y[(j / 3)];
+					rnd.SetRandomSeed(x, y);
+					if (rnd.Random(1, 100) > 50)
+						found = true;
 				}
+				else
+					found = true;
 			}
 		}
-		for (int j = 0; j < perkBlock; j++) if (!found[j]) return false;
-		perkIdx += perkBlock;
+		if (!found) return false;
 	}
 	return true;
 }
@@ -296,16 +286,20 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 	int offset = 0;
 	int tmp = 0;
 	spawnChest(315, 17, random->world_seed, lCfg, bytes, offset, tmp);
-	Spawnable* s = (Spawnable*)(bytes + 1);
+	Spawnable* s = (Spawnable*)bytes;
 	SpawnableBlock b = { random->world_seed, 1, &s };
 
 	bool passed = SpawnablesPassed(b, fCfg, false);
 
-	offset = 0;
-	spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, tmp);
-	bool passed2 = SpawnablesPassed(b, fCfg, false);
+	//offset = 0;
+	//spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, tmp);
+	//passed |= SpawnablesPassed(b, fCfg, false);
 
-	return passed || passed2;
+	offset = 0;
+	spawnChest(835, 17, random->world_seed, lCfg, bytes, offset, tmp);
+	passed |= SpawnablesPassed(b, fCfg, false);
+
+	return passed;
 }
 
 __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
@@ -323,8 +317,8 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 		if (!CheckFungalShifts(&sharedRandom, config.orderedShifts, config.shifts)) return false;
 	if (config.checkBiomeModifiers)
 		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;
-	if (config.checkUpwarps)
-		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
+	//if (config.checkUpwarps)
+	//	if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
 	if (config.checkPerks)
 		if (!CheckPerks(&sharedRandom, config.perks)) return false;
 	if (config.printPassed) printf("Precheck passed: %i\n", seed);
