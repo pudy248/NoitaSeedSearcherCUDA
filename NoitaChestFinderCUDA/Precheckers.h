@@ -1,5 +1,7 @@
 #pragma once
 
+#include "defines.h"
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "misc/datatypes.h"
@@ -27,10 +29,10 @@ struct PrecheckConfig
 	bool checkStartingFlask;
 	Material startingFlask;
 	bool checkAlchemy;
+	AlchemyOrdering orderedAlchemy;
 	AlchemyRecipe LC;
 	AlchemyRecipe AP;
 	bool checkFungalShifts;
-	bool orderedShifts;
 	FungalShift shifts[maxFungalShifts];
 	bool checkBiomeModifiers;
 	BiomeModifier biomeModifiers[9];
@@ -40,6 +42,7 @@ struct PrecheckConfig
 	FilterConfig fCfg;
 	LootConfig lCfg;
 };
+
 
 __device__ bool CheckRain(NoitaRandom* random, Material rain)
 {
@@ -53,6 +56,8 @@ __device__ bool CheckRain(NoitaRandom* random, Material rain)
 	}
 	return rain == MATERIAL_NONE;
 }
+
+
 __device__ bool CheckStartingFlask(NoitaRandom* random, Material starting_flask)
 {
 	random->SetRandomSeed(-4.5, -4);
@@ -99,47 +104,70 @@ __device__ bool CheckStartingFlask(NoitaRandom* random, Material starting_flask)
 	}
 	return material == starting_flask;
 }
-__device__ bool CheckAlchemy(NoitaRandom* random, AlchemyRecipe LC, AlchemyRecipe AP)
+
+__device__ bool CheckAlchemy(NoitaRandom* random, AlchemyRecipe LC, AlchemyRecipe AP, AlchemyOrdering ordered)
 {
-	AlchemyRecipe lc = alchemyGetRecipe(random->world_seed, alchemyInit(random->world_seed));
-	AlchemyRecipe ap = alchemyGetRecipe(random->world_seed, lc.iseed);
-	return lc == LC && ap == AP;
+	NollaPrng prng(random->world_seed * 0.17127 + 1323.5903);
+	for (int i = 0; i < 5; i++) prng.Next();
+	AlchemyRecipe lc = MaterialPicker(prng, random->world_seed);
+	AlchemyRecipe ap = MaterialPicker(prng, random->world_seed);
+	return AlchemyRecipe::Equals(LC, lc, ordered) && AlchemyRecipe::Equals(AP, ap, ordered);
 }
-__device__ bool CheckFungalShifts(NoitaRandom* random, bool orderedShifts, FungalShift shift[maxFungalShifts])
+
+__device__ bool CheckFungalShifts(NoitaRandom* random, FungalShift shiftFilters[maxFungalShifts])
 {
-	bool shiftFound[maxFungalShifts];
-	for (int i = 0; i < maxFungalShifts; i++) shiftFound[i] = false;
+	//return true;
+	
+	FungalShift generatedShifts[maxFungalShifts];
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
-		FungalShift result;
 		random->SetRandomSeed(89346, 42345 + i);
 		IntPair rnd = { 9123,58925 + i };
-		result.from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, &rnd)];
-		result.to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, &rnd)];
+		generatedShifts[i].from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, &rnd)];
+		generatedShifts[i].to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, &rnd)];
 		if (random_nexti(1, 100, random, &rnd) <= 75)
 		{
 			if (random_nexti(1, 100, random, &rnd) <= 50)
-				result.fromFlask = true;
+				generatedShifts[i].fromFlask = true;
 			else
-				result.toFlask = true;
+				generatedShifts[i].toFlask = true;
 		}
-		if (orderedShifts && !(result == shift[i])) return false;
-		else
+	}
+
+	Material variables[4 * materialVarEntryCount];
+	int ptrs[4] = { 0,0,0,0 };
+	
+	//populate vars
+	for (int i = 0; i < maxFungalShifts; i++)
+	{
+		if (shiftFilters[i].to > SD_NONE && (int)shiftFilters[i].to <= SD_VAR4)
 		{
-			for (int j = 0; j < maxFungalShifts; j++)
+			for (int j = shiftFilters[i].minIdx; j < shiftFilters[i].maxIdx; j++)
 			{
-				if (!shiftFound[j] && result == shift[j])
-				{
-					shiftFound[j] = true;
-					break;
-				}
+				if (MaterialEquals((Material)shiftFilters[i].from, (Material)generatedShifts[j].from, false, ptrs, variables))
+					MaterialEquals((Material)shiftFilters[i].to, (Material)generatedShifts[j].to, true, ptrs, variables);
+					//this has side effects when the bool is true, it looks kinda funny out of context tho
 			}
 		}
 	}
-	if (!orderedShifts)
-		for (int i = 0; i < maxFungalShifts; i++) if (!shiftFound[i]) return false;
+
+	for (int i = 0; i < maxFungalShifts; i++)
+	{
+		bool found = false;
+		for (int j = shiftFilters[i].minIdx; j < shiftFilters[i].maxIdx; j++)
+		{
+			if (FungalShift::Equals(shiftFilters[i], generatedShifts[j], ptrs, variables))
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found) return false;
+	}
 	return true;
 }
+
+
 __device__ bool CheckBiomeModifiers(NoitaRandom* random, BiomeModifier biomeModifiers[9])
 {
 	BiomeModifier modifiers[9];
@@ -156,6 +184,8 @@ __device__ bool CheckBiomeModifiers(NoitaRandom* random, BiomeModifier biomeModi
 	for (int i = 0; i < 9; i++) if (biomeModifiers[i] != BM_NONE && modifiers[i] != biomeModifiers[i]) return false;
 	return true;
 }
+
+
 __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 {
 	const int MIN_DISTANCE_BETWEEN_DUPLICATE_PERKS = 4;
@@ -261,7 +291,8 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 	{
 		PerkInfo perkToCkeck = perks[i];
 		bool found = perks[i].p == PERK_NONE;
-		for(int j = perkToCkeck.minPosition; j < perkToCkeck.maxPosition; j++) {
+		for (int j = perkToCkeck.minPosition; j < perkToCkeck.maxPosition; j++)
+		{
 			if (perkToCkeck.p == perkDeck[j])
 			{
 				if (perkToCkeck.lottery)
@@ -280,6 +311,8 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 	}
 	return true;
 }
+
+
 __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg)
 {
 	byte bytes[1000];
@@ -291,13 +324,13 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 
 	bool passed = SpawnablesPassed(b, fCfg, false);
 
-	//offset = 0;
-	//spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, tmp);
-	//passed |= SpawnablesPassed(b, fCfg, false);
-
 	offset = 0;
-	spawnChest(835, 17, random->world_seed, lCfg, bytes, offset, tmp);
+	spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, tmp);
 	passed |= SpawnablesPassed(b, fCfg, false);
+
+	//offset = 0;
+	//spawnChest(835, 17, random->world_seed, lCfg, bytes, offset, tmp);
+	//passed |= SpawnablesPassed(b, fCfg, false);
 
 	return passed;
 }
@@ -305,6 +338,12 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 {
 	NoitaRandom sharedRandom = NoitaRandom(seed);
+	/*for (int max_safe_polymorphs = 0; max_safe_polymorphs < 100; max_safe_polymorphs++)
+	{
+		sharedRandom.SetRandomSeed(64687, max_safe_polymorphs);
+		if (sharedRandom.Random(1, 100) <= 50) return max_safe_polymorphs;
+	}
+	return false;*/
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
 	if (config.checkRain)
@@ -312,13 +351,15 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 	if (config.checkStartingFlask)
 		if (!CheckStartingFlask(&sharedRandom, config.startingFlask)) return false;
 	if (config.checkAlchemy)
-		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP)) return false;
+		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP, config.orderedAlchemy)) return false;
 	if (config.checkFungalShifts)
-		if (!CheckFungalShifts(&sharedRandom, config.orderedShifts, config.shifts)) return false;
+		if (!CheckFungalShifts(&sharedRandom, config.shifts)) return false;
 	if (config.checkBiomeModifiers)
 		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;
-	//if (config.checkUpwarps)
-	//	if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
+#ifdef DO_WORLDGEN
+	if (config.checkUpwarps)
+		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
+#endif
 	if (config.checkPerks)
 		if (!CheckPerks(&sharedRandom, config.perks)) return false;
 	if (config.printPassed) printf("Precheck passed: %i\n", seed);

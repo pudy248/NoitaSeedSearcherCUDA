@@ -422,7 +422,7 @@ enum Spell : short {
     SPELL_RAINBOW_TRAIL
 };
 
-__device__ __constant__ const char* SpellNames[] = {
+__device__ const char* SpellNames[] = {
     "NONE",
     "BOMB",
     "LIGHT_BULLET",
@@ -819,7 +819,7 @@ __device__ __constant__ const char* SpellNames[] = {
     "RAINBOW_TRAIL"
 };
 
-__device__ __constant__ const static SpellData all_spells[] =
+__device__ const static SpellData all_spells[] =
 {
     {"BOMB", PROJECTILE, {1, 1, 1, 1, 1, 1, 1, 0, 0, 0}},
     {"LIGHT_BULLET", PROJECTILE, {2, 1, 0.5, 0, 0, 0, 0, 0, 0, 0}},

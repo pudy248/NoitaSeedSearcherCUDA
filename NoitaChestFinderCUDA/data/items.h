@@ -94,7 +94,7 @@ enum Item : byte
 	ERR
 };
 
-__device__ __constant__ const char* SpawnableTypeNames[] = {
+__device__ const char* SpawnableTypeNames[] = {
 	"CHEST",
 	"GREAT_CHEST",
 	"ITEM_PEDESTAL",
@@ -103,7 +103,7 @@ __device__ __constant__ const char* SpawnableTypeNames[] = {
 	"EOE_DROP"
 };
 
-__device__ __constant__ const char* ItemNames[] = {
+__device__ const char* ItemNames[] = {
 	"GOLD_NUGGETS",
 	"CHEST_TO_GOLD",
 	"RAIN_GOLD",

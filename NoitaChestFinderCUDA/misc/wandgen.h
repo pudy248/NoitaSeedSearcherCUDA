@@ -4,6 +4,7 @@
 #include "device_launch_parameters.h"
 
 #include <cmath>
+#include "../data/wand_sprites.h"
 
 #include "noita_random.h"
 #include "../data/spells.h"
@@ -23,6 +24,7 @@ struct Wand
 {
 	int level;
 	bool isBetter;
+	int spriteIdx;
 
 	float cost;
 	float capacity;
@@ -63,6 +65,41 @@ struct WandData
 	Spell spells;
 };
 #pragma pack(pop)
+
+__device__ int GetBestSprite(NoitaRandom* rnd, Wand w)
+{
+	int bestIdx = 0;
+	int bestScore = 1000;
+	WandSpaceDat gunInWandSpace = {};
+	gunInWandSpace.fire_rate_wait = fminf(fmaxf(((w.delay + 5) / 7.0f) - 1, 0), 4);
+	gunInWandSpace.actions_per_round = fminf(fmaxf(w.multicast - 1, 0), 2);
+	gunInWandSpace.shuffle_deck_when_empty = w.shuffle;
+	gunInWandSpace.deck_capacity = fminf(fmaxf((w.capacity - 3) / 3.0f, 0), 7);
+	gunInWandSpace.spread_degrees = fminf(fmaxf(((w.spread + 5) / 5.0f) - 1, 0), 2);
+	gunInWandSpace.reload_time = fminf(fmaxf(((w.reload + 5) / 25.0f) - 1, 0), 2);
+
+	for (int i = 0; i < 1000; i++)
+	{
+		int score = WandDiff(gunInWandSpace, wandSprites[i]);
+		//printf("sprite %i: score %i\n", i, score);
+		if (score <= bestScore)
+		{
+			bestScore = score;
+			bestIdx = i;
+
+			if (score == 0 && rnd->Random(0, 100) < 33)
+				break;
+		}
+	}
+	//printf("%i:%i  %i:%i  %i:%i  %i:%i  %i:%i: best sprite %i\n",  
+	//	w.delay, gunInWandSpace.fire_rate_wait, 
+	//	w.multicast, gunInWandSpace.actions_per_round, 
+	//	(int)w.capacity, gunInWandSpace.deck_capacity, 
+	//	w.spread, gunInWandSpace.spread_degrees, 
+	//	w.reload, gunInWandSpace.reload_time, 
+	//	bestIdx);
+	return bestIdx;
+}
 
 struct StatProb
 {
@@ -401,9 +438,7 @@ __device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _le
 		}
 		else
 		{
-			int temp = random->Random(0, 100);
-			printf("%i\n", temp);
-			if (temp < 40)
+			if (random->Random(0, 100) < 40)
 			{
 				card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
 				gun->spells[gun->spellIdx++] = card;
@@ -754,6 +789,7 @@ __device__ Wand GetWand(uint seed, double x, double y, int cost, int level, bool
 	NoitaRandom random = NoitaRandom(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStats(cost, level, force_unshuffle, &random);
+	wand.spriteIdx = GetBestSprite(&random, wand);
 	AddRandomCards(&wand, seed, x, y, level, &random);
 	return wand;
 }
@@ -763,6 +799,7 @@ __device__ Wand GetWandBetter(uint seed, double x, double y, int cost, int level
 	NoitaRandom random = NoitaRandom(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStatsBetter(cost, level, &random);
+	wand.spriteIdx = GetBestSprite(&random, wand);
 	AddRandomCardsBetter(&wand, seed, x, y, level, &random);
 
 	return wand;

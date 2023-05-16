@@ -23,7 +23,6 @@ struct GlobalConfig
 	uint startSeed;
 	uint endSeed;
 	int printInterval;
-	bool doWorldgen;
 };
 
 struct MemBlockSizes
@@ -60,15 +59,14 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 
 		bool seedPassed = true;
 
-		//if (globalCfg.doWorldgen)
-		//{
-		//	GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
+#ifdef DO_WORLDGEN
+		GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
 
-		//	CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
+		CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
 		
-		//	SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
-		//	seedPassed = SpawnablesPassed(result, filterCfg, true);
-		//}
+		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
+		seedPassed = SpawnablesPassed(result, filterCfg, true);
+#endif
 
 		atomicAdd(checkedSeeds, 1);
 		if (seedPassed)
@@ -191,27 +189,28 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, 5, true };
+		GlobalConfig globalCfg = { 1, INT_MAX, 0 };
 
-		Item iF1[FILTER_OR_COUNT] = { WAND_T1 };
+		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
+		Material mF1[FILTER_OR_COUNT] = { BRASS };
 		Spell sF1[FILTER_OR_COUNT] = { SPELL_SPEED, SPELL_ACCELERATING_SHOT, SPELL_LIGHT_SHOT, SPELL_GRAVITY };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
 		ItemFilter iFilters[] = { ItemFilter(iF1), ItemFilter(iF2) };
-		Material mFilters[] = { FUNGUS_POWDER };
+		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
 		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, false, 1);
-		LootConfig lootCfg = LootConfig(0, true, false, false, false, false, filterCfg.materialFilterCount > 0, true, biomeIdx, false);
+		FilterConfig filterCfg = FilterConfig(false, 1, iFilters, 0, mFilters, 0, sFilters, false, 1);
+		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
-			true,
+			false,
 			false, WATER,
 			false, WATER,
-			true, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
-			false, true, {FungalShift(SS_ACID_GAS, false, SD_NONE, true)},
+			false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
+			false, {FungalShift(SS_ACID_GAS, SD_NONE, 0, 1)},
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
 			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, 0, 6}, {PERK_EDIT_WANDS_EVERYWHERE, false, 0, 3}, {PERK_PROTECTION_EXPLOSION, false, 0, 6}, {PERK_NO_MORE_SHUFFLE, false, 0, 6}},
 			false, filterCfg, lootCfg
@@ -247,17 +246,17 @@ int main()
 		byte* dVisitedMem;
 
 		printf("Memory Usage Statistics:\n");
-		printf("Output: %iMB  Map data: %iMB\n", outputSize / 1000000, mapDataSize / 1000000);
-		printf("Misc memory: %iMB  Visited cells: %iMB\n", miscMemSize / 1000000, visitedMemSize / 1000000);
-		printf("Total memory: %iMB\n",(tileDataSize + outputSize + mapDataSize + miscMemSize + visitedMemSize) / 1000000);
+		printf("Output: %ziMB  Map data: %ziMB\n", outputSize / 1000000, mapDataSize / 1000000);
+		printf("Misc memory: %ziMB  Visited cells: %ziMB\n", miscMemSize / 1000000, visitedMemSize / 1000000);
+		printf("Total memory: %ziMB\n",(tileDataSize + outputSize + mapDataSize + miscMemSize + visitedMemSize) / 1000000);
 
 		cudaSetDeviceFlags(cudaDeviceMapHost);
 
-		volatile int* h_checkedSeeds, * h_passedSeeds;
-		volatile int* d_checkedSeeds, * d_passedSeeds;
+		volatile uint* h_checkedSeeds, * h_passedSeeds;
+		volatile uint* d_checkedSeeds, * d_passedSeeds;
 
-		cudaHostAlloc((void**)&h_checkedSeeds, sizeof(volatile int), cudaHostAllocMapped);
-		cudaHostAlloc((void**)&h_passedSeeds, sizeof(volatile int), cudaHostAllocMapped);
+		cudaHostAlloc((void**)&h_checkedSeeds, sizeof(volatile uint), cudaHostAllocMapped);
+		cudaHostAlloc((void**)&h_passedSeeds, sizeof(volatile uint), cudaHostAllocMapped);
 
 		cudaHostGetDevicePointer((void**)&d_checkedSeeds, (void*)h_checkedSeeds, 0);
 		cudaHostGetDevicePointer((void**)&d_passedSeeds, (void*)h_passedSeeds, 0);
@@ -283,7 +282,7 @@ int main()
 		int intervals = 0;
 		if (globalCfg.printInterval > 0)
 		{
-			while (cudaEventQuery(_event) != cudaSuccess && (*h_checkedSeeds) < (globalCfg.endSeed - globalCfg.startSeed))
+			while (cudaEventQuery(_event) == cudaErrorNotReady && (*h_checkedSeeds) < (globalCfg.endSeed - globalCfg.startSeed))
 			{
 				intervals++;
 				float percentComplete = ((float)(*h_checkedSeeds) / (globalCfg.endSeed - globalCfg.startSeed));

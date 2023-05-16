@@ -106,7 +106,7 @@ struct FilterConfig
 	SpellFilter spellFilters[TOTAL_FILTER_COUNT];
 	bool checkBigWands;
 	int howBig;
-	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, Material* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, bool _checkBigWands, int _howBig)
+	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, MaterialFilter* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, bool _checkBigWands, int _howBig)
 	{
 		aggregate = _aggregate;
 		itemFilterCount = _itemFilterCount;
@@ -115,7 +115,7 @@ struct FilterConfig
 		checkBigWands = _checkBigWands;
 		howBig = _howBig;
 		memcpy(itemFilters, _itemFilters, sizeof(ItemFilter) * itemFilterCount);
-		memcpy(materialFilters, _materialFilters, sizeof(Material) * materialFilterCount);
+		memcpy(materialFilters, _materialFilters, sizeof(MaterialFilter) * materialFilterCount);
 		memcpy(spellFilters, _spellFilters, sizeof(SpellFilter) * spellFilterCount);
 	}
 };

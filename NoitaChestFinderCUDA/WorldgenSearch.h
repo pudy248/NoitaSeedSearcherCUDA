@@ -1,5 +1,7 @@
 #pragma once
 
+#include "defines.h"
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -18,7 +20,8 @@
 
 struct LootConfig
 {
-	int pwCount;
+	int pwCenter;
+	int pwWidth;
 
 	bool searchChests;
 	bool searchPedestals;
@@ -32,9 +35,10 @@ struct LootConfig
 	int biomeIdx;
 
 	bool checkCards;
-	LootConfig(int _pwCount, bool _chests, bool _pedestals, bool _wandAltars, bool _pixelScenes, bool _greed, bool _potions, bool _wands, int _biomeIdx, bool _spells)
+	LootConfig(int _pwCenter, int _pwWidth, bool _chests, bool _pedestals, bool _wandAltars, bool _pixelScenes, bool _greed, bool _potions, bool _wands, int _biomeIdx, bool _spells)
 	{
-		pwCount = _pwCount;
+		pwCenter = _pwCenter;
+		pwWidth = _pwWidth;
 		searchChests = _chests;
 		searchPedestals = _pedestals;
 		searchWandAltars = _wandAltars;
@@ -87,6 +91,7 @@ __device__ void createPotion(double x, double y, Item type, uint seed, LootConfi
 __device__ void createWand(double x, double y, Item type, bool addOffset, uint seed, LootConfig cfg, byte* bytes, int& offset)
 {
 	writeByte(bytes, offset, type);
+#ifdef DO_WANDGEN
 	if (!cfg.checkWands ||
 		type == WAND_T1B ||
 		type == WAND_T2B ||
@@ -168,6 +173,7 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, uint s
 			writeShort(bytes, offset, (short)w.spells[i]);
 		} //36 + 2 * spellCount
 	}
+#endif
 }
 
 __device__ Spell MakeRandomCard(NoitaRandom* random)
@@ -588,6 +594,7 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, 
 
 __device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
+#ifdef DO_WANDGEN
 	//t10 wands only
 	if (floorf(_y / (512 * 4.0f)) <= 7) return;
 
@@ -629,6 +636,7 @@ __device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, b
 		printf("\n");
 		printf("WAND - %i @ (%i %i) --- %.1f %i %i %i %i %i %i %.4f\n", seed, pos_x, pos_y, w.capacity, w.multicast, w.delay, w.reload, w.mana, w.regen, w.spread, w.speed);
 	}
+#endif
 }
 
 
@@ -719,14 +727,14 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 			}
 
 			if (check)
-				for (int i = -lCfg.pwCount; i <= lCfg.pwCount; i++)
+				for (int i = lCfg.pwCenter - lCfg.pwWidth; i <= lCfg.pwCenter + lCfg.pwWidth; i++)
 					func(gp.x + PWSize * i, gp.y, seed, lCfg, bytes, offset, sCount);
 		}
 	}
 	int tmp = 0;
 	writeInt(count, tmp, sCount);
 	if (offset > maxMemory) printf("ran out of misc memory: %i of %i bytes used\n", offset, maxMemory);
-	//printf("%i, %i\n", (int)(*bytes - origin), maxMemory);
+	//printf("%i, %i\n", offset, maxMemory);
 	//memcpy(output, origin, *bytes - origin);
 }
 
@@ -734,7 +742,7 @@ __device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* putSpawnablesHe
 {
 	int offset = 0;
 	uint seed = readInt(bytes, offset);
-	uint sCount = readInt(bytes, offset);
+	int sCount = readInt(bytes, offset);
 
 	Spawnable** spawnables = (Spawnable**)putSpawnablesHere;
 	if (sCount * sizeof(Spawnable*) > maxMemory) printf("ran out of map memory: %i of %i bytes used\n", (int)(sCount * sizeof(Spawnable*)), maxMemory);
@@ -745,7 +753,7 @@ __device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* putSpawnablesHe
 		offset += 9;
 		int count = readInt(bytes, offset);
 		offset += count;
-	}
+	}	
 
 	SpawnableBlock ret{ seed, sCount, spawnables };
 	return ret;

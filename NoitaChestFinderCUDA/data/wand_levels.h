@@ -14,16 +14,16 @@ struct BiomeWands {
 	wandLevel levels[6];
 };
 
-__device__ __constant__ const static BiomeWands wandLevels[] = {
+__device__ const static BiomeWands wandLevels[] = {
 { //coalmine
 	2,
 	{{17, UNKNOWN_WAND},
-	{1.9, WAND_T1}}
+	{1.9f, WAND_T1}}
 },
 { //coalmine_alt
 	2,
 	{{17, UNKNOWN_WAND},
-	{1.9, WAND_T1}}
+	{1.9f, WAND_T1}}
 },
 { //excavationsite
 	3,
@@ -211,7 +211,7 @@ __device__ bool wandCheck_sandcave(NoitaRandom& random, int x, int y)
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.94;
 }
-__device__ __constant__ bool(*wandChecks[])(NoitaRandom&, int, int) = {
+__device__ bool(*wandChecks[])(NoitaRandom&, int, int) = {
 	wandCheck_coalmine,
 	wandCheck_coalminealt,
 	wandCheck_excavationsite,

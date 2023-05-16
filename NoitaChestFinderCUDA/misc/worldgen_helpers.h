@@ -18,7 +18,7 @@ constexpr uint COLOR_HELL_GREEN = 0x8aff80;
 #define WORLD_OFFSET_X 35
 
 #define BCSize 9
-__device__ __constant__ uint blockedColors[BCSize] = {
+__device__ const uint blockedColors[BCSize] = {
 	0x00ac6eU, //load_pixel_scene4_alt
 	0x70d79eU, //load_gunpowderpool_01
 	0x70d79fU, //???

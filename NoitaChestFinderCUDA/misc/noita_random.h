@@ -6,9 +6,6 @@
 
 #include <cmath>
 
-//Don't ask me why the code has so many warnings, I didn't write it
-#pragma warning(disable 4244 4293 4319) //Casting from ulong to uint, Shift count too large, Zero extending uint to ulong
-
 // Thanks to kaliuresis!
 // Check out his orb atlas repository: https://github.com/kaliuresis/noa
 // #include <stdint.h>
@@ -89,7 +86,7 @@ public:
 
 		ulong f = SetRandomSeedHelper(r);
 
-		uint g = SetRandomSeedHelper2(e, f, ws);
+		uint g = SetRandomSeedHelper2((uint)e, (uint)f, ws);
 		double s = g;
 		s /= 4294967295.0;
 		s *= 2147483639.0;
@@ -168,10 +165,7 @@ public:
 			}
 			return i & 0xffffffff;
 		}
-
-		// error!
-		ulong error_ret_val = 0x8000000000000000;
-		return *(double*)&error_ret_val;
+		return 0;
 	}
 
 	__host__ __device__
@@ -193,7 +187,8 @@ public:
 	}
 };
 
-__device__ uint StaticRandom(NollaPrng* prng) {
+__device__ uint StaticRandom(NollaPrng* prng)
+{
 	return prng->NextU();
 }
 
@@ -203,15 +198,15 @@ public:
 	int randomCTR = 0;
 
 	__host__ __device__
-	NoitaRandom(uint worldSeed)
+		NoitaRandom(uint worldSeed)
 	{
 		SetWorldSeed(worldSeed);
 	}
-	
+
 	uint world_seed = 0;
 
 	__host__ __device__
-	ulong SetRandomSeedHelper(double r)
+		ulong SetRandomSeedHelper(double r)
 	{
 		ulong e = *(ulong*)&r;
 
@@ -238,7 +233,7 @@ public:
 	}
 
 	__host__ __device__
-	uint SetRandomSeedHelper2(uint a, uint b, uint ws)
+		uint SetRandomSeedHelper2(uint a, uint b, uint ws)
 	{
 		uint uVar1;
 		uint uVar2;
@@ -278,7 +273,7 @@ public:
 	}
 
 	__host__ __device__
-	void SetRandomFromWorldSeed()
+		void SetRandomFromWorldSeed()
 	{
 		Seed = world_seed;
 		if (2147483647.0 <= Seed)
@@ -288,7 +283,7 @@ public:
 	}
 
 	__host__ __device__
-	void SetRandomSeed(double x, double y)
+		void SetRandomSeed(double x, double y)
 	{
 		randomCTR = 0;
 
@@ -313,7 +308,7 @@ public:
 		else
 		{
 			double y__ = y_ * 3483.328;
-			double t = e;
+			double t = (double)e;
 			y__ += t;
 			y_ *= y__;
 			r = y_;
@@ -345,14 +340,14 @@ public:
 	}
 
 	__host__ __device__
-	uint NextU()
+		uint NextU()
 	{
 		Next();
 		return (uint)((Seed * 4.656612875e-10) * 2147483645.0);
 	}
 
 	__host__ __device__
-	double Next()
+		double Next()
 	{
 		randomCTR++;
 		int v4 = (int)Seed * 0x41a7 + ((int)Seed / 0x1f31d) * -0x7fffffff;
@@ -365,33 +360,33 @@ public:
 	}
 
 	__host__ __device__
-	int Random(int a, int b)
+		int Random(int a, int b)
 	{
 		return a + (int)((b + 1 - a) * Next());
 	}
 
 	__host__ __device__
-	void SetWorldSeed(uint worldseed)
+		void SetWorldSeed(uint worldseed)
 	{
 		world_seed = worldseed;
 	}
 
 	__host__ __device__
-	float ProceduralRandomf(double x, double y, double a, double b)
+		float ProceduralRandomf(double x, double y, double a, double b)
 	{
 		SetRandomSeed(x, y);
 		return (float)(a + ((b - a) * Next()));
 	}
 
 	__host__ __device__
-	int ProceduralRandomi(double x, double y, double a, double b)
+		int ProceduralRandomi(double x, double y, double a, double b)
 	{
 		SetRandomSeed(x, y);
 		return Random((int)a, (int)b);
 	}
 
 	__host__ __device__
-	float GetDistribution(float mean, float sharpness, float baseline)
+		float GetDistribution(float mean, float sharpness, float baseline)
 	{
 		int i = 0;
 		do
@@ -419,7 +414,7 @@ public:
 	}
 
 	__host__ __device__
-	int RandomDistribution(int min, int max, int mean, float sharpness)
+		int RandomDistribution(int min, int max, int mean, float sharpness)
 	{
 		if (sharpness == 0)
 		{
@@ -433,13 +428,13 @@ public:
 	}
 
 	__host__ __device__
-	int RandomDistribution(float min, float max, float mean, float sharpness)
+		int RandomDistribution(float min, float max, float mean, float sharpness)
 	{
-		return RandomDistribution((int)min, (int)max, (int)mean, (int)sharpness);
+		return (int)RandomDistribution((int)min, (int)max, (int)mean, (int)sharpness);
 	}
 
 	__host__ __device__
-	float RandomDistributionf(float min, float max, float mean, float sharpness)
+		float RandomDistributionf(float min, float max, float mean, float sharpness)
 	{
 		if (sharpness == 0.0)
 		{

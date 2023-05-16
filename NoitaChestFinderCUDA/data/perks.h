@@ -15,7 +15,7 @@ struct PerkData
 };
 
 #define perkCount 106
-__device__ __constant__ PerkData perkAttrs[] =
+__device__ const PerkData perkAttrs[] =
 {
 	{true}, //CRITICAL_HIT
 	{true, true}, //BREATH_UNDERWATER
@@ -125,7 +125,7 @@ __device__ __constant__ PerkData perkAttrs[] =
 	{true} //MEGA_BEAM_STONE
 };
 
-__device__ __constant__ const char* perkNames[] =
+__device__ const char* perkNames[] =
 {
 	"CRITICAL_HIT",
 	"BREATH_UNDERWATER",
@@ -345,7 +345,7 @@ enum Perk : byte {
 	PERK_MEGA_BEAM_STONE,
 };
 
-__device__ __constant__ int temple_x[] = {
+__device__ const int temple_x[] = {
 	-32,
 	-32,
 	-32,
@@ -355,7 +355,7 @@ __device__ __constant__ int temple_x[] = {
 	2560
 };
 
-__device__ __constant__ int temple_y[] = {
+__device__ const int temple_y[] = {
 	1410,
 	2946,
 	4994,

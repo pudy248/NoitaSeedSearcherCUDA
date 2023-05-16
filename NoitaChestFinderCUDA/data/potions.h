@@ -5,7 +5,7 @@
 #include "materials.h"
 
 #define standardMaterialCount 11
-__device__ __constant__ Material potionMaterialsStandard[] = {
+__device__ const Material potionMaterialsStandard[] = {
 	LAVA,
 	WATER,
 	BLOOD,
@@ -20,7 +20,7 @@ __device__ __constant__ Material potionMaterialsStandard[] = {
 };
 
 #define magicMaterialCount 12
-__device__ __constant__ Material potionMaterialsMagic[] = {
+__device__ const Material potionMaterialsMagic[] = {
 	MAGIC_LIQUID_UNSTABLE_TELEPORTATION,
 	MAGIC_LIQUID_POLYMORPH,
 	MAGIC_LIQUID_RANDOM_POLYMORPH,
@@ -36,7 +36,7 @@ __device__ __constant__ Material potionMaterialsMagic[] = {
 };
 
 #define secretMaterialCount 13
-__device__ __constant__ Material potionMaterialsSecret[] = {
+__device__ const Material potionMaterialsSecret[] = {
 	MAGIC_LIQUID_HP_REGENERATION_UNSTABLE,
 	BLOOD_WORM,
 	GOLD,
@@ -53,7 +53,7 @@ __device__ __constant__ Material potionMaterialsSecret[] = {
 };
 
 #define sandMaterialCount 81
-__device__ __constant__ Material potionSands[] = {
+__device__ const Material potionSands[] = {
 	MUD,
 	CONCRETE_SAND,
 	SAND,
@@ -138,7 +138,7 @@ __device__ __constant__ Material potionSands[] = {
 };
 
 #define liquidMaterialCount 90
-__device__ __constant__ Material potionLiquids[] = {
+__device__ const Material potionLiquids[] = {
 	WATER,
 	WATER_TEMP,
 	WATER_ICE,

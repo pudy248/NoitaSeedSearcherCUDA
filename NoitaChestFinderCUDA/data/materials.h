@@ -1,7 +1,16 @@
 #pragma once
 
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
 enum Material : short {
 	MATERIAL_NONE,
+	
+	//VARIABLES
+	MATERIAL_VAR1,
+	MATERIAL_VAR2,
+	MATERIAL_VAR3,
+	MATERIAL_VAR4,
 
 	//STATIC
 	WATERROCK,
@@ -455,8 +464,14 @@ enum Material : short {
 	SPARK_TEAL
 };
 
-__device__ __constant__ const char* MaterialNames[] = {
+__device__ const char* MaterialNames[] = {
 	"MATERIAL_NONE",
+
+	//VARIABLES
+	"MATERIAL_VAR1",
+	"MATERIAL_VAR2",
+	"MATERIAL_VAR3",
+	"MATERIAL_VAR4",
 
 	//STATIC
 	"WATERROCK",
@@ -909,3 +924,61 @@ __device__ __constant__ const char* MaterialNames[] = {
 	"SPARK_PLAYER",
 	"SPARK_TEAL"
 };
+
+constexpr int materialVarEntryCount = 10;
+
+__device__ static bool MaterialRefEquals(Material reference, Material test)
+{
+	if (reference == MATERIAL_NONE) return true;
+	if (test == MATERIAL_NONE) return false;
+	return reference == test;
+}
+
+__device__ static bool MaterialEquals(Material reference, Material test, bool writeRef, int* ptrs, Material* variables)
+{
+	if (reference == MATERIAL_NONE) return true;
+	else if ((int)reference <= MATERIAL_VAR4)
+	{
+		int idx = (int)reference - 1;
+		if (writeRef)
+		{
+			if (ptrs[idx] >= materialVarEntryCount) printf("Material variable %i space ran out!\n", idx);
+			else variables[idx * materialVarEntryCount + ptrs[idx]++] = test;
+			return true;
+		}
+		else
+		{
+			bool foundVar = false;
+			for (int i = 0; i < ptrs[idx]; i++)
+			{
+				if (MaterialRefEquals(variables[idx * materialVarEntryCount + i], test))
+					foundVar = true;
+			}
+			return foundVar;
+		}
+	}
+
+	if (test == MATERIAL_NONE) return false;
+	/*if ((int)test <= MATERIAL_VAR4)
+	{
+		int idx = (int)test - 1;
+		if (writeRef)
+		{
+			if (ptrs[idx] >= materialVarEntryCount) printf("Material variable %i space ran out!\n", idx);
+			else variables[idx * materialVarEntryCount + ptrs[idx]++] = reference;
+			return true;
+		}
+		else
+		{
+			bool foundVar = false;
+			for (int i = 0; i < ptrs[idx]; i++)
+			{
+				if (MaterialEquals(reference, variables[idx * materialVarEntryCount + i], writeRef, ptrs, variables))
+					foundVar = true;
+			}
+			return foundVar;
+		}
+	}*/
+
+	return reference == test;
+}

@@ -65,6 +65,10 @@
     <ClInclude Include="misc\wandgen.h">
       <Filter>misc</Filter>
     </ClInclude>
+    <ClInclude Include="data\wand_sprites.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="defines.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">

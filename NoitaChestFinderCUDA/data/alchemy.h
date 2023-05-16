@@ -5,10 +5,15 @@
 #include "materials.h"
 #include "../misc/datatypes.h"
 
+enum AlchemyOrdering
+{
+	UNORDERED,
+	ONLY_CONSUMED,
+	STRICT_ORDERED
+};
+
 struct AlchemyRecipe {
 	Material mats[4];
-	float prob;
-	uint iseed;
 
 	__host__ __device__ AlchemyRecipe() {}
 	__host__ __device__ AlchemyRecipe(Material mat1, Material mat2, Material mat3) {
@@ -17,17 +22,36 @@ struct AlchemyRecipe {
 		mats[2] = mat3;
 	}
 
-	__host__ __device__ bool operator==(AlchemyRecipe other) {
-		bool passed1 = other.mats[0] == MATERIAL_NONE || (other.mats[0] == mats[0] || other.mats[0] == mats[2]);
-		bool passed2 = other.mats[1] == MATERIAL_NONE || (other.mats[1] == mats[1]);
-		bool passed3 = other.mats[2] == MATERIAL_NONE || (other.mats[2] == mats[0] || other.mats[2] == mats[2]);
+	__host__ __device__ static bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered) {
+		if (ordered == STRICT_ORDERED)
+		{
+			bool passed1 = reference.mats[0] == MATERIAL_NONE || reference.mats[0] == test.mats[0];
+			bool passed2 = reference.mats[1] == MATERIAL_NONE || reference.mats[1] == test.mats[1];
+			bool passed3 = reference.mats[2] == MATERIAL_NONE || reference.mats[2] == test.mats[2];
 
-		return passed1 && passed2 && passed3;
+			return passed1 && passed2 && passed3;
+		}
+		else if (ordered == ONLY_CONSUMED)
+		{
+			bool passed1 = reference.mats[0] == MATERIAL_NONE || (reference.mats[0] == test.mats[0] || reference.mats[0] == test.mats[2]);
+			bool passed2 = reference.mats[1] == MATERIAL_NONE || (reference.mats[1] == test.mats[1]);
+			bool passed3 = reference.mats[2] == MATERIAL_NONE || (reference.mats[2] == test.mats[0] || reference.mats[2] == test.mats[2]);
+
+			return passed1 && passed2 && passed3;
+		}
+		else
+		{
+			bool passed1 = reference.mats[0] == MATERIAL_NONE || (reference.mats[0] == test.mats[0] || reference.mats[0] == test.mats[1] || reference.mats[0] == test.mats[2]);
+			bool passed2 = reference.mats[1] == MATERIAL_NONE || (reference.mats[1] == test.mats[0] || reference.mats[1] == test.mats[1] || reference.mats[1] == test.mats[2]);
+			bool passed3 = reference.mats[2] == MATERIAL_NONE || (reference.mats[2] == test.mats[0] || reference.mats[2] == test.mats[1] || reference.mats[2] == test.mats[2]);
+
+			return passed1 && passed2 && passed3;
+		}
 	}
 };
 
 #define alchemyLiquidCount 30
-__device__ __constant__ Material alchemyLiquids[] = {
+__device__ const Material alchemyLiquids[] = {
 	Material::ACID,
 	Material::ALCOHOL,
 	Material::BLOOD,
@@ -61,7 +85,7 @@ __device__ __constant__ Material alchemyLiquids[] = {
 };
 
 #define alchemySolidCount 18
-__device__ __constant__ Material alchemySolids[] = {
+__device__ const Material alchemySolids[] = {
 	Material::BONE,
 	Material::BRASS,
 	Material::COAL,
@@ -82,66 +106,53 @@ __device__ __constant__ Material alchemySolids[] = {
 	Material::HONEY
 };
 
-__device__ uint* alchemyLGMRandom(uint* iseed, uint count) {
-	while (count > 0) {
-		*iseed = 16807 * (*iseed % 127773) - 2836 * (*iseed / 127773);
-		//if (*iseed < 0) {
-		//	*iseed = *iseed + 2147483647U;
-		//};
-		count--;
-	}
-	return iseed;
-}
-
-__device__ uint alchemyInit(uint seed) {
-	uint iseed = (uint)((double)seed * 0.17127 + 1323.5903);
-	alchemyLGMRandom(&iseed, 6);
-	return iseed;
-}
-
-__device__ void alchemyShuffle(AlchemyRecipe* recipe, uint seed) {
-	uint nseed = (seed >> 1) + 12534;
-	alchemyLGMRandom(&nseed, 1);
-	int index[4] = { 0,0,0,0 };
-	for (int i = 0; i < 3; i++) {
-		alchemyLGMRandom(&nseed, 1);
-		index[i] = (int)((float)nseed / 2147483647.0f * ((float)(3 - i) + 1.0f));
-	}
-	int x = 3;
-	for (int i = 0; i < 3; i++) {
-		Material temp = recipe->mats[x];
-		recipe->mats[x] = recipe->mats[index[i]];
-		recipe->mats[index[i]] = temp;
-		x -= 1;
-	}
-}
-
-__device__ AlchemyRecipe alchemyGetRecipe(uint seed, uint iseed) {
-	AlchemyRecipe recipe;
-	int index[] = { 0, 0, 0, 0 };
-
-	int i = 0;
-	int x = 0;
-	while (x < 3 && i < 1000) {
-		alchemyLGMRandom(&iseed, 1);
-		int temp = (int)(((float)iseed / 2147483647.0f) * alchemyLiquidCount);
-		if (index[0] != temp && index[1] != temp && index[2] != temp && index[3] != temp) {
-			index[x] = temp;
-			x++;
+__device__ AlchemyRecipe MaterialPicker(NollaPrng& prng, uint worldSeed)
+{
+	AlchemyRecipe result;
+	int counter = 0;
+	int failed = 0;
+	while (counter < 3 && failed < 99999)
+	{
+		int r = (int)(prng.Next() * alchemyLiquidCount);
+		Material picked = alchemyLiquids[r];
+		bool duplicate = false;
+		for (int i = 0; i < counter; i++)
+		{
+			if (picked == result.mats[i]) duplicate = true;
 		}
-		i++;
+		if (duplicate) failed++;
+		else
+		{
+			result.mats[counter++] = picked;
+		}
 	}
-	if (i >= 1000) memset(recipe.mats, 0, 3);
-	alchemyLGMRandom(&iseed, 1);
-	index[3] = (int)(((float)iseed / 2147483647.0f) * alchemySolidCount);
-	for (int n = 0; n < 3; n++) {
-		recipe.mats[n] = alchemyLiquids[index[n]];
+	failed = 0;
+	while (counter < 4 && failed < 99999)
+	{
+		int r = (int)(prng.Next() * alchemySolidCount);
+		Material picked = alchemySolids[r];
+		bool duplicate = false;
+		for (int i = 0; i < counter; i++)
+		{
+			if (picked == result.mats[i]) duplicate = true;
+		}
+		if (duplicate) failed++;
+		else
+		{
+			result.mats[counter++] = picked;
+		}
 	}
-	recipe.mats[3] = alchemySolids[index[3]];
-	alchemyShuffle(&recipe, seed);
-	alchemyLGMRandom(&iseed, 1);
-	recipe.prob = 10 - (int)((float)iseed / 2147483647.0f * -91.0f);
-	alchemyLGMRandom(&iseed, 1);
-	recipe.iseed = iseed;
-	return recipe;
+
+	NollaPrng prng2((worldSeed >> 1) + 12534);
+	for (int i = 3; i >= 0; i--)
+	{
+		int r = (int)(prng2.Next() * (i + 1));
+		Material temp = result.mats[i];
+		result.mats[i] = result.mats[r];
+		result.mats[r] = temp;
+	}
+
+	prng.Next();
+	prng.Next();
+	return result;
 }

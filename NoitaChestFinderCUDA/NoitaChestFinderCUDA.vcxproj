@@ -91,6 +91,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\items.h" />
+    <ClInclude Include="data\wand_sprites.h" />
+    <ClInclude Include="defines.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />

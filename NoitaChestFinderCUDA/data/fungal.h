@@ -5,7 +5,12 @@
 #include "materials.h"
 
 enum ShiftSource : short {
+	SS_FLASK = -1,
 	SS_NONE = MATERIAL_NONE,
+	SS_VAR1 = MATERIAL_VAR1,
+	SS_VAR2 = MATERIAL_VAR2,
+	SS_VAR3 = MATERIAL_VAR3,
+	SS_VAR4 = MATERIAL_VAR4,
 	SS_WATER = Material::WATER,
 	SS_LAVA = Material::LAVA,
 	SS_RADIOACTIVE_LIQUID = Material::RADIOACTIVE_LIQUID,
@@ -27,7 +32,12 @@ enum ShiftSource : short {
 };
 
 enum ShiftDest : short {
+	SD_FLASK = -1,
 	SD_NONE = MATERIAL_NONE,
+	SD_VAR1 = MATERIAL_VAR1,
+	SD_VAR2 = MATERIAL_VAR2,
+	SD_VAR3 = MATERIAL_VAR3,
+	SD_VAR4 = MATERIAL_VAR4,
 	SD_WATER = Material::WATER,
 	SD_LAVA = Material::LAVA,
 	SD_RADIOACTIVE_LIQUID = Material::RADIOACTIVE_LIQUID,
@@ -66,24 +76,25 @@ struct FungalShift {
 	bool fromFlask;
 	ShiftDest to;
 	bool toFlask;
-	__host__ __device__ FungalShift() {
-		from = SS_NONE;
-		to = SD_NONE;
-		fromFlask = false;
-		toFlask = false;
-	}
-	__host__ __device__ FungalShift(ShiftSource _from, bool _fromFlask, ShiftDest _to, bool _toFlask) {
-		from = _from;
-		fromFlask = _fromFlask;
-		to = _to;
-		toFlask = _toFlask;
+	int minIdx;
+	int maxIdx;
+	__host__ __device__ constexpr FungalShift()
+		: from(SS_NONE),to(SD_NONE),fromFlask(false),toFlask(false),minIdx(0),maxIdx(0) {}
+	__host__ __device__ FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx)
+	{
+		if (_from == SS_FLASK) { from = SS_NONE; fromFlask = true; }
+		else { from = _from; fromFlask = false; }
+		if (_to == SD_FLASK) { to = SD_NONE; toFlask = true; }
+		else { to = _to; toFlask = false; }
+		minIdx = _minIdx;
+		maxIdx = _maxIdx;
 	}
 
-	__host__ __device__ bool operator==(FungalShift other) {
-		if (other.from != SS_NONE && other.from != from) return false;
-		if (other.to != SD_NONE && other.to != to) return false;
-		if (other.fromFlask && !fromFlask) return false;
-		if (other.toFlask && !toFlask) return false;
+	__device__ static bool Equals(FungalShift reference, FungalShift test, int ptrs[4], Material vars[materialVarEntryCount * 4]) {
+		if (reference.fromFlask && !test.fromFlask) return false;
+		if (reference.toFlask && !test.toFlask) return false;
+		if (!MaterialEquals((Material)reference.from, (Material)test.from, false, ptrs, vars)) return false;
+		if (!MaterialEquals((Material)reference.to, (Material)test.to, false, ptrs, vars)) return false;
 		return true;
 	}
 };
@@ -91,7 +102,7 @@ struct FungalShift {
 constexpr auto maxFungalShifts = 3;
 
 constexpr auto fungalMaterialsFromCount = 18;
-__device__ __constant__ ShiftSource fungalMaterialsFrom[] = {
+__device__ const ShiftSource fungalMaterialsFrom[] = {
 	SS_WATER,
 	SS_LAVA,
 	SS_RADIOACTIVE_LIQUID,
@@ -112,7 +123,7 @@ __device__ __constant__ ShiftSource fungalMaterialsFrom[] = {
 	SS_GOLD
 };
 constexpr auto fungalSumFrom = 11.4503f;
-__device__ __constant__ const float fungalProbsFrom[] = {
+__device__ const float fungalProbsFrom[] = {
 	1,
 	1,
 	1,
@@ -134,7 +145,7 @@ __device__ __constant__ const float fungalProbsFrom[] = {
 };
 
 constexpr auto fungalMaterialsToCount = 31;
-__device__ __constant__ ShiftDest fungalMaterialsTo[] = {
+__device__ const ShiftDest fungalMaterialsTo[] = {
 	SD_WATER,
 	SD_LAVA,
 	SD_RADIOACTIVE_LIQUID,
@@ -168,7 +179,7 @@ __device__ __constant__ ShiftDest fungalMaterialsTo[] = {
 	SD_CHEESE_STATIC,
 };
 constexpr auto fungalSumTo = 20.63f;
-__device__ __constant__ float fungalProbsTo[] = {
+__device__ const float fungalProbsTo[] = {
 	1,
 	1,
 	1,

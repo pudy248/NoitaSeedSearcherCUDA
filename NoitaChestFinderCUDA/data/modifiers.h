@@ -85,7 +85,7 @@ static const char* biomeModifierNames[] = {
 };
 
 #define biomeModifierProbSum 9.71025f
-__device__ __constant__ const float biomeModifierProbs[] = {
+__device__ const float biomeModifierProbs[] = {
 	0.7f,
 	1,
 	0.5f,
