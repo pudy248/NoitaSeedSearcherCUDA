@@ -412,7 +412,6 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 
 		if (failed)
 		{
-			free(relevantSpawnables);
 			return false;
 		}
 	}
@@ -469,7 +468,6 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 
 		if (relevantSpawnableCount == 0)
 		{
-			free(relevantSpawnables);
 			return false;
 		}
 	}
@@ -574,6 +572,5 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 		}
 	}
 
-	free(relevantSpawnables);
 	return true;
 }

@@ -43,6 +43,7 @@ struct PrecheckConfig
 	FilterConfig fCfg;
 	LootConfig lCfg;
 	bool checkShops;
+	bool checkPacifists;
 	int minHMidx;
 	int maxHMidx;
 };
@@ -301,8 +302,8 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 			{
 				if (perkToCkeck.lottery)
 				{
-					int x = temple_perk_x[(j / 3)] + (int)roundf(((j % 3) + 0.5f) * 20);
-					int y = temple_perk_y[(j / 3)];
+					int x = temple_x[(j / 3)] + (int)roundf(((j % 3) + 0.5f) * 20);
+					int y = temple_y[(j / 3)];
 					rnd.SetRandomSeed(x, y);
 					if (rnd.Random(1, 100) > 50)
 						found = true;
@@ -321,13 +322,32 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 {
 	byte bytes[1000];
 	int offset = 0;
-	int tmp = 0;
-	spawnChest(315, 17, random->world_seed, lCfg, bytes, offset, tmp);
-	spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, tmp);
-	Spawnable* s = (Spawnable*)bytes;
-	SpawnableBlock b = { random->world_seed, 2, &s };
+	int _ = 0;
+	spawnChest(315, 17, random->world_seed, lCfg, bytes, offset, _);
+	byte* ptr1 = bytes + offset;
+	spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, _);
+	Spawnable* spawnables[] = { (Spawnable*)bytes, (Spawnable*)ptr1 };
+	SpawnableBlock b = { random->world_seed, 2, spawnables };
 
 	return SpawnablesPassed(b, fCfg, false);
+}
+
+__device__ bool CheckPacifists(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
+{
+	byte bytes[3000];
+	Spawnable* mountains[7];
+	int offset = 0;
+	int _ = 0;
+	for (int hm_level = minIdx; hm_level <= maxIdx; hm_level++)
+	{
+		int x = temple_x[hm_level] + chestOffsetX;
+		int y = temple_y[hm_level] + chestOffsetY;
+		byte* mountainStart = bytes + offset;
+		CheckNormalChestLoot(x, y, random->world_seed, lCfg, false, bytes, offset, _);
+		mountains[hm_level] = (Spawnable*)mountainStart;
+	}
+	SpawnableBlock b = { random->world_seed, 7, mountains };
+	return SpawnablesPassed(b, fCfg, false);;
 }
 
 __device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
@@ -342,8 +362,8 @@ __device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lC
 	int offset = 0;
 	for (int hm_level = minIdx; hm_level <= maxIdx; hm_level++)
 	{
-		int x = temple_perk_x[hm_level] + shopOffsetX;
-		int y = temple_perk_y[hm_level] + shopOffsetY;
+		int x = temple_x[hm_level] + shopOffsetX;
+		int y = temple_y[hm_level] + shopOffsetY;
 		random->SetRandomSeed(x, y);
 		int sale_item = random->Random(0, itemCount - 1);
 		bool wands = random->Random(0, 100) > 50;
@@ -434,7 +454,9 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 	if (config.checkUpwarps)
 		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
 #endif
-	if (config.checkShops)//config.lCfg.checkCards)
+	if (config.checkPacifists)
+		if (!CheckPacifists(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;
+	if (config.checkShops)
 		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;
 	if (config.checkPerks)
 		if (!CheckPerks(&sharedRandom, config.perks)) return false;

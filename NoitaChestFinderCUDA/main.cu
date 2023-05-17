@@ -196,15 +196,15 @@ int main()
 		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Material mF1[FILTER_OR_COUNT] = { BRASS };
-		Spell sF1[FILTER_OR_COUNT] = { SPELL_FUNKY_SPELL };
+		Spell sF1[FILTER_OR_COUNT] = { SPELL_OMEGA };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
-		ItemFilter iFilters[] = { ItemFilter(iF1), ItemFilter(iF2) };
+		ItemFilter iFilters[] = { ItemFilter(iF1, 4), ItemFilter(iF2) };
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
 		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 36);
+		FilterConfig filterCfg = FilterConfig(true, 1, iFilters, 0, mFilters, 0, sFilters, false, 36);
 		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
@@ -216,7 +216,7 @@ int main()
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
 			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, 0, 6}, {PERK_EDIT_WANDS_EVERYWHERE, false, 0, 3}, {PERK_PROTECTION_EXPLOSION, false, 0, 6}, {PERK_NO_MORE_SHUFFLE, false, 0, 6}},
 			false, filterCfg, lootCfg,
-			true, 6, 6
+			false, true, 0, 6
 		};
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg))

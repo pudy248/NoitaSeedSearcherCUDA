@@ -5,7 +5,7 @@
 #include "../misc/datatypes.h"
 #include "../misc/wandgen.h"
 
-__device__ const int temple_perk_x[] = {
+__device__ const int temple_x[] = {
 	-32,
 	-32,
 	-32,
@@ -15,7 +15,7 @@ __device__ const int temple_perk_x[] = {
 	2560
 };
 
-__device__ const int temple_perk_y[] = {
+__device__ const int temple_y[] = {
 	1410,
 	2946,
 	4994,
@@ -27,6 +27,9 @@ __device__ const int temple_perk_y[] = {
 
 constexpr int shopOffsetX = -299;
 constexpr int shopOffsetY = -15;
+
+constexpr int chestOffsetX = -46;
+constexpr int chestOffsetY = -39;
 
 __device__ Wand GetShopWand(NoitaRandom* random, int x, int y, int level)
 {
