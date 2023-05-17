@@ -222,6 +222,40 @@ __device__ StatProbBlock statProbabilitiesBetter[] = {
 	}
 };
 
+__device__ Spell GetRandomAction(uint seed, double x, double y, int level, int offset)
+{
+	NoitaRandom random = NoitaRandom((uint)(seed + offset));
+	random.SetRandomSeed(x, y);
+	level = min(level, 10);
+	double sum = spellTierSums[level];
+
+	double accumulated = sum * random.Next();
+
+	for (int i = 0; i < 393; i++)
+	{
+		SpellData spell2 = allSpells[i];
+
+		double probability = 0;
+		probability = spell2.spawn_probabilities[level];
+		if (probability > 0.0 && probability >= accumulated)
+		{
+			return (Spell)(i + 1);
+		}
+		accumulated -= probability;
+	}
+	int rand = (int)(random.Next() * 393);
+	for (int j = 0; j < 393; j++)
+	{
+		SpellData spell = allSpells[(j + rand) % 393];
+		if (spell.spawn_probabilities[level] > 0.0)
+		{
+			return (Spell)(((j + rand) % 393) + 1);
+		}
+		j++;
+	}
+	return SPELL_NONE;
+}
+
 __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int level, ACTION_TYPE type, int offset)
 {
 	NoitaRandom random = NoitaRandom((uint)(seed + offset));
@@ -231,8 +265,8 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 	// all_spells length is 393
 	for (int i = 0; i < 393; i++)
 	{
-		if (all_spells[i].type == type)
-			sum += all_spells[i].spawn_probabilities[level];
+		if (allSpells[i].type == type)
+			sum += allSpells[i].spawn_probabilities[level];
 	}
 
 	double multiplier = random.Next();
@@ -240,7 +274,7 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 
 	for (int i = 0; i < 393; i++)
 	{
-		SpellData spell2 = all_spells[i];
+		SpellData spell2 = allSpells[i];
 		if (spell2.type != type) continue;
 
 		double probability = 0;
@@ -254,7 +288,7 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 	int rand = (int)(random.Next() * 393);
 	for (int j = 0; j < 393; j++)
 	{
-		SpellData spell = all_spells[(j + rand) % 393];
+		SpellData spell = allSpells[(j + rand) % 393];
 		if (spell.type == type && spell.spawn_probabilities[level] > 0.0)
 		{
 			return (Spell)(((j + rand) % 393) + 1);

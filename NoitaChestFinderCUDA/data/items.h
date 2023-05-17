@@ -16,6 +16,7 @@ enum SpawnableMetadata : byte
 	TYPE_WAND_PEDESTAL,
 	TYPE_NIGHTMARE_WAND,
 	TYPE_EOE_DROP,
+	TYPE_HM_SHOP,
 
 	DATA_MATERIAL,
 	DATA_SPELL,
@@ -100,7 +101,8 @@ __device__ const char* SpawnableTypeNames[] = {
 	"ITEM_PEDESTAL",
 	"WAND_PEDESTAL",
 	"NIGHTMARE_WAND",
-	"EOE_DROP"
+	"EOE_DROP",
+	"HM_SHOP"
 };
 
 __device__ const char* ItemNames[] = {

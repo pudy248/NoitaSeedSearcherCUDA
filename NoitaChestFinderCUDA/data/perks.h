@@ -345,26 +345,6 @@ enum Perk : byte {
 	PERK_MEGA_BEAM_STONE,
 };
 
-__device__ const int temple_x[] = {
-	-32,
-	-32,
-	-32,
-	-32,
-	-32,
-	-32,
-	2560
-};
-
-__device__ const int temple_y[] = {
-	1410,
-	2946,
-	4994,
-	6530,
-	8578,
-	10626,
-	13181
-};
-
 __device__ void shuffle_table(byte* perk_deck, NoitaRandom* rng, int iters) {
 	for (int i = iters; i > 0; i--) {
 		int j = rng->Random(0, i);

@@ -37,7 +37,6 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 	uint stride = blockDim.x * gridDim.x;
-
 	for (int seed = globalCfg.startSeed + index; seed < globalCfg.endSeed; seed += stride)
 	{
 #ifdef SEED_OUTPUT
@@ -45,12 +44,12 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 #else
 		byte* output = outputBlock + index * memSizes.outputSize;
 #endif
-
+#ifdef DO_WORLDGEN
 		byte* map = dMapData + index * memSizes.mapDataSize;
 		byte* miscMem = dMiscMem + index * memSizes.miscMemSize;
 		byte* visited = dVisitedMem + index * memSizes.visitedMemSize;
 		byte* spawnableMem = miscMem;
-
+#endif
 		if (!PrecheckSeed(seed, precheckCfg))
 		{
 			atomicAdd(checkedSeeds, 1);
@@ -70,7 +69,10 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 
 		atomicAdd(checkedSeeds, 1);
 		if (seedPassed)
+		{
+			printf("Seed passed: %i\n", seed);
 			atomicAdd(passedSeeds, 1);
+		}
 	}
 }
 
@@ -189,12 +191,12 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, 0 };
+		GlobalConfig globalCfg = { 1, INT_MAX, 5 };
 
 		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Material mF1[FILTER_OR_COUNT] = { BRASS };
-		Spell sF1[FILTER_OR_COUNT] = { SPELL_SPEED, SPELL_ACCELERATING_SHOT, SPELL_LIGHT_SHOT, SPELL_GRAVITY };
+		Spell sF1[FILTER_OR_COUNT] = { SPELL_FUNKY_SPELL };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
@@ -202,7 +204,7 @@ int main()
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
 		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 1, iFilters, 0, mFilters, 0, sFilters, false, 1);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 36);
 		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
@@ -213,7 +215,8 @@ int main()
 			false, {FungalShift(SS_ACID_GAS, SD_NONE, 0, 1)},
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
 			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, 0, 6}, {PERK_EDIT_WANDS_EVERYWHERE, false, 0, 3}, {PERK_PROTECTION_EXPLOSION, false, 0, 6}, {PERK_NO_MORE_SHUFFLE, false, 0, 6}},
-			false, filterCfg, lootCfg
+			false, filterCfg, lootCfg,
+			true, 6, 6
 		};
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg))
@@ -264,8 +267,9 @@ int main()
 		*h_checkedSeeds = 0;
 		*h_passedSeeds = 0;
 
-		checkCudaErrors(cudaMalloc(&dTileData, tileDataSize));
 		checkCudaErrors(cudaMalloc(&dOutput, outputSize));
+#ifdef DO_WORLDGEN
+		checkCudaErrors(cudaMalloc(&dTileData, tileDataSize));
 		checkCudaErrors(cudaMalloc(&dMapData, mapDataSize));
 		checkCudaErrors(cudaMalloc(&dMiscMem, miscMemSize));
 		checkCudaErrors(cudaMalloc(&dVisitedMem, visitedMemSize));
@@ -273,6 +277,7 @@ int main()
 		checkCudaErrors(cudaMemcpy(dTileData, tileData, 3 * worldCfg.tiles_w * worldCfg.tiles_h, cudaMemcpyHostToDevice));
 		buildTS << <1, 1 >> > (dTileData, worldCfg.tiles_w, worldCfg.tiles_h);
 		checkCudaErrors(cudaDeviceSynchronize());
+#endif
 
 		cudaEvent_t _event;
 		checkCudaErrors(cudaEventCreateWithFlags(&_event, cudaEventDisableTiming));
@@ -292,23 +297,25 @@ int main()
 		}
 		checkCudaErrors(cudaDeviceSynchronize());
 
-		printf("Intervals elapsed: %i. Checked %i seeds, found %i valid seeds.\n", intervals, *h_checkedSeeds, *h_passedSeeds);
-
 		freeTS << <1, 1 >> > ();
 		checkCudaErrors(cudaDeviceSynchronize());
 
 		checkCudaErrors(cudaMemcpy(output, dOutput, outputSize, cudaMemcpyDeviceToHost));
 
-		checkCudaErrors(cudaFree(dTileData));
 		checkCudaErrors(cudaFree(dOutput));
+
+#ifdef DO_WORLDGEN
+		checkCudaErrors(cudaFree(dTileData));
 		checkCudaErrors(cudaFree(dMapData));
 		checkCudaErrors(cudaFree(dMiscMem));
 		checkCudaErrors(cudaFree(dVisitedMem));
+#endif
 
 		free(tileData);
 		chrono::steady_clock::time_point time2 = chrono::steady_clock::now();
 		std::chrono::nanoseconds duration = time2 - time1;
-		printf("%i ms\n", (int)(duration.count() / 1000000));
+
+		printf("Intervals elapsed: %i (%ims). Checked %i seeds, found %i valid seeds.\n", intervals, (int)(duration.count() / 1000000), *h_checkedSeeds, *h_passedSeeds);
 
 
 		std::ofstream f = ofstream("output.bin", std::ios::binary);

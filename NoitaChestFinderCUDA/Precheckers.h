@@ -14,6 +14,7 @@
 #include "data/fungal.h"
 #include "data/modifiers.h"
 #include "data/perks.h"
+#include "data/temples.h"
 
 #include "WorldgenSearch.h"
 #include "Filters.h"
@@ -41,6 +42,9 @@ struct PrecheckConfig
 	bool checkUpwarps;
 	FilterConfig fCfg;
 	LootConfig lCfg;
+	bool checkShops;
+	int minHMidx;
+	int maxHMidx;
 };
 
 
@@ -297,8 +301,8 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 			{
 				if (perkToCkeck.lottery)
 				{
-					int x = temple_x[(j / 3)] + (int)roundf(((j % 3) + 0.5f) * 20);
-					int y = temple_y[(j / 3)];
+					int x = temple_perk_x[(j / 3)] + (int)roundf(((j % 3) + 0.5f) * 20);
+					int y = temple_perk_y[(j / 3)];
 					rnd.SetRandomSeed(x, y);
 					if (rnd.Random(1, 100) > 50)
 						found = true;
@@ -319,19 +323,89 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 	int offset = 0;
 	int tmp = 0;
 	spawnChest(315, 17, random->world_seed, lCfg, bytes, offset, tmp);
-	Spawnable* s = (Spawnable*)bytes;
-	SpawnableBlock b = { random->world_seed, 1, &s };
-
-	bool passed = SpawnablesPassed(b, fCfg, false);
-
-	offset = 0;
 	spawnChest(75, 117, random->world_seed, lCfg, bytes, offset, tmp);
-	passed |= SpawnablesPassed(b, fCfg, false);
+	Spawnable* s = (Spawnable*)bytes;
+	SpawnableBlock b = { random->world_seed, 2, &s };
 
-	//offset = 0;
-	//spawnChest(835, 17, random->world_seed, lCfg, bytes, offset, tmp);
-	//passed |= SpawnablesPassed(b, fCfg, false);
+	return SpawnablesPassed(b, fCfg, false);
+}
 
+__device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
+{
+	int width = 132;
+	constexpr int itemCount = 5;
+	float stepSize = width / (float)itemCount;
+	bool passed = false;
+
+	byte bytes[3000];
+	Spawnable* mountains[7];
+	int offset = 0;
+	for (int hm_level = minIdx; hm_level <= maxIdx; hm_level++)
+	{
+		int x = temple_perk_x[hm_level] + shopOffsetX;
+		int y = temple_perk_y[hm_level] + shopOffsetY;
+		random->SetRandomSeed(x, y);
+		int sale_item = random->Random(0, itemCount - 1);
+		bool wands = random->Random(0, 100) > 50;
+
+		if (wands)
+		{
+#ifdef DO_WANDGEN
+			byte* mountainStart = bytes + offset;
+			writeInt(bytes, offset, x);
+			writeInt(bytes, offset, y);
+			writeByte(bytes, offset, TYPE_HM_SHOP);
+			byte* countPtr = getIntPtr(bytes, offset);
+			int startOffset = offset;
+
+			for (int i = 0; i < itemCount; i++)
+			{
+				Wand w = GetShopWand(random, roundf(x + i * stepSize), y, max(1, hm_level));
+				writeByte(bytes, offset, DATA_WAND); //-1
+				writeInt(bytes, offset, *(int*)&w.capacity); //0
+				writeInt(bytes, offset, w.multicast); //4
+				writeInt(bytes, offset, w.mana); //8
+				writeInt(bytes, offset, w.regen); //12
+				writeInt(bytes, offset, w.delay); //16
+				writeInt(bytes, offset, w.reload); //20
+				writeInt(bytes, offset, *(int*)&w.speed); //24
+				writeInt(bytes, offset, w.spread); //28
+				writeByte(bytes, offset, (byte)w.shuffle); //32
+				writeByte(bytes, offset, (byte)w.spellIdx); //33
+				writeByte(bytes, offset, DATA_SPELL);
+				writeShort(bytes, offset, (short)w.alwaysCast); //34
+				for (int i = 0; i < w.spellIdx; i++)
+				{
+					writeByte(bytes, offset, DATA_SPELL);
+					writeShort(bytes, offset, (short)w.spells[i]);
+				}
+			}
+			int tmp = 0;
+			writeInt(countPtr, tmp, offset - startOffset);
+			mountains[hm_level] = mountainStart;
+#endif
+		}
+		else
+		{
+			byte* mountainStart = bytes + offset;
+			writeInt(bytes, offset, x);
+			writeInt(bytes, offset, y);
+			writeByte(bytes, offset, TYPE_HM_SHOP);
+			writeInt(bytes, offset, 30);
+
+			for (int i = 0; i < itemCount; i++)
+			{
+				writeByte(bytes, offset, DATA_SPELL);
+				writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y - 30, hm_level, 0));
+				writeByte(bytes, offset, DATA_SPELL);
+				writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y, hm_level, 0));
+			}
+			mountains[hm_level] = (Spawnable*)mountainStart;
+		}
+	}
+
+	SpawnableBlock b = { random->world_seed, 7, mountains };
+	passed = SpawnablesPassed(b, fCfg, false);
 	return passed;
 }
 
@@ -360,6 +434,8 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 	if (config.checkUpwarps)
 		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
 #endif
+	if (config.checkShops)//config.lCfg.checkCards)
+		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;
 	if (config.checkPerks)
 		if (!CheckPerks(&sharedRandom, config.perks)) return false;
 	if (config.printPassed) printf("Precheck passed: %i\n", seed);

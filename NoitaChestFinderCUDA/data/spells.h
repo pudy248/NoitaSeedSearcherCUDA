@@ -819,7 +819,21 @@ __device__ const char* SpellNames[] = {
     "RAINBOW_TRAIL"
 };
 
-__device__ const static SpellData all_spells[] =
+__device__ const static double spellTierSums[] = {
+    47.100000,
+    86.650000,
+    139.180000,
+    130.200000,
+    145.100000,
+    127.350000,
+    88.300000,
+    0,
+    0,
+    0,
+    51.700000
+};
+
+__device__ const static SpellData allSpells[] =
 {
     {"BOMB", PROJECTILE, {1, 1, 1, 1, 1, 1, 1, 0, 0, 0}},
     {"LIGHT_BULLET", PROJECTILE, {2, 1, 0.5, 0, 0, 0, 0, 0, 0, 0}},

@@ -312,13 +312,6 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 			n += 3 + 3 * spellCount;
 			continue;
 		}
-		//else if (c == DATA_WAND)
-		//{
-		//	n++;
-		//	WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-		//	n += 36 + dat.spellCount * 3;
-		//}
-
 	}
 }
 
@@ -339,8 +332,7 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print
 		{
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			
-			if (false) return true;
+			if (dat.capacity >= howBig) return true;
 			
 			n += 36 + dat.spellCount * 3;
 			continue;
@@ -368,6 +360,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 		for (int j = 0; j < b.count; j++)
 		{
 			Spawnable* s = b.spawnables[j];
+			if (s == NULL) continue;
 			bool added = false;
 
 			for (int i = 0; i < cfg.itemFilterCount; i++)
@@ -428,6 +421,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 		for (int j = 0; j < b.count; j++)
 		{
 			Spawnable* s = b.spawnables[j];
+			if (s == NULL) continue;
 
 			bool failed = false;
 			for (int i = 0; i < cfg.itemFilterCount; i++)

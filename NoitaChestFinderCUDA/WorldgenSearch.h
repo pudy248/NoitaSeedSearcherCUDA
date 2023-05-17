@@ -183,7 +183,7 @@ __device__ Spell MakeRandomCard(NoitaRandom* random)
 	while (valid == 0)
 	{
 		int itemno = random->Random(0, 392);
-		SpellData item = all_spells[itemno];
+		SpellData item = allSpells[itemno];
 		double sum = 0;
 		for (int i = 0; i < 11; i++) sum += item.spawn_probabilities[i];
 		if (sum > 0)
