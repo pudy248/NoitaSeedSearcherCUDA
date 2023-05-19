@@ -228,17 +228,14 @@ __device__ Spell GetRandomAction(uint seed, double x, double y, int level, int o
 	level = min(level, 10);
 
 	float sum = spellTierSums[level];
-	float accumulated = sum * random.Next();
+	float cutoff = sum * random.Next();
+	const SpellProb* tierProbs = allSpellProbs[level];
 
-	for (int i = 0; i < 393; i++)
+	for (int i = 0;;i++)
 	{
-		float probability = allSpells[i].spawn_probabilities[level];
-		if (probability >= accumulated)
-		{
-			return (Spell)(i + 1);
-		}
-		accumulated -= probability;
+		if (cutoff < tierProbs[i].p) return tierProbs[i].s;
 	}
+
 	int rand = (int)(random.Next() * 393);
 	for (int j = 0; j < 393; j++)
 	{

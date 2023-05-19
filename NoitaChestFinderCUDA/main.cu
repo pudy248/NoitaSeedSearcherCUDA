@@ -137,6 +137,22 @@ int main()
 	for (int i = 0; i < 70; i++) {
 		printf("multicast %i: %i wands\n", i, h_buckets[i]);
 	}
+	return;
+	
+	for (int i = 0; i < 11; i++)
+	{
+		double sum = 0;
+		printf("__device__ const static SpellProb spellProbs_%i[] = {\n", i);
+		for (int j = 0; j < 393; j++)
+		{
+			if (allSpells[j].spawn_probabilities[i] > 0)
+			{
+				sum += allSpells[j].spawn_probabilities[i];
+				printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
+			}
+		}
+		printf("};\n\n");
+	}
 	return;*/
 
 	for (int global_iters = 0; global_iters < 1; global_iters++)
@@ -204,7 +220,7 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX / 100, 1, 10000, 1000 };
+		GlobalConfig globalCfg = { 1, INT_MAX / 10, 1, 100, 10 };
 
 		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
@@ -215,9 +231,9 @@ int main()
 
 		ItemFilter iFilters[] = { ItemFilter(iF1, 2), ItemFilter(iF2) };
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
-		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2, 10) };
+		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2, 2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 36);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 2, sFilters, false, 36);
 		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {

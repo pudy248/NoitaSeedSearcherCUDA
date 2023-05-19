@@ -515,7 +515,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 						int offset2 = n + 1;
 						short m = readShort((byte*)(&sPtr->contents), offset2);
 						_putstr_offset("SPELL_", buffer, offset);
-						_putstr_offset(SpellNames[m], buffer, offset);
+						//_putstr_offset(SpellNames[m], buffer, offset);
 						n += 2;
 					}
 					else if (item == DATA_WAND)
