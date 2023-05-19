@@ -106,7 +106,7 @@ __device__ const Material alchemySolids[] = {
 	Material::HONEY
 };
 
-__device__ AlchemyRecipe MaterialPicker(NollaPrng& prng, uint worldSeed)
+__device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint worldSeed)
 {
 	AlchemyRecipe result;
 	int counter = 0;
@@ -143,7 +143,7 @@ __device__ AlchemyRecipe MaterialPicker(NollaPrng& prng, uint worldSeed)
 		}
 	}
 
-	NollaPrng prng2((worldSeed >> 1) + 12534);
+	NollaPRNG prng2((worldSeed >> 1) + 12534);
 	for (int i = 3; i >= 0; i--)
 	{
 		int r = (int)(prng2.Next() * (i + 1));

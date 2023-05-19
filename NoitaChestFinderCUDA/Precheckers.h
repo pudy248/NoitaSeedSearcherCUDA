@@ -25,18 +25,21 @@ struct PrecheckConfig
 {
 	bool printPassed;
 
-	bool checkRain;
-	Material rain;
 	bool checkStartingFlask;
 	Material startingFlask;
+	bool checkStartingWands;
+	Spell projectileSpell;
+	Spell bombSpell;
+	bool checkRain;
+	Material rain;
 	bool checkAlchemy;
 	AlchemyOrdering orderedAlchemy;
 	AlchemyRecipe LC;
 	AlchemyRecipe AP;
-	bool checkFungalShifts;
-	FungalShift shifts[maxFungalShifts];
 	bool checkBiomeModifiers;
 	BiomeModifier biomeModifiers[9];
+	bool checkFungalShifts;
+	FungalShift shifts[maxFungalShifts];
 	bool checkPerks;
 	PerkInfo perks[20];
 	bool checkUpwarps;
@@ -49,7 +52,7 @@ struct PrecheckConfig
 };
 
 
-__device__ bool CheckRain(NoitaRandom* random, Material rain)
+__device__ bool CheckRain(NollaPRNG* random, Material rain)
 {
 	float rainfall_chance = 1.0f / 15;
 	IntPair rnd = { 7893434, 3458934 };
@@ -62,8 +65,7 @@ __device__ bool CheckRain(NoitaRandom* random, Material rain)
 	return rain == MATERIAL_NONE;
 }
 
-
-__device__ bool CheckStartingFlask(NoitaRandom* random, Material starting_flask)
+__device__ bool CheckStartingFlask(NollaPRNG* random, Material starting_flask)
 {
 	random->SetRandomSeed(-4.5, -4);
 	Material material = Material::MATERIAL_NONE;
@@ -110,16 +112,64 @@ __device__ bool CheckStartingFlask(NoitaRandom* random, Material starting_flask)
 	return material == starting_flask;
 }
 
-__device__ bool CheckAlchemy(NoitaRandom* random, AlchemyRecipe LC, AlchemyRecipe AP, AlchemyOrdering ordered)
+__device__ bool CheckStartingWands(NollaPRNG* random, Spell projectileSpell, Spell bombSpell)
 {
-	NollaPrng prng(random->world_seed * 0.17127 + 1323.5903);
+	if (projectileSpell != SPELL_NONE)
+	{
+		Spell selectedProj = SPELL_NONE;
+		random->SetRandomSeed(0, -11);
+		random->Next();
+		random->Next();
+		random->Next();
+		random->Next();
+		random->Next();
+		random->Next();
+		random->Next();
+		int rnd = random->Random(1, 100);
+		if (rnd < 50)
+		{
+			const Spell spells[] = { SPELL_LIGHT_BULLET, SPELL_SPITTER, SPELL_RUBBER_BALL, SPELL_BOUNCY_ORB };
+			int idx = random->Random(0, 3);
+			selectedProj = spells[idx];
+		}
+		else selectedProj = SPELL_BOMB;
+		if (selectedProj != projectileSpell) return false;
+	}
+
+	if (bombSpell != SPELL_NONE)
+	{
+		Spell selectedBomb = SPELL_NONE;
+		random->SetRandomSeed(-1, 0);
+		random->Next();
+		random->Next();
+		random->Next();
+		random->Next();
+		random->Next();
+		int rnd = random->Random(1, 100);
+		if (rnd < 50)
+		{
+			const Spell spells[] = { SPELL_BOMB, SPELL_DYNAMITE, SPELL_MINE, SPELL_ROCKET, SPELL_GRENADE };
+			int idx = random->Random(0, 4);
+			selectedBomb = spells[idx];
+		}
+		else selectedBomb = SPELL_BOMB;
+		if (selectedBomb != bombSpell) return false;
+	}
+	return true;
+}
+
+__device__ bool CheckAlchemy(NollaPRNG* random, AlchemyRecipe LC, AlchemyRecipe AP, AlchemyOrdering ordered)
+{
+	NollaPRNG prng((int)(random->world_seed * 0.17127 + 1323.5903));
 	for (int i = 0; i < 5; i++) prng.Next();
 	AlchemyRecipe lc = MaterialPicker(prng, random->world_seed);
 	AlchemyRecipe ap = MaterialPicker(prng, random->world_seed);
+	//printf("%i %i %i, %i %i %i\n", lc.mats[0], lc.mats[1], lc.mats[2], ap.mats[0], ap.mats[1], ap.mats[2]);
+	//if (lc.mats[0] == MUD && lc.mats[1] == WATER && lc.mats[2] == SOIL) return true;
 	return AlchemyRecipe::Equals(LC, lc, ordered) && AlchemyRecipe::Equals(AP, ap, ordered);
 }
 
-__device__ bool CheckFungalShifts(NoitaRandom* random, FungalShift shiftFilters[maxFungalShifts])
+__device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[maxFungalShifts])
 {
 	//return true;
 	
@@ -172,8 +222,7 @@ __device__ bool CheckFungalShifts(NoitaRandom* random, FungalShift shiftFilters[
 	return true;
 }
 
-
-__device__ bool CheckBiomeModifiers(NoitaRandom* random, BiomeModifier biomeModifiers[9])
+__device__ bool CheckBiomeModifiers(NollaPRNG* random, BiomeModifier biomeModifiers[9])
 {
 	BiomeModifier modifiers[9];
 	memset(modifiers, 0, 9);
@@ -190,22 +239,15 @@ __device__ bool CheckBiomeModifiers(NoitaRandom* random, BiomeModifier biomeModi
 	return true;
 }
 
-
-__device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
+__device__ bool CheckPerks(NollaPRNG* random, PerkInfo perks[20])
 {
-	const int MIN_DISTANCE_BETWEEN_DUPLICATE_PERKS = 4;
-	const short DEFAULT_MAX_STACKABLE_PERK_COUNT = 128;
-
 	random->SetRandomSeed(1, 2);
 
-	byte perkDeck[130];
-	short stackable_distances[perkCount];
-	short stackable_count[perkCount];
+	constexpr int maxPerkCount = 130;
+	byte perkDeck[maxPerkCount];
 
 	int perkDeckIdx = 0;
-	for (int i = 0; i < 130; i++) perkDeck[i] = PERK_NONE;
-	for (int i = 0; i < perkCount; i++) stackable_distances[i] = -1;
-	for (int i = 0; i < perkCount; i++) stackable_count[i] = -1;
+	for (int i = 0; i < maxPerkCount; i++) perkDeck[i] = PERK_NONE;
 
 
 	for (int i = 0; i < perkCount; i++)
@@ -214,8 +256,6 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 		if (perkData.not_default) continue;
 
 		int how_many_times = 1;
-		stackable_distances[i] = -1;
-		stackable_count[i] = -1;
 
 		if (perkData.stackable)
 		{
@@ -225,28 +265,9 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 				max_perks = random->Random(1, perkData.max_in_pool);
 			}
 
-
-			if (perkData.stackable_max != 0)
-			{
-				stackable_count[i] = perkData.stackable_max;
-			}
-			else
-			{
-				stackable_count[i] = DEFAULT_MAX_STACKABLE_PERK_COUNT;
-			}
-
 			if (perkData.stackable_rare)
 			{
 				max_perks = 1;
-			}
-
-			if (perkData.stackable_how_often_reappears != 0)
-			{
-				stackable_distances[i] = perkData.stackable_how_often_reappears;
-			}
-			else
-			{
-				stackable_distances[i] = MIN_DISTANCE_BETWEEN_DUPLICATE_PERKS;
 			}
 
 			how_many_times = random->Random(1, max_perks);
@@ -263,40 +284,37 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 	for (int i = perkDeckIdx - 1; i >= 0; i--)
 	{
 		byte perk = perkDeck[i];
-		if (stackable_distances[perk] != -1)
+		if (perkStackableDistances[perk - 1] != -1)
 		{
-			short min_distance = stackable_distances[perk];
+			short min_distance = perkStackableDistances[perk - 1];
 			bool remove_me = false;
 
-			for (int ri = i - min_distance; ri < i; ri++)
+			for (int ri = max(0, i - min_distance); ri < i; ri++)
 			{
-				if (ri >= 0 && perkDeck[ri] == perk)
+				if (perkDeck[ri] == perk)
 				{
 					remove_me = true;
 					break;
 				}
 			}
 
-			if (remove_me) perkDeck[i] = 0;
+			if (remove_me) perkDeck[i] = PERK_NONE;
 		}
 	}
 
 	perkDeckIdx = 0;
-	for (int i = 0; i < 130; i++)
+	for (int i = 0; i < maxPerkCount; i++)
 	{
 		if (perkDeck[i] != 0) perkDeck[perkDeckIdx++] = perkDeck[i];
 	}
-	for (int i = perkDeckIdx; i < 130; i++)
-	{
-		perkDeck[i] = 0;
-	}
 
-	NoitaRandom rnd = NoitaRandom(random->world_seed);
+	NollaPRNG rnd = NollaPRNG(random->world_seed);
 	for (int i = 0; i < 20; i++)
 	{
 		PerkInfo perkToCkeck = perks[i];
-		bool found = perks[i].p == PERK_NONE;
-		for (int j = perkToCkeck.minPosition; j < perkToCkeck.maxPosition; j++)
+		if (perks[i].p == PERK_NONE) break;
+		bool found = false;
+		for (int j = (perkToCkeck.minPosition + perkDeckIdx) % perkDeckIdx; j < (perkToCkeck.maxPosition + perkDeckIdx) % perkDeckIdx; j++)
 		{
 			if (perkToCkeck.p == perkDeck[j])
 			{
@@ -317,8 +335,7 @@ __device__ bool CheckPerks(NoitaRandom* random, PerkInfo perks[20])
 	return true;
 }
 
-
-__device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg)
+__device__ bool CheckUpwarps(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg)
 {
 	byte bytes[1000];
 	int offset = 0;
@@ -332,7 +349,7 @@ __device__ bool CheckUpwarps(NoitaRandom* random, FilterConfig fCfg, LootConfig 
 	return SpawnablesPassed(b, fCfg, false);
 }
 
-__device__ bool CheckPacifists(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
+__device__ bool CheckPacifists(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
 {
 	byte bytes[3000];
 	Spawnable* mountains[7];
@@ -350,7 +367,7 @@ __device__ bool CheckPacifists(NoitaRandom* random, FilterConfig fCfg, LootConfi
 	return SpawnablesPassed(b, fCfg, false);;
 }
 
-__device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
+__device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
 {
 	int width = 132;
 	constexpr int itemCount = 5;
@@ -360,7 +377,7 @@ __device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lC
 	byte bytes[3000];
 	Spawnable* mountains[7];
 	int offset = 0;
-	for (int hm_level = minIdx; hm_level <= maxIdx; hm_level++)
+	for (int hm_level = minIdx; hm_level < maxIdx; hm_level++)
 	{
 		int x = temple_x[hm_level] + shopOffsetX;
 		int y = temple_y[hm_level] + shopOffsetY;
@@ -375,8 +392,8 @@ __device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lC
 			writeInt(bytes, offset, x);
 			writeInt(bytes, offset, y);
 			writeByte(bytes, offset, TYPE_HM_SHOP);
-			byte* countPtr = getIntPtr(bytes, offset);
-			int startOffset = offset;
+			int countOffset = offset;
+			offset += 4;
 
 			for (int i = 0; i < itemCount; i++)
 			{
@@ -400,9 +417,8 @@ __device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lC
 					writeShort(bytes, offset, (short)w.spells[i]);
 				}
 			}
-			int tmp = 0;
-			writeInt(countPtr, tmp, offset - startOffset);
-			mountains[hm_level] = mountainStart;
+			writeInt(bytes, countOffset, offset - countOffset - 4);
+			mountains[hm_level] = (Spawnable*)mountainStart;
 #endif
 		}
 		else
@@ -431,7 +447,7 @@ __device__ bool CheckShops(NoitaRandom* random, FilterConfig fCfg, LootConfig lC
 
 __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 {
-	NoitaRandom sharedRandom = NoitaRandom(seed);
+	NollaPRNG sharedRandom = NollaPRNG(seed);
 	/*for (int max_safe_polymorphs = 0; max_safe_polymorphs < 100; max_safe_polymorphs++)
 	{
 		sharedRandom.SetRandomSeed(64687, max_safe_polymorphs);
@@ -440,27 +456,32 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 	return false;*/
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
-	if (config.checkRain)
-		if (!CheckRain(&sharedRandom, config.rain)) return false;
 	if (config.checkStartingFlask)
-		if (!CheckStartingFlask(&sharedRandom, config.startingFlask)) return false;
+		if (!CheckStartingFlask(&sharedRandom, config.startingFlask)) return false;										//555ms
 	if (config.checkAlchemy)
-		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP, config.orderedAlchemy)) return false;
-	if (config.checkFungalShifts)
-		if (!CheckFungalShifts(&sharedRandom, config.shifts)) return false;
+		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP, config.orderedAlchemy)) return false;					//805ms
+	if (config.checkStartingWands)
+		if (!CheckStartingWands(&sharedRandom, config.projectileSpell, config.bombSpell)) return false;					//1014ms
+	if (config.checkRain)
+		if (!CheckRain(&sharedRandom, config.rain)) return false;														//1450ms
 	if (config.checkBiomeModifiers)
-		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;
-#ifdef DO_WORLDGEN
+		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;									//5817ms
+	if (config.checkFungalShifts)
+		if (!CheckFungalShifts(&sharedRandom, config.shifts)) return false;												//4500ms (3 shifts, 1 filter)
+//#ifdef DO_WORLDGEN
 	if (config.checkUpwarps)
-		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;
-#endif
+		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;										//7600ms
+//#endif
 	if (config.checkPacifists)
-		if (!CheckPacifists(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;
-	if (config.checkShops)
-		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;
+		if (!CheckPacifists(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;	//13800ms (7 HMs, 1 filter)
 	if (config.checkPerks)
-		if (!CheckPerks(&sharedRandom, config.perks)) return false;
+		if (!CheckPerks(&sharedRandom, config.perks)) return false;														//38000ms
+	if (config.checkShops)
+		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;		//230sec, 23000sec (without/with wands, 7 HMs, 1 filter)
+																				//Worldgen (Wang only): mines, temple	//260,000 sec, 440,000 sec
+																				//Worldgen + Spawnables: mines, temple	//360,000 sec, 750,000 sec
 	if (config.printPassed) printf("Precheck passed: %i\n", seed);
+	
 	return true;
 }
 

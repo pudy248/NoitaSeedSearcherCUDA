@@ -23,6 +23,8 @@ struct GlobalConfig
 	uint startSeed;
 	uint endSeed;
 	int printInterval;
+	int atomicGranularity;
+	int passedGranularity;
 };
 
 struct MemBlockSizes
@@ -37,43 +39,58 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 {
 	uint index = blockIdx.x * blockDim.x + threadIdx.x;
 	uint stride = blockDim.x * gridDim.x;
+	int counter = 0;
+	int counter2 = 0;
 	for (int seed = globalCfg.startSeed + index; seed < globalCfg.endSeed; seed += stride)
 	{
-#ifdef SEED_OUTPUT
-		byte* output = outputBlock + (seed - globalCfg.startSeed) * memSizes.outputSize;
-#else
+		counter++;
+		bool seedPassed = true;
 		byte* output = outputBlock + index * memSizes.outputSize;
-#endif
+
+		//while (*output != 0); //Wait for CPU to finish reading output.
+
 #ifdef DO_WORLDGEN
 		byte* map = dMapData + index * memSizes.mapDataSize;
 		byte* miscMem = dMiscMem + index * memSizes.miscMemSize;
 		byte* visited = dVisitedMem + index * memSizes.visitedMemSize;
 		byte* spawnableMem = miscMem;
 #endif
-		if (!PrecheckSeed(seed, precheckCfg))
+		seedPassed &= PrecheckSeed(seed, precheckCfg);
+
+		if (!seedPassed)
 		{
-			atomicAdd(checkedSeeds, 1);
+#ifdef DO_ATOMICS
+			if(counter % globalCfg.atomicGranularity == globalCfg.atomicGranularity - 1) atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
+#endif
 			continue;
 		}
-
-		bool seedPassed = true;
 
 #ifdef DO_WORLDGEN
 		GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
 
-		CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
+		/*CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
 		
 		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
-		seedPassed = SpawnablesPassed(result, filterCfg, true);
+		seedPassed &= SpawnablesPassed(result, filterCfg, true);
+
+		if (!seedPassed)
+		{
+			atomicAdd(checkedSeeds, 1);
+			continue;
+		}*/
 #endif
 
-		atomicAdd(checkedSeeds, 1);
-		if (seedPassed)
-		{
-			printf("Seed passed: %i\n", seed);
-			atomicAdd(passedSeeds, 1);
-		}
+		//printf("Seed passed: %i\n", seed);
+#ifdef DO_ATOMICS
+		if (counter % globalCfg.atomicGranularity == globalCfg.atomicGranularity - 1) atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
+		counter2++;
+		if (counter2 % globalCfg.passedGranularity == globalCfg.passedGranularity - 1) atomicAdd(passedSeeds, globalCfg.passedGranularity);
+#endif
 	}
+#ifdef DO_ATOMICS
+	atomicAdd(checkedSeeds, counter % globalCfg.atomicGranularity);
+	atomicAdd(passedSeeds, counter2 % globalCfg.passedGranularity);
+#endif
 }
 
 /*
@@ -181,42 +198,39 @@ int main()
 		//constexpr auto miscMemMult = 10;
 
 		MemBlockSizes memSizes = {
-#ifdef SEED_OUTPUT
-			3 * worldCfg.map_w * worldCfg.map_h,
-#else
-			256,
-#endif
+			4096,
 			mapMemMult * 3 * worldCfg.map_w * (worldCfg.map_h + 4),
 			miscMemMult * worldCfg.map_w * worldCfg.map_h,
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, 5 };
+		GlobalConfig globalCfg = { 1, INT_MAX / 100, 1, 10000, 1000 };
 
 		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Material mF1[FILTER_OR_COUNT] = { BRASS };
-		Spell sF1[FILTER_OR_COUNT] = { SPELL_OMEGA };
+		Spell sF1[FILTER_OR_COUNT] = { SPELL_FREEZE, SPELL_FREEZE_FIELD };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
-		ItemFilter iFilters[] = { ItemFilter(iF1, 4), ItemFilter(iF2) };
+		ItemFilter iFilters[] = { ItemFilter(iF1, 2), ItemFilter(iF2) };
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
-		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2) };
+		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2, 10) };
 
-		FilterConfig filterCfg = FilterConfig(true, 1, iFilters, 0, mFilters, 0, sFilters, false, 36);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 36);
 		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
 			false,
-			false, WATER,
+			false, MAGIC_LIQUID_POLYMORPH,
+			false, SPELL_RUBBER_BALL, SPELL_GRENADE,
 			false, WATER,
 			false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
-			false, {FungalShift(SS_ACID_GAS, SD_NONE, 0, 1)},
-			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_NONE},
-			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, 0, 6}, {PERK_EDIT_WANDS_EVERYWHERE, false, 0, 3}, {PERK_PROTECTION_EXPLOSION, false, 0, 6}, {PERK_NO_MORE_SHUFFLE, false, 0, 6}},
+			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_GOLD_VEIN_SUPER},
+			false, {FungalShift(SS_ROCK_STATIC, SD_CHEESE_STATIC, 0, 3)},
+			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, -3, -1}},
 			false, filterCfg, lootCfg,
-			false, true, 0, 6
+			true, false, 0, 6
 		};
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg))
@@ -225,12 +239,7 @@ int main()
 			return;
 		}
 
-		int sharedMemSize = 0;
-#ifdef SEED_OUTPUT
-		size_t outputSize = (globalCfg.endSeed - globalCfg.startSeed) * memSizes.outputSize;
-#else
 		size_t outputSize = NUMBLOCKS * BLOCKSIZE * memSizes.outputSize;
-#endif
 		size_t tileDataSize = 3 * worldCfg.tiles_w * worldCfg.tiles_h;
 		size_t mapDataSize = NUMBLOCKS * BLOCKSIZE * memSizes.mapDataSize;
 		size_t miscMemSize = NUMBLOCKS * BLOCKSIZE * memSizes.miscMemSize;
@@ -248,10 +257,12 @@ int main()
 		byte* dMiscMem;
 		byte* dVisitedMem;
 
+#ifdef DO_WORLDGEN
 		printf("Memory Usage Statistics:\n");
 		printf("Output: %ziMB  Map data: %ziMB\n", outputSize / 1000000, mapDataSize / 1000000);
 		printf("Misc memory: %ziMB  Visited cells: %ziMB\n", miscMemSize / 1000000, visitedMemSize / 1000000);
 		printf("Total memory: %ziMB\n",(tileDataSize + outputSize + mapDataSize + miscMemSize + visitedMemSize) / 1000000);
+#endif
 
 		cudaSetDeviceFlags(cudaDeviceMapHost);
 
@@ -281,24 +292,32 @@ int main()
 
 		cudaEvent_t _event;
 		checkCudaErrors(cudaEventCreateWithFlags(&_event, cudaEventDisableTiming));
-		Kernel << <NUMBLOCKS, BLOCKSIZE, sharedMemSize >> > (dOutput, dMapData, dMiscMem, dVisitedMem, memSizes, globalCfg, precheckCfg, worldCfg, lootCfg, filterCfg, (int*)d_checkedSeeds, (int*)d_passedSeeds);
+		Kernel << <NUMBLOCKS, BLOCKSIZE >> > (dOutput, dMapData, dMiscMem, dVisitedMem, memSizes, globalCfg, precheckCfg, worldCfg, lootCfg, filterCfg, (int*)d_checkedSeeds, (int*)d_passedSeeds);
 		checkCudaErrors(cudaEventRecord(_event));
 
 		int intervals = 0;
+#ifdef DO_ATOMICS
 		if (globalCfg.printInterval > 0)
 		{
-			while (cudaEventQuery(_event) == cudaErrorNotReady && (*h_checkedSeeds) < (globalCfg.endSeed - globalCfg.startSeed))
+			uint lastDiff = 0;
+			uint lastSeed = 0;
+			while (cudaEventQuery(_event) == cudaErrorNotReady && (lastSeed) < (globalCfg.endSeed - globalCfg.startSeed - lastDiff))
 			{
+				lastDiff = *h_checkedSeeds - lastSeed;
+				lastSeed = *h_checkedSeeds;
 				intervals++;
 				float percentComplete = ((float)(*h_checkedSeeds) / (globalCfg.endSeed - globalCfg.startSeed));
-				printf("Interval %i: %2.4f%% complete (%i seeds), found %i valid seeds.\n", intervals, percentComplete * 100, *h_checkedSeeds, *h_passedSeeds);
+				printf(">%i: %2.3f%% complete. Searched %i seeds (+%i this interval), found %i valid seeds.\n", intervals, percentComplete * 100, *h_checkedSeeds, lastDiff, *h_passedSeeds);
 				this_thread::sleep_for(chrono::seconds(globalCfg.printInterval));
 			}
 		}
+#endif
 		checkCudaErrors(cudaDeviceSynchronize());
 
+#ifdef DO_WORLDGEN
 		freeTS << <1, 1 >> > ();
 		checkCudaErrors(cudaDeviceSynchronize());
+#endif
 
 		checkCudaErrors(cudaMemcpy(output, dOutput, outputSize, cudaMemcpyDeviceToHost));
 

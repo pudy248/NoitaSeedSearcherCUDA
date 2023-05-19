@@ -73,8 +73,8 @@ enum ShiftDest : short {
 
 struct FungalShift {
 	ShiftSource from;
-	bool fromFlask;
 	ShiftDest to;
+	bool fromFlask;
 	bool toFlask;
 	int minIdx;
 	int maxIdx;

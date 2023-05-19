@@ -31,7 +31,7 @@ constexpr int shopOffsetY = -15;
 constexpr int chestOffsetX = -46;
 constexpr int chestOffsetY = -39;
 
-__device__ Wand GetShopWand(NoitaRandom* random, int x, int y, int level)
+__device__ Wand GetShopWand(NollaPRNG* random, int x, int y, int level)
 {
 	random->SetRandomSeed(x, y);
 	bool shuffle = random->Random(0, 100) <= 50;

@@ -57,7 +57,7 @@ __device__ void createPotion(double x, double y, Item type, uint seed, LootConfi
 	else
 	{
 		writeByte(bytes, offset, DATA_MATERIAL);
-		NoitaRandom rnd = NoitaRandom(seed);
+		NollaPRNG rnd = NollaPRNG(seed);
 		rnd.SetRandomSeed(x - 4.5, y - 4);
 		switch (type)
 		{
@@ -176,20 +176,16 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, uint s
 #endif
 }
 
-__device__ Spell MakeRandomCard(NoitaRandom* random)
+__device__ Spell MakeRandomCard(NollaPRNG* random)
 {
 	Spell res = SPELL_NONE;
 	char valid = 0;
 	while (valid == 0)
 	{
 		int itemno = random->Random(0, 392);
-		SpellData item = allSpells[itemno];
-		double sum = 0;
-		for (int i = 0; i < 11; i++) sum += item.spawn_probabilities[i];
-		if (sum > 0)
+		if (spellSpawnableInChests[itemno])
 		{
-			valid = 1;
-			res = (Spell)(itemno + 1);
+			return (Spell)(itemno + 1);
 		}
 	}
 	return res;
@@ -201,13 +197,13 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 	writeInt(bytes, offset, x);
 	writeInt(bytes, offset, y);
 	writeByte(bytes, offset, TYPE_CHEST);
-	byte* itemCount = getIntPtr(bytes, offset);
-	int startOffset = offset;
+	int countOffset = offset;
+	offset += 4;
 
 	if (hasMimicSign)
 		writeByte(bytes, offset, MIMIC_SIGN);
 
-	NoitaRandom random = NoitaRandom(worldSeed);
+	NollaPRNG random = NollaPRNG(worldSeed);
 	random.SetRandomSeed(roundRNGPos(x) + 509.7, y + 683.1);
 
 	int count = 1;
@@ -336,8 +332,7 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 		else
 			count += 3;
 	}
-	int tmp = 0;
-	writeInt(itemCount, tmp, offset - startOffset);
+	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
 __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
@@ -346,13 +341,13 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 	writeInt(bytes, offset, x);
 	writeInt(bytes, offset, y);
 	writeByte(bytes, offset, TYPE_CHEST_GREATER);
-	byte* itemCount = getIntPtr(bytes, offset);
-	int startOffset = offset;
+	int countOffset = offset;
+	offset += 4;
 
 	if (hasMimicSign)
 		writeByte(bytes, offset, MIMIC_SIGN);
 
-	NoitaRandom random = NoitaRandom(worldSeed);
+	NollaPRNG random = NollaPRNG(worldSeed);
 	random.SetRandomSeed(roundRNGPos(x), y);
 
 	int count = 1;
@@ -420,8 +415,7 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 		else
 			count += 3;
 	}
-	int tmp = 0;
-	writeInt(itemCount, tmp, offset - startOffset);
+	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
 __device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
@@ -430,10 +424,10 @@ __device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig c
 	writeInt(bytes, offset, x);
 	writeInt(bytes, offset, y);
 	writeByte(bytes, offset, TYPE_ITEM_PEDESTAL);
-	byte* itemCount = getIntPtr(bytes, offset);
-	int startOffset = offset;
+	int countOffset = offset;
+	offset += 4;
 
-	NoitaRandom random = NoitaRandom(worldSeed);
+	NollaPRNG random = NollaPRNG(worldSeed);
 	random.SetRandomSeed(x + 425, y - 243);
 
 	int rnd = random.Random(1, 91);
@@ -466,13 +460,12 @@ __device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig c
 	else
 		writeByte(bytes, offset, SHINY_ORB);
 
-	int tmp = 0;
-	writeInt(itemCount, tmp, offset - startOffset);
+	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
 __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
-	NoitaRandom random = NoitaRandom(seed);
+	NollaPRNG random = NollaPRNG(seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	float heart_spawn_percent = 0.7f;
 
@@ -499,7 +492,8 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 			writeInt(bytes, offset, x);
 			writeInt(bytes, offset, y);
 			writeByte(bytes, offset, TYPE_CHEST);
-			byte* itemCount = getIntPtr(bytes, offset);
+			int countOffset = offset;
+			offset += 4;
 			int totalBytes = 1;
 
 			rnd = random.Random(1, 100);
@@ -509,15 +503,14 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 			}
 			if(rnd <= 95) writeByte(bytes, offset, MIMIC);
 			else writeByte(bytes, offset, MIMIC_LEGGY);
-			int tmp = 0;
-			writeInt(itemCount, tmp, totalBytes);
+			writeInt(bytes, countOffset, totalBytes);
 		}
 	}
 }
 
 __device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
-	NoitaRandom random = NoitaRandom(seed);
+	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	int super_chest_spawn_rate = cfg.greedCurse ? 100 : 2000;
 	int rnd = random.Random(1, super_chest_spawn_rate);
@@ -530,7 +523,7 @@ __device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 
 __device__ void spawnPotion(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
-	NoitaRandom random = NoitaRandom(seed);
+	NollaPRNG random = NollaPRNG(seed);
 	float rnd = random.ProceduralRandomf(x, y, 0, 1);
 
 	if (rnd > 0.65f)
@@ -539,7 +532,7 @@ __device__ void spawnPotion(int x, int y, uint seed, LootConfig cfg, byte* bytes
 
 __device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
-	NoitaRandom random = NoitaRandom(seed);
+	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	int rnd = random.Random(1, 100);
 	if (rnd <= 50 && oiltank == 0 || rnd > 50 && oiltank > 0)
@@ -564,7 +557,7 @@ __device__ void spawnOilTank(int x, int y, uint seed, LootConfig cfg, byte* byte
 
 __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
-	NoitaRandom random = NoitaRandom(seed);
+	NollaPRNG random = NollaPRNG(seed);
 
 	if (!wandChecks[cfg.biomeIdx](random, x, y)) return;
 
@@ -646,7 +639,8 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 	int offset = 0;
 	byte* map = res + 4 * 3 * wCfg.map_w;
 	writeInt(bytes, offset, seed);
-	byte* count = getIntPtr(bytes, offset);
+	int countOffset = offset;
+	offset += 4;
 	int sCount = 0;
 
 	for (int px = 0; px < wCfg.map_w; px++)
@@ -731,8 +725,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 					func(gp.x + PWSize * i, gp.y, seed, lCfg, bytes, offset, sCount);
 		}
 	}
-	int tmp = 0;
-	writeInt(count, tmp, sCount);
+	writeInt(bytes, countOffset, sCount);
 	if (offset > maxMemory) printf("ran out of misc memory: %i of %i bytes used\n", offset, maxMemory);
 	//printf("%i, %i\n", offset, maxMemory);
 	//memcpy(output, origin, *bytes - origin);

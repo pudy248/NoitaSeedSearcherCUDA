@@ -214,12 +214,12 @@ __device__ int readInt(byte* ptr, int& offset)
 #endif
 }
 
-__device__ byte* getIntPtr(byte* ptr, int& offset)
-{
-	byte* intPtr = ptr + offset;
-	offset += 4;
-	return intPtr;
-}
+//__device__ byte* getIntPtr(byte* ptr, int& offset)
+//{
+//	byte* intPtr = ptr + offset;
+//	offset += 4;
+//	return intPtr;
+//}
 
 __device__ void writeInt(byte* ptr, int& offset, int val)
 {

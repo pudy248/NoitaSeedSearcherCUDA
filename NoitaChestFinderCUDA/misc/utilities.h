@@ -5,20 +5,20 @@
 #include "datatypes.h"
 #include "noita_random.h"
 
-__device__ float random_next(float min, float max, NoitaRandom* random, IntPair* rnd)
+__device__ float random_next(float min, float max, NollaPRNG* random, IntPair* rnd)
 {
 	float result = random->ProceduralRandomf(rnd->x, rnd->y, min, max);
 	rnd->y += 1;
 	return result;
 }
-__device__ int random_nexti(float min, float max, NoitaRandom* random, IntPair* rnd)
+__device__ int random_nexti(float min, float max, NollaPRNG* random, IntPair* rnd)
 {
 	int result = random->ProceduralRandomi(rnd->x, rnd->y, min, max);
 	rnd->y += 1;
 	return result;
 }
 
-__device__ int pick_random_from_table_backwards(const float* probs, int length, NoitaRandom* random, IntPair* rnd)
+__device__ int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG* random, IntPair* rnd)
 {
 	for (int i = length - 1; i > 0; i--)
 	{
@@ -27,7 +27,7 @@ __device__ int pick_random_from_table_backwards(const float* probs, int length, 
 	return 0;
 }
 
-__device__ int pick_random_from_table_weighted(const float* probs, float sum, int length, NoitaRandom* random, IntPair* rnd)
+__device__ int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG* random, IntPair* rnd)
 {
 	float val = random_next(0, sum, random, rnd);
 	for (int i = 0; i < length; i++)

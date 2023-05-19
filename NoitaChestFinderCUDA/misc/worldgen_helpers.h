@@ -36,10 +36,9 @@ __device__ bool contains(const uint arr[BCSize], uint val)
 		if (arr[i] == val) return true;
 	return false;
 };
-__device__ NollaPrng GetRNG(uint world_seed, int map_w)
+__device__ WorldgenPRNG GetRNG(uint world_seed, int map_w)
 {
-	NollaPrng rng = NollaPrng();
-	rng.SetRandomFromWorldSeed(world_seed);
+	WorldgenPRNG rng = WorldgenPRNG(world_seed);
 	rng.Next();
 
 	int iters = map_w + world_seed + 11 * (map_w / -11) - 12 * (world_seed / 12);

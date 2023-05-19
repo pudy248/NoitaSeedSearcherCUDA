@@ -34,7 +34,7 @@ __global__ void freeTS()
 
 __device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visited, byte* miscMem, WorldgenConfig c, int idx)
 {
-	NollaPrng rng = GetRNG(worldSeed, c.map_w);
+	WorldgenPRNG rng = GetRNG(worldSeed, c.map_w);
 	if (c.isNightmare) rng.Next();
 	int tries = 0;
 	bool has_path = false;
@@ -43,7 +43,7 @@ __device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visi
 	while (!has_path)
 	{
 		if (tries >= c.maxTries - 1 + worldSeed) break;
-		NollaPrng rng2 = NollaPrng(rng.NextU());
+		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 
 		stbhw_generate_image(res, c.map_w * 3, c.map_w, c.map_h + 4, StaticRandom, &rng2);
 

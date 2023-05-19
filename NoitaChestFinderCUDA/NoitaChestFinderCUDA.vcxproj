@@ -97,6 +97,7 @@
     <ClInclude Include="Filters.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
+    <ClInclude Include="Output.h" />
     <ClInclude Include="Precheckers.h" />
     <ClInclude Include="misc\wandgen.h" />
     <ClInclude Include="Worldgen.h" />

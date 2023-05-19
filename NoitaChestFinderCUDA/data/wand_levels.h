@@ -148,7 +148,7 @@ __device__ const static BiomeWands wandLevels[] = {
 	{2, WAND_T4NS}}
 }};
 
-__device__ bool wandCheck_coalmine(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_coalmine(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	if (r < 0.47) return false;
@@ -156,7 +156,7 @@ __device__ bool wandCheck_coalmine(NoitaRandom& random, int x, int y)
 	return r > 0.755;
 }
 
-__device__ bool wandCheck_coalminealt(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_coalminealt(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	if (r < 0.47) return false;
@@ -164,54 +164,54 @@ __device__ bool wandCheck_coalminealt(NoitaRandom& random, int x, int y)
 	return r > 0.725;
 }
 
-__device__ bool wandCheck_excavationsite(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_excavationsite(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
 	return r > 0.725;
 }
 
-__device__ bool wandCheck_fungicave(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_fungicave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.06;
 }
 
-__device__ bool wandCheck_snowcave(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_snowcave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.45;
 }
 
-__device__ bool wandCheck_snowcastle(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_snowcastle(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.2;
 }
 
-__device__ bool wandCheck_rainforest(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_rainforest(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.27;
 }
 
-__device__ bool wandCheck_vault(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_vault(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.93;
 }
 
-__device__ bool wandCheck_crypt(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_crypt(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.38;
 }
 
-__device__ bool wandCheck_sandcave(NoitaRandom& random, int x, int y)
+__device__ bool wandCheck_sandcave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.94;
 }
-__device__ bool(*wandChecks[])(NoitaRandom&, int, int) = {
+__device__ bool(*wandChecks[])(NollaPRNG&, int, int) = {
 	wandCheck_coalmine,
 	wandCheck_coalminealt,
 	wandCheck_excavationsite,
