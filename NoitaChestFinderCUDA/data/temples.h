@@ -31,9 +31,9 @@ constexpr int shopOffsetY = -15;
 constexpr int chestOffsetX = -46;
 constexpr int chestOffsetY = -39;
 
-__device__ Wand GetShopWand(NollaPRNG* random, int x, int y, int level)
+__device__ Wand GetShopWand(NollaPRNG* random, double x, double y, int level)
 {
-	random->SetRandomSeed(x, y);
+	random->SetRandomSeed((int)x, (int)y);
 	bool shuffle = random->Random(0, 100) <= 50;
 	return GetWandWithLevel(random->world_seed, x, y, level, shuffle, false);
 }

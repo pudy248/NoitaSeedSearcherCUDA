@@ -8,6 +8,7 @@
 
 #include "noita_random.h"
 #include "../data/spells.h"
+#include "../data/items.h"
 
 enum WandStat
 {
@@ -20,13 +21,25 @@ enum WandStat
 	SHUFFLE
 };
 
+#pragma pack(push, 1)
+struct LabelledSpell
+{
+	SpawnableMetadata d;
+	Spell s;
+};
+#pragma pack(pop)
+
 struct Wand
 {
 	int level;
 	bool isBetter;
-	int spriteIdx;
-
 	float cost;
+
+	float prob_unshuffle;
+	float prob_draw_many;
+	bool force_unshuffle;
+	bool is_rare;
+
 	float capacity;
 	int multicast;
 	int mana;
@@ -36,15 +49,9 @@ struct Wand
 	float speed;
 	int spread;
 	bool shuffle;
-
-	float prob_unshuffle;
-	float prob_draw_many;
-	bool force_unshuffle;
-	bool is_rare;
-
-	int spellIdx;
-	Spell alwaysCast;
-	Spell spells[67];
+	byte spellCount;
+	LabelledSpell alwaysCast;
+	LabelledSpell spells[67];
 };
 
 //DON'T REARRANGE CONTENTS! THE ORDER IS HARDCODED
@@ -61,15 +68,13 @@ struct WandData
 	int spread;
 	bool shuffle;
 	byte spellCount;
-	Spell alwaysCast;
-	Spell spells;
+	LabelledSpell alwaysCast;
+	LabelledSpell spells;
 };
 #pragma pack(pop)
 
 __device__ int GetBestSprite(NollaPRNG* rnd, Wand w)
 {
-	int bestIdx = 0;
-	int bestScore = 1000;
 	WandSpaceDat gunInWandSpace = {};
 	gunInWandSpace.fire_rate_wait = fminf(fmaxf(((w.delay + 5) / 7.0f) - 1, 0), 4);
 	gunInWandSpace.actions_per_round = fminf(fmaxf(w.multicast - 1, 0), 2);
@@ -78,27 +83,24 @@ __device__ int GetBestSprite(NollaPRNG* rnd, Wand w)
 	gunInWandSpace.spread_degrees = fminf(fmaxf(((w.spread + 5) / 5.0f) - 1, 0), 2);
 	gunInWandSpace.reload_time = fminf(fmaxf(((w.reload + 5) / 25.0f) - 1, 0), 2);
 
+	if (gunInWandSpace.fire_rate_wait - (int)gunInWandSpace.fire_rate_wait != 0) return;
+	if (gunInWandSpace.actions_per_round - (int)gunInWandSpace.actions_per_round != 0) return;
+	if (gunInWandSpace.deck_capacity - (int)gunInWandSpace.deck_capacity != 0) return;
+	if (gunInWandSpace.spread_degrees - (int)gunInWandSpace.spread_degrees != 0) return;
+	if (gunInWandSpace.reload_time - (int)gunInWandSpace.reload_time != 0) return;
+
 	for (int i = 0; i < 1000; i++)
 	{
-		int score = WandDiff(gunInWandSpace, wandSprites[i]);
-		//printf("sprite %i: score %i\n", i, score);
-		if (score <= bestScore)
-		{
-			bestScore = score;
-			bestIdx = i;
-
-			if (score == 0 && rnd->Random(0, 100) < 33)
-				break;
-		}
+		if (wandSprites[i].deck_capacity == gunInWandSpace.deck_capacity)
+		if (wandSprites[i].fire_rate_wait == gunInWandSpace.fire_rate_wait)
+		if (wandSprites[i].actions_per_round == gunInWandSpace.actions_per_round)
+		if (wandSprites[i].spread_degrees == gunInWandSpace.spread_degrees)
+		if (wandSprites[i].reload_time == gunInWandSpace.reload_time)
+		if (wandSprites[i].shuffle_deck_when_empty == gunInWandSpace.shuffle_deck_when_empty)
+		if (rnd->Random(0, 100) < 33)
+			break;
 	}
-	//printf("%i:%i  %i:%i  %i:%i  %i:%i  %i:%i: best sprite %i\n",  
-	//	w.delay, gunInWandSpace.fire_rate_wait, 
-	//	w.multicast, gunInWandSpace.actions_per_round, 
-	//	(int)w.capacity, gunInWandSpace.deck_capacity, 
-	//	w.spread, gunInWandSpace.spread_degrees, 
-	//	w.reload, gunInWandSpace.reload_time, 
-	//	bestIdx);
-	return bestIdx;
+	return;
 }
 
 struct StatProb
@@ -109,7 +111,6 @@ struct StatProb
 	float mean;
 	float sharpness;
 };
-
 struct StatProbBlock
 {
 	int count;
@@ -178,7 +179,6 @@ __device__ StatProbBlock statProbabilities[] = {
 		0
 	}
 };
-
 __device__ StatProbBlock statProbabilitiesBetter[] = {
 	{
 		1, 1,
@@ -227,30 +227,51 @@ __device__ Spell GetRandomAction(uint seed, double x, double y, int level, int o
 	random.SetRandomSeed(x, y);
 	level = min(level, 10);
 
-	float sum = spellTierSums[level];
-	float cutoff = sum * random.Next();
+	int low = 0;
+	int high = spellTierCounts[level];
+
 	const SpellProb* tierProbs = allSpellProbs[level];
 
-	for (int i = 0;;i++)
-	{
-		if (cutoff < tierProbs[i].p) return tierProbs[i].s;
-	}
+	float sum = tierProbs[spellTierCounts[level] - 1].p;
+	float cutoff = random.Next() * sum;
 
-	int rand = (int)(random.Next() * 393);
-	for (int j = 0; j < 393; j++)
+	while (low < high)
 	{
-		SpellData spell = allSpells[(j + rand) % 393];
-		if (spell.spawn_probabilities[level] > 0.0)
-		{
-			return (Spell)(((j + rand) % 393) + 1);
-		}
-		j++;
+		int mid = low + (high - low) / 2;
+		if (tierProbs[mid].p < cutoff)
+			low = mid + 1;
+		else
+			high = mid;
 	}
-	return SPELL_NONE;
+	return tierProbs[low].s;
 }
-
 __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int level, ACTION_TYPE type, int offset)
 {
+	NollaPRNG random = NollaPRNG((uint)(seed + offset));
+	random.SetRandomSeed(x, y);
+	level = min(level, 10);
+
+	int low = 0;
+	int high = spellProbs_Counts[level][type];
+
+	if (high == 0) return SPELL_NONE;
+
+	const SpellProb* tierProbs = spellProbs_Types[level][type];
+
+	float sum = tierProbs[spellProbs_Counts[level][type] - 1].p;
+	float rnd = random.Next();
+	float cutoff = sum * rnd;
+
+	while (low < high)
+	{
+		int mid = low + (high - low) / 2;
+		if (tierProbs[mid].p < cutoff)
+			low = mid + 1;
+		else
+			high = mid;
+	}
+	return tierProbs[low].s;
+	/*
 	NollaPRNG random = NollaPRNG((uint)(seed + offset));
 	random.SetRandomSeed(x, y);
 	float sum = 0;
@@ -286,18 +307,17 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 		}
 		j++;
 	}
-	return SPELL_NONE;
+	return SPELL_NONE;*/
 }
 
 __device__ StatProb getGunProbs(WandStat s, StatProbBlock* dict, NollaPRNG* random)
 {
-	StatProbBlock probs = dict[s];
-	if (probs.count == 0) return {};
-	float rnd = (float)random->Next() * probs.probSum;
-	for (int i = 0; i < probs.count; i++)
+	if (dict[s].count == 0) return {};
+	float rnd = (float)random->Next() * dict[s].probSum;
+	for (int i = 0; i < dict[s].count; i++)
 	{
-		if (rnd < probs.probs[i].prob) return probs.probs[i];
-		rnd -= probs.probs[i].prob;
+		if (rnd < dict[s].probs[i].prob) return dict[s].probs[i];
+		rnd -= dict[s].probs[i].prob;
 	}
 	return {};
 }
@@ -389,210 +409,9 @@ __device__ void applyShuffle(Wand* gun, StatProb prob, NollaPRNG* random)
 
 __device__ void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock dict[7], NollaPRNG* random)
 {
-	if (s > SHUFFLE) printf("HELP!!!!\n");
 	StatProb prob = getGunProbs(s, dict, random);
 	static void (*applyVars[7])(Wand*, StatProb, NollaPRNG*) = { applyReload, applyDelay, applySpread, applySpeed, applyCapacity, applyMulticast, applyShuffle, };
 	applyVars[s](gun, prob, random);
-}
-
-__device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _level, NollaPRNG* random)
-{
-	bool is_rare = gun->is_rare;
-	int goodCards = 5;
-	if (random->Random(0, 100) < 7) goodCards = random->Random(20, 50);
-	if (is_rare) goodCards *= 2;
-
-	int orig_level = _level;
-	int level = _level - 1;
-	int capacity = (int)gun->capacity;
-	int multicast = gun->multicast;
-	int cardCount = random->Random(1, 3);
-	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
-	Spell card = SPELL_NONE;
-	int randomBullets = 0;
-	int good_card_count = 0;
-
-	if (random->Random(0, 100) < 50 && cardCount < 3) cardCount++;
-	if (random->Random(0, 100) < 10 || is_rare) cardCount += random->Random(1, 2);
-
-	goodCards = random->Random(5, 45);
-	cardCount = random->Random((int)(0.51f * capacity), capacity);
-	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
-
-	if (random->Random(0, 100) < (orig_level * 10) - 5) randomBullets = 1;
-
-	if (random->Random(0, 100) < 4 || is_rare)
-	{
-		int p = random->Random(0, 100);
-		if (p < 77)
-			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
-		else if (p < 85)
-		{
-			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
-			good_card_count++;
-		}
-		else if (p < 93)
-			card = GetRandomActionWithType(seed, x, y, level + 1, STATIC_PROJECTILE, 666);
-		else
-			card = GetRandomActionWithType(seed, x, y, level + 1, PROJECTILE, 666);
-		gun->alwaysCast = card;
-	}
-
-	if (random->Random(0, 100) < 50)
-	{
-		int extraLevel = level;
-		while (random->Random(1, 10) == 10)
-		{
-			extraLevel++;
-			bulletCard = GetRandomActionWithType(seed, x, y, extraLevel, PROJECTILE, 0);
-		}
-		if (cardCount < 3)
-		{
-			if (cardCount < 1 && random->Random(0, 100) < 20)
-			{
-				card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
-				gun->spells[gun->spellIdx++] = card;
-				cardCount--;
-			}
-
-			for (int i = 0; i < cardCount; i++)
-				gun->spells[gun->spellIdx++] = bulletCard;
-		}
-		else
-		{
-			if (random->Random(0, 100) < 40)
-			{
-				card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
-				gun->spells[gun->spellIdx++] = card;
-				cardCount--;
-			}
-			if (cardCount > 3 && random->Random(0, 100) < 40)
-			{
-				card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
-				gun->spells[gun->spellIdx++] = card;
-				cardCount--;
-			}
-			if (random->Random(0, 100) < 80)
-			{
-				card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
-				gun->spells[gun->spellIdx++] = card;
-				cardCount--;
-			}
-
-			for (int i = 0; i < cardCount; i++)
-				gun->spells[gun->spellIdx++] = bulletCard;
-		}
-	}
-	else
-	{
-		for (int i = 0; i < cardCount; i++)
-		{
-			if (random->Random(0, 100) < goodCards && cardCount > 2)
-			{
-				if (good_card_count == 0 && multicast == 1)
-				{
-					card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, i + 1);
-					good_card_count++;
-				}
-				else
-				{
-					if (random->Random(0, 100) < 83)
-						card = GetRandomActionWithType(seed, x, y, level, MODIFIER, i + 1);
-					else
-						card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, i + 1);
-				}
-
-				gun->spells[gun->spellIdx++] = card;
-			}
-			else
-			{
-				gun->spells[gun->spellIdx++] = bulletCard;
-				if (randomBullets == 1)
-				{
-					bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, i + 1);
-				}
-			}
-		}
-	}
-}
-
-__device__ void AddRandomCardsBetter(Wand* gun, uint seed, double x, double y, int _level, NollaPRNG* random)
-{
-	bool is_rare = gun->is_rare;
-	int goodCards = 5;
-	if (random->Random(0, 100) < 7) goodCards = random->Random(20, 50);
-	if (is_rare) goodCards *= 2;
-
-	int orig_level = _level;
-	int level = _level - 1;
-	int capacity = (int)gun->capacity;
-	int cardCount = random->Random(1, 3);
-	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
-	Spell card = SPELL_NONE;
-	int good_card_count = 0;
-
-	if (random->Random(0, 100) < 50 && cardCount < 3) cardCount++;
-	if (random->Random(0, 100) < 10 || is_rare) cardCount += random->Random(1, 2);
-
-	goodCards = random->Random(5, 45);
-	cardCount = random->Random((int)(0.51f * capacity), capacity);
-	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
-
-	if (random->Random(0, 100) < (orig_level * 10) - 5) {}
-
-	if (random->Random(0, 100) < 4 || is_rare)
-	{
-		int p = random->Random(0, 100);
-		if (p < 77)
-			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
-		else if (p < 85)
-		{
-			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
-			good_card_count++;
-		}
-		else if (p < 93)
-			card = GetRandomActionWithType(seed, x, y, level + 1, STATIC_PROJECTILE, 666);
-		else
-			card = GetRandomActionWithType(seed, x, y, level + 1, PROJECTILE, 666);
-		gun->alwaysCast = card;
-	}
-
-	if (cardCount < 3)
-	{
-		if (cardCount < 1 && random->Random(0, 100) < 20)
-		{
-			card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
-			gun->spells[gun->spellIdx++] = card;
-			cardCount--;
-		}
-
-		for (int i = 0; i < cardCount; i++)
-			gun->spells[gun->spellIdx++] = bulletCard;
-	}
-	else
-	{
-		if (random->Random(0, 100) < 40)
-		{
-			card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
-			gun->spells[gun->spellIdx++] = card;
-			cardCount--;
-		}
-		if (cardCount > 3 && random->Random(0, 100) < 40)
-		{
-			card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
-			gun->spells[gun->spellIdx++] = card;
-			cardCount--;
-		}
-		if (random->Random(0, 100) < 80)
-		{
-			card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
-			gun->spells[gun->spellIdx++] = card;
-			cardCount--;
-		}
-
-		for (int i = 0; i < cardCount; i++)
-			gun->spells[gun->spellIdx++] = bulletCard;
-	}
 }
 
 __device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPRNG* random)
@@ -705,7 +524,6 @@ __device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPR
 
 	return gun;
 }
-
 __device__ Wand GetWandStatsBetter(int _cost, int level, NollaPRNG* random)
 {
 	Wand gun = { level, true };
@@ -809,24 +627,225 @@ __device__ Wand GetWandStatsBetter(int _cost, int level, NollaPRNG* random)
 	return gun;
 }
 
+__device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _level, NollaPRNG* random)
+{
+	bool is_rare = gun->is_rare;
+	int goodCards = 5;
+	if (random->Random(0, 100) < 7) goodCards = random->Random(20, 50);
+	if (is_rare) goodCards *= 2;
+
+	int orig_level = _level;
+	int level = _level - 1;
+	int capacity = (int)gun->capacity;
+	int multicast = gun->multicast;
+	int cardCount = random->Random(1, 3);
+	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
+	Spell card = SPELL_NONE;
+	int randomBullets = 0;
+	int good_card_count = 0;
+
+	if (random->Random(0, 100) < 50 && cardCount < 3) cardCount++;
+	if (random->Random(0, 100) < 10 || is_rare) cardCount += random->Random(1, 2);
+
+	goodCards = random->Random(5, 45);
+	cardCount = random->Random((int)(0.51f * capacity), capacity);
+	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
+
+	if (random->Random(0, 100) < (orig_level * 10) - 5) randomBullets = 1;
+
+	if (random->Random(0, 100) < 4 || is_rare)
+	{
+		int p = random->Random(0, 100);
+		if (p < 77)
+			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
+		else if (p < 85)
+		{
+			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
+			good_card_count++;
+		}
+		else if (p < 93)
+			card = GetRandomActionWithType(seed, x, y, level + 1, STATIC_PROJECTILE, 666);
+		else
+			card = GetRandomActionWithType(seed, x, y, level + 1, PROJECTILE, 666);
+		gun->alwaysCast = { DATA_SPELL, card };
+	}
+	else gun->alwaysCast = { DATA_SPELL, SPELL_NONE };
+
+	if (random->Random(0, 100) < 50)
+	{
+		int extraLevel = level;
+		while (random->Random(1, 10) == 10)
+		{
+			extraLevel++;
+			bulletCard = GetRandomActionWithType(seed, x, y, extraLevel, PROJECTILE, 0);
+		}
+		if (cardCount < 3)
+		{
+			if (cardCount < 1 && random->Random(0, 100) < 20)
+			{
+				card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
+				gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+				cardCount--;
+			}
+
+			for (int i = 0; i < cardCount; i++)
+				gun->spells[gun->spellCount++] = { DATA_SPELL, bulletCard };
+		}
+		else
+		{
+			if (random->Random(0, 100) < 40)
+			{
+				card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
+				gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+				cardCount--;
+			}
+			if (cardCount > 3 && random->Random(0, 100) < 40)
+			{
+				card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
+				gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+				cardCount--;
+			}
+			if (random->Random(0, 100) < 80)
+			{
+				card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
+				gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+				cardCount--;
+			}
+
+			for (int i = 0; i < cardCount; i++)
+				gun->spells[gun->spellCount++] = { DATA_SPELL, bulletCard };
+		}
+	}
+	else
+	{
+		for (int i = 0; i < cardCount; i++)
+		{
+			if (random->Random(0, 100) < goodCards && cardCount > 2)
+			{
+				if (good_card_count == 0 && multicast == 1)
+				{
+					card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, i + 1);
+					good_card_count++;
+				}
+				else
+				{
+					if (random->Random(0, 100) < 83)
+						card = GetRandomActionWithType(seed, x, y, level, MODIFIER, i + 1);
+					else
+						card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, i + 1);
+				}
+
+				gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+			}
+			else
+			{
+				gun->spells[gun->spellCount++] = { DATA_SPELL, bulletCard };
+				if (randomBullets == 1)
+				{
+					bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, i + 1);
+				}
+			}
+		}
+	}
+}
+__device__ void AddRandomCardsBetter(Wand* gun, uint seed, double x, double y, int _level, NollaPRNG* random)
+{
+	bool is_rare = gun->is_rare;
+	int goodCards = 5;
+	if (random->Random(0, 100) < 7) goodCards = random->Random(20, 50);
+	if (is_rare) goodCards *= 2;
+
+	int orig_level = _level;
+	int level = _level - 1;
+	int capacity = (int)gun->capacity;
+	int cardCount = random->Random(1, 3);
+	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
+	Spell card = SPELL_NONE;
+	int good_card_count = 0;
+
+	if (random->Random(0, 100) < 50 && cardCount < 3) cardCount++;
+	if (random->Random(0, 100) < 10 || is_rare) cardCount += random->Random(1, 2);
+
+	goodCards = random->Random(5, 45);
+	cardCount = random->Random((int)(0.51f * capacity), capacity);
+	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
+
+	if (random->Random(0, 100) < (orig_level * 10) - 5) {}
+
+	if (random->Random(0, 100) < 4 || is_rare)
+	{
+		int p = random->Random(0, 100);
+		if (p < 77)
+			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
+		else if (p < 85)
+		{
+			card = GetRandomActionWithType(seed, x, y, level + 1, MODIFIER, 666);
+			good_card_count++;
+		}
+		else if (p < 93)
+			card = GetRandomActionWithType(seed, x, y, level + 1, STATIC_PROJECTILE, 666);
+		else
+			card = GetRandomActionWithType(seed, x, y, level + 1, PROJECTILE, 666);
+		gun->alwaysCast = { DATA_SPELL, card };
+	}
+	else gun->alwaysCast = { DATA_SPELL, SPELL_NONE };
+
+	if (cardCount < 3)
+	{
+		if (cardCount < 1 && random->Random(0, 100) < 20)
+		{
+			card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
+			gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+			cardCount--;
+		}
+
+		for (int i = 0; i < cardCount; i++)
+			gun->spells[gun->spellCount++] = { DATA_SPELL, bulletCard };
+	}
+	else
+	{
+		if (random->Random(0, 100) < 40)
+		{
+			card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
+			gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+			cardCount--;
+		}
+		if (cardCount > 3 && random->Random(0, 100) < 40)
+		{
+			card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, 1);
+			gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+			cardCount--;
+		}
+		if (random->Random(0, 100) < 80)
+		{
+			card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
+			gun->spells[gun->spellCount++] = { DATA_SPELL, card };
+			cardCount--;
+		}
+
+		for (int i = 0; i < cardCount; i++)
+			gun->spells[gun->spellCount++] = { DATA_SPELL, bulletCard };
+	}
+}
+
 __device__ Wand GetWand(uint seed, double x, double y, int cost, int level, bool force_unshuffle)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStats(cost, level, force_unshuffle, &random);
-	wand.spriteIdx = GetBestSprite(&random, wand);
+	GetBestSprite(&random, wand);
+	wand.spellCount = 0;
 	AddRandomCards(&wand, seed, x, y, level, &random);
 	return wand;
 }
-
 __device__ Wand GetWandBetter(uint seed, double x, double y, int cost, int level)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStatsBetter(cost, level, &random);
-	wand.spriteIdx = GetBestSprite(&random, wand);
+	GetBestSprite(&random, wand);
+	wand.spellCount = 0;
 	AddRandomCardsBetter(&wand, seed, x, y, level, &random);
-
 	return wand;
 }
 

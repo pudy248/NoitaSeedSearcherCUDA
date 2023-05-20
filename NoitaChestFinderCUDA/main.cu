@@ -41,6 +41,7 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 	uint stride = blockDim.x * gridDim.x;
 	int counter = 0;
 	int counter2 = 0;
+
 	for (int seed = globalCfg.startSeed + index; seed < globalCfg.endSeed; seed += stride)
 	{
 		counter++;
@@ -68,7 +69,7 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 #ifdef DO_WORLDGEN
 		GenerateMap(seed, output, map, visited, miscMem, worldCfg, globalCfg.startSeed / 5);
 
-		/*CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
+		CheckSpawnables(map, seed, spawnableMem, output, worldCfg, lootCfg, memSizes.miscMemSize);
 		
 		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, map, output, lootCfg, memSizes.mapDataSize);
 		seedPassed &= SpawnablesPassed(result, filterCfg, true);
@@ -77,10 +78,10 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 		{
 			atomicAdd(checkedSeeds, 1);
 			continue;
-		}*/
+		}
 #endif
 
-		//printf("Seed passed: %i\n", seed);
+		printf("Seed passed: %i\n", seed);
 #ifdef DO_ATOMICS
 		if (counter % globalCfg.atomicGranularity == globalCfg.atomicGranularity - 1) atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
 		counter2++;
@@ -138,18 +139,41 @@ int main()
 		printf("multicast %i: %i wands\n", i, h_buckets[i]);
 	}
 	return;
-	
-	for (int i = 0; i < 11; i++)
+	for (int capacity = 0; capacity < 8; capacity++)
 	{
-		double sum = 0;
-		printf("__device__ const static SpellProb spellProbs_%i[] = {\n", i);
-		for (int j = 0; j < 393; j++)
+		for(int multicast = 0; multicast < )
+		for (int i = 0; i < 1000; i++)
 		{
-			if (allSpells[j].spawn_probabilities[i] > 0)
+			WandSprite s = wandSprites[i];
+			counters[s.deck_capacity]++;
+		}
+		/*
+		for (int t = 0; t < 8; t++)
+		{
+			double sum = 0;
+			printf("__device__ const static SpellProb spellProbs_%i_T%i[] = {\n", capacity, t);
+			for (int j = 0; j < 393; j++)
 			{
-				sum += allSpells[j].spawn_probabilities[i];
-				printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
+				if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[capacity] > 0)
+				{
+					counters[t]++;
+					sum += allSpells[j].spawn_probabilities[capacity];
+					printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
+				}
 			}
+			printf("};\n\n");
+		}
+		printf("__device__ const static SpellProb* spellProbs_%i_Types[] = {\n", capacity);
+		for (int t = 0; t < 8; t++)
+		{
+			printf("spellProbs_%i_T%i,\n", capacity, t);
+		}
+		printf("};\n\n");
+
+		printf("__device__ const static int spellProbs_%i_Counts[] = {\n", capacity);
+		for (int t = 0; t < 8; t++)
+		{
+			printf("%i,\n", counters[t]);
 		}
 		printf("};\n\n");
 	}
@@ -220,21 +244,21 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX / 10, 1, 100, 10 };
+		GlobalConfig globalCfg = { 1, INT_MAX, 1, 100, 1 };
 
-		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
+		Item iF1[FILTER_OR_COUNT] = { WAND_T1, WAND_T1NS, WAND_T2, WAND_T2NS };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Material mF1[FILTER_OR_COUNT] = { BRASS };
-		Spell sF1[FILTER_OR_COUNT] = { SPELL_FREEZE, SPELL_FREEZE_FIELD };
+		Spell sF1[FILTER_OR_COUNT] = { SPELL_REGENERATION_FIELD };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
-		ItemFilter iFilters[] = { ItemFilter(iF1, 2), ItemFilter(iF2) };
+		ItemFilter iFilters[] = { ItemFilter(iF1), ItemFilter(iF2) };
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
-		SpellFilter sFilters[] = { SpellFilter(sF1), SpellFilter(sF2, 2) };
+		SpellFilter sFilters[] = { SpellFilter(sF1, 5), SpellFilter(sF2, 2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 2, sFilters, false, 36);
-		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 27);
+		LootConfig lootCfg = LootConfig(0, 20, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
 			false,
@@ -246,7 +270,7 @@ int main()
 			false, {FungalShift(SS_ROCK_STATIC, SD_CHEESE_STATIC, 0, 3)},
 			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, -3, -1}},
 			false, filterCfg, lootCfg,
-			true, false, 0, 6
+			true, false, false, 1, 6, 5
 		};
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg))
@@ -311,13 +335,13 @@ int main()
 		Kernel << <NUMBLOCKS, BLOCKSIZE >> > (dOutput, dMapData, dMiscMem, dVisitedMem, memSizes, globalCfg, precheckCfg, worldCfg, lootCfg, filterCfg, (int*)d_checkedSeeds, (int*)d_passedSeeds);
 		checkCudaErrors(cudaEventRecord(_event));
 
-		int intervals = 0;
+		int intervals = -1;
 #ifdef DO_ATOMICS
 		if (globalCfg.printInterval > 0)
 		{
 			uint lastDiff = 0;
 			uint lastSeed = 0;
-			while (cudaEventQuery(_event) == cudaErrorNotReady && (lastSeed) < (globalCfg.endSeed - globalCfg.startSeed - lastDiff))
+			while (cudaEventQuery(_event) == cudaErrorNotReady && lastSeed < (globalCfg.endSeed - globalCfg.startSeed - lastDiff))
 			{
 				lastDiff = *h_checkedSeeds - lastSeed;
 				lastSeed = *h_checkedSeeds;

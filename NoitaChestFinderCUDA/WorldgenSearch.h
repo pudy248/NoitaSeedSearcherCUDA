@@ -155,23 +155,10 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, uint s
 		//	w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);
 
 		writeByte(bytes, offset, DATA_WAND); //-1
-		writeInt(bytes, offset, *(int*)&w.capacity); //0
-		writeInt(bytes, offset, w.multicast); //4
-		writeInt(bytes, offset, w.mana); //8
-		writeInt(bytes, offset, w.regen); //12
-		writeInt(bytes, offset, w.delay); //16
-		writeInt(bytes, offset, w.reload); //20
-		writeInt(bytes, offset, *(int*)&w.speed); //24
-		writeInt(bytes, offset, w.spread); //28
-		writeByte(bytes, offset, (byte)w.shuffle); //32
-		writeByte(bytes, offset, (byte)w.spellIdx); //33
-		writeByte(bytes, offset, DATA_SPELL);
-		writeShort(bytes, offset, (short)w.alwaysCast); //34
-		for (int i = 0; i < w.spellIdx; i++)
-		{
-			writeByte(bytes, offset, DATA_SPELL);
-			writeShort(bytes, offset, (short)w.spells[i]);
-		} //36 + 2 * spellCount
+		memcpy(bytes + offset, &w.capacity, 37);
+		offset += 37;
+		memcpy(bytes + offset, w.spells, w.spellCount * 3);
+		offset += w.spellCount * 3;
 	}
 #endif
 }
@@ -191,7 +178,7 @@ __device__ Spell MakeRandomCard(NollaPRNG* random)
 	return res;
 }
 
-__device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
+__device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
 	writeInt(bytes, offset, x);
@@ -335,7 +322,7 @@ __device__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cf
 	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
-__device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
+__device__ __noinline__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
 	writeInt(bytes, offset, x);
@@ -418,7 +405,7 @@ __device__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg
 	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
-__device__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ __noinline__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
 	writeInt(bytes, offset, x);
@@ -587,11 +574,11 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, 
 
 __device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
 {
-#ifdef DO_WANDGEN
+#ifdef DO_WANDGEN_
 	//t10 wands only
 	if (floorf(_y / (512 * 4.0f)) <= 7) return;
 
-	NoitaRandom random = NoitaRandom(seed);
+	NollaPRNG random = NollaPRNG(seed);
 
 	//enemy spawns
 	//if (random.ProceduralRandomf(_x, _y, 0, 1.115f) <= 0.4f) return;

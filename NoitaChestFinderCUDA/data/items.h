@@ -5,8 +5,6 @@
 
 #include "../misc/datatypes.h"
 
-#define BYTE_ALIGN_BIG_ENDIAN
-
 enum SpawnableMetadata : byte
 {
 	BYTE_NONE,
@@ -190,53 +188,36 @@ struct SpawnableBlock
 	Spawnable** spawnables;
 };
 
-__device__ byte readByte(byte* ptr, int& offset)
+__device__
+byte readByte(byte* ptr, int& offset)
 {
 	return ptr[offset++];
 }
 
-__device__ byte* getBytePtr(byte* ptr, int& offset)
-{
-	return ptr + (offset++);
-}
-
-__device__ void writeByte(byte* ptr, int& offset, byte b)
+__device__
+void writeByte(byte* ptr, int& offset, byte b)
 {
 	ptr[offset++] = b;
 }
 
-__device__ int readInt(byte* ptr, int& offset)
+__device__  
+int readInt(byte* ptr, int& offset)
 {
-#ifdef BYTE_ALIGN_BIG_ENDIAN
-	return (readByte(ptr, offset) << 24) | (readByte(ptr, offset) << 16) | (readByte(ptr, offset) << 8) | (readByte(ptr, offset));
-#else
-	return (readByte(ptr, offset)) | (readByte(ptr, offset) << 8) | (readByte(ptr, offset) << 16) | (readByte(ptr, offset) << 24);
-#endif
+	int tmp;
+	memcpy(&tmp, ptr + offset, 4);
+	offset += 4;
+	return tmp;
 }
 
-//__device__ byte* getIntPtr(byte* ptr, int& offset)
-//{
-//	byte* intPtr = ptr + offset;
-//	offset += 4;
-//	return intPtr;
-//}
-
-__device__ void writeInt(byte* ptr, int& offset, int val)
+__device__  
+void writeInt(byte* ptr, int& offset, int val)
 {
-#ifdef BYTE_ALIGN_BIG_ENDIAN
-	writeByte(ptr, offset, (val >> 24) & 0xff);
-	writeByte(ptr, offset, (val >> 16) & 0xff);
-	writeByte(ptr, offset, (val >> 8) & 0xff);
-	writeByte(ptr, offset, val & 0xff);
-#else
-	writeByte(ptr, offset, val & 0xff);
-	writeByte(ptr, offset, (val >> 8) & 0xff);
-	writeByte(ptr, offset, (val >> 16) & 0xff);
-	writeByte(ptr, offset, (val >> 24) & 0xff);
-#endif
+	memcpy(ptr + offset, &val, 4);
+	offset += 4;
 }
 
-__device__ void incrInt(byte* ptr)
+__device__ 
+void incrInt(byte* ptr)
 {
 	int offsetTmp = 0;
 	int tmp = readInt(ptr, offsetTmp);
@@ -244,12 +225,14 @@ __device__ void incrInt(byte* ptr)
 	writeInt(ptr, offsetTmp, tmp + 1);
 }
 
-__device__ short readShort(byte* ptr, int& offset)
+__device__ 
+short readShort(byte* ptr, int& offset)
 {
 	return (readByte(ptr, offset) | (readByte(ptr, offset) << 8));
 }
 
-__device__ void writeShort(byte* ptr, int& offset, short s)
+__device__ 
+void writeShort(byte* ptr, int& offset, short s)
 {
 	writeByte(ptr, offset, ((short)s) & 0xff);
 	writeByte(ptr, offset, (((short)s) >> 8) & 0xff);
@@ -260,11 +243,4 @@ __device__ int readMisaligned(int* ptr2)
 	byte* ptr = (byte*)ptr2;
 	int offset = 0;
 	return readInt(ptr, offset);
-
-	/*
-#ifdef BIG_ENDIAN
-	return (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | (ptr[3]);
-#else
-	return (ptr[0]) | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24);
-#endif*/
 }

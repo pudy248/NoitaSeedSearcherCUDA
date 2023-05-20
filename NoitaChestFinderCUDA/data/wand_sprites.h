@@ -33,18 +33,6 @@ struct WandSpaceDat
 	float reload_time;
 };
 
-__device__ float WandDiff(WandSpaceDat w, WandSprite s)
-{
-	float score = 0;
-	score = score + (abs(w.fire_rate_wait - s.fire_rate_wait) * 2);
-	score = score + (abs(w.actions_per_round - s.actions_per_round) * 20);
-	score = score + (abs((w.shuffle_deck_when_empty ? 0 : 1) - (s.shuffle_deck_when_empty ? 0 : 1)) * 30);
-	score = score + (abs(w.deck_capacity - s.deck_capacity) * 5);
-	score = score + abs(w.spread_degrees - s.spread_degrees);
-	score = score + abs(w.reload_time - s.reload_time);
-	return score;
-}
-
 __device__ const static WandSprite wandSprites[] = {
 {"Spread staff",0,2,2,21,5,4,1,true,5,1,1},
 {"Burst staff",1,2,2,19,5,3,0,false,6,0,1},

@@ -45,10 +45,12 @@ struct PrecheckConfig
 	bool checkUpwarps;
 	FilterConfig fCfg;
 	LootConfig lCfg;
-	bool checkShops;
+	bool checkShopSpells;
+	bool checkShopWands;
 	bool checkPacifists;
 	int minHMidx;
 	int maxHMidx;
+	int itemCount;
 };
 
 
@@ -172,7 +174,7 @@ __device__ bool CheckAlchemy(NollaPRNG* random, AlchemyRecipe LC, AlchemyRecipe 
 __device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[maxFungalShifts])
 {
 	//return true;
-	
+
 	FungalShift generatedShifts[maxFungalShifts];
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
@@ -191,7 +193,7 @@ __device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[ma
 
 	Material variables[4 * materialVarEntryCount];
 	int ptrs[4] = { 0,0,0,0 };
-	
+
 	//populate vars
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
@@ -201,7 +203,7 @@ __device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[ma
 			{
 				if (MaterialEquals((Material)shiftFilters[i].from, (Material)generatedShifts[j].from, false, ptrs, variables))
 					MaterialEquals((Material)shiftFilters[i].to, (Material)generatedShifts[j].to, true, ptrs, variables);
-					//this has side effects when the bool is true, it looks kinda funny out of context tho
+				//this has side effects when the bool is true, it looks kinda funny out of context tho
 			}
 		}
 	}
@@ -352,10 +354,10 @@ __device__ bool CheckUpwarps(NollaPRNG* random, FilterConfig fCfg, LootConfig lC
 __device__ bool CheckPacifists(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
 {
 	byte bytes[3000];
-	Spawnable* mountains[7];
+	Spawnable* mountains[7] = { NULL,NULL,NULL,NULL,NULL,NULL,NULL };
 	int offset = 0;
 	int _ = 0;
-	for (int hm_level = minIdx; hm_level <= maxIdx; hm_level++)
+	for (int hm_level = minIdx; hm_level < maxIdx; hm_level++)
 	{
 		int x = temple_x[hm_level] + chestOffsetX;
 		int y = temple_y[hm_level] + chestOffsetY;
@@ -364,85 +366,78 @@ __device__ bool CheckPacifists(NollaPRNG* random, FilterConfig fCfg, LootConfig 
 		mountains[hm_level] = (Spawnable*)mountainStart;
 	}
 	SpawnableBlock b = { random->world_seed, 7, mountains };
-	return SpawnablesPassed(b, fCfg, false);;
+	return SpawnablesPassed(b, fCfg, false);
 }
 
-__device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
+__device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx, int _itemCount, bool checkSpells, bool checkWands)
 {
 	int width = 132;
 	constexpr int itemCount = 5;
 	float stepSize = width / (float)itemCount;
-	bool passed = false;
-
-	byte bytes[3000];
-	Spawnable* mountains[7];
-	int offset = 0;
-	for (int hm_level = minIdx; hm_level < maxIdx; hm_level++)
+	for (int pw = lCfg.pwCenter - lCfg.pwWidth; pw <= lCfg.pwCenter + lCfg.pwWidth; pw++)
 	{
-		int x = temple_x[hm_level] + shopOffsetX;
-		int y = temple_y[hm_level] + shopOffsetY;
-		random->SetRandomSeed(x, y);
-		int sale_item = random->Random(0, itemCount - 1);
-		bool wands = random->Random(0, 100) > 50;
+		bool passed = false;
 
-		if (wands)
+		byte bytes[3000];
+		Spawnable* mountains[7] = { NULL,NULL,NULL,NULL,NULL,NULL,NULL };
+		int offset = 0;
+		for (int hm_level = minIdx; hm_level < min(maxIdx, pw == 0 ? 7 : 6); hm_level++)
 		{
-#ifdef DO_WANDGEN
-			byte* mountainStart = bytes + offset;
-			writeInt(bytes, offset, x);
-			writeInt(bytes, offset, y);
-			writeByte(bytes, offset, TYPE_HM_SHOP);
-			int countOffset = offset;
-			offset += 4;
+			int x = temple_x[hm_level] + shopOffsetX + 70 * 512 * pw;
+			int y = temple_y[hm_level] + shopOffsetY;
+			random->SetRandomSeed(x, y);
+			int sale_item = random->Random(0, itemCount - 1);
+			bool wands = random->Random(0, 100) > 50;
 
-			for (int i = 0; i < itemCount; i++)
+			if (wands)
 			{
-				Wand w = GetShopWand(random, roundf(x + i * stepSize), y, max(1, hm_level));
-				writeByte(bytes, offset, DATA_WAND); //-1
-				writeInt(bytes, offset, *(int*)&w.capacity); //0
-				writeInt(bytes, offset, w.multicast); //4
-				writeInt(bytes, offset, w.mana); //8
-				writeInt(bytes, offset, w.regen); //12
-				writeInt(bytes, offset, w.delay); //16
-				writeInt(bytes, offset, w.reload); //20
-				writeInt(bytes, offset, *(int*)&w.speed); //24
-				writeInt(bytes, offset, w.spread); //28
-				writeByte(bytes, offset, (byte)w.shuffle); //32
-				writeByte(bytes, offset, (byte)w.spellIdx); //33
-				writeByte(bytes, offset, DATA_SPELL);
-				writeShort(bytes, offset, (short)w.alwaysCast); //34
-				for (int i = 0; i < w.spellIdx; i++)
+				if (!checkWands) continue;
+#ifdef DO_WANDGEN
+				byte* mountainStart = bytes + offset;
+				writeInt(bytes, offset, x);
+				writeInt(bytes, offset, y);
+				writeByte(bytes, offset, TYPE_HM_SHOP);
+				int countOffset = offset;
+				offset += 4;
+
+				for (int i = 0; i < itemCount; i++)
+				{
+					Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, hm_level));
+					writeByte(bytes, offset, DATA_WAND); //-1
+					memcpy(bytes + offset, &w.capacity, 37);
+					offset += 37;
+					memcpy(bytes + offset, w.spells, w.spellCount * 3);
+					offset += w.spellCount * 3;
+		}
+				writeInt(bytes, countOffset, offset - countOffset - 4);
+				mountains[hm_level] = (Spawnable*)mountainStart;
+#endif
+	}
+			else
+			{
+				if(!checkSpells) continue;
+				byte* mountainStart = bytes + offset;
+				writeInt(bytes, offset, x);
+				writeInt(bytes, offset, y);
+				writeByte(bytes, offset, TYPE_HM_SHOP);
+				writeInt(bytes, offset, 6 * itemCount);
+
+				for (int i = 0; i < itemCount; i++)
 				{
 					writeByte(bytes, offset, DATA_SPELL);
-					writeShort(bytes, offset, (short)w.spells[i]);
+					writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y - 30, hm_level, 0));
+					writeByte(bytes, offset, DATA_SPELL);
+					writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y, hm_level, 0));
 				}
+				mountains[hm_level] = (Spawnable*)mountainStart;
 			}
-			writeInt(bytes, countOffset, offset - countOffset - 4);
-			mountains[hm_level] = (Spawnable*)mountainStart;
-#endif
-		}
-		else
-		{
-			byte* mountainStart = bytes + offset;
-			writeInt(bytes, offset, x);
-			writeInt(bytes, offset, y);
-			writeByte(bytes, offset, TYPE_HM_SHOP);
-			writeInt(bytes, offset, 30);
+}
 
-			for (int i = 0; i < itemCount; i++)
-			{
-				writeByte(bytes, offset, DATA_SPELL);
-				writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y - 30, hm_level, 0));
-				writeByte(bytes, offset, DATA_SPELL);
-				writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y, hm_level, 0));
-			}
-			mountains[hm_level] = (Spawnable*)mountainStart;
-		}
+		SpawnableBlock b = { random->world_seed, 7, mountains };
+		passed = SpawnablesPassed(b, fCfg, true);
+		if (passed) return true;
 	}
-
-	SpawnableBlock b = { random->world_seed, 7, mountains };
-	passed = SpawnablesPassed(b, fCfg, false);
-	return passed;
+	return false;
 }
 
 __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
@@ -468,20 +463,20 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;									//5817ms
 	if (config.checkFungalShifts)
 		if (!CheckFungalShifts(&sharedRandom, config.shifts)) return false;												//4500ms (3 shifts, 1 filter)
-//#ifdef DO_WORLDGEN
+	//#ifdef DO_WORLDGEN
 	if (config.checkUpwarps)
 		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;										//7600ms
-//#endif
+	//#endif
 	if (config.checkPacifists)
 		if (!CheckPacifists(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;	//13800ms (7 HMs, 1 filter)
 	if (config.checkPerks)
 		if (!CheckPerks(&sharedRandom, config.perks)) return false;														//38000ms
-	if (config.checkShops)
-		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;		//230sec, 23000sec (without/with wands, 7 HMs, 1 filter)
-																				//Worldgen (Wang only): mines, temple	//260,000 sec, 440,000 sec
-																				//Worldgen + Spawnables: mines, temple	//360,000 sec, 750,000 sec
+	if (config.checkShopSpells || config.checkShopWands)
+		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx, config.itemCount, config.checkShopSpells, config.checkShopWands)) return false;		//50sec, 6500sec (without/with wands, 7 HMs, 1 filter)
+	//Worldgen (Wang only): mines, temple	//260,000 sec, 440,000 sec
+	//Worldgen + Spawnables: mines, temple	//360,000 sec, 750,000 sec
 	if (config.printPassed) printf("Precheck passed: %i\n", seed);
-	
+
 	return true;
 }
 

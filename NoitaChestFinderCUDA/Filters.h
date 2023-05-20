@@ -134,22 +134,8 @@ __device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 
 __device__ WandData readMisalignedWand(WandData* wPtr)
 {
-	byte* bPtr = (byte*)wPtr;
-	WandData w;
-	int offset = 0;
-	int temp = readInt(bPtr, offset);
-	w.capacity = *(float*)&temp;
-	w.multicast = readInt(bPtr, offset);
-	w.mana = readInt(bPtr, offset);
-	w.regen = readInt(bPtr, offset);
-	w.delay = readInt(bPtr, offset);
-	w.reload = readInt(bPtr, offset);
-	temp = readInt(bPtr, offset);
-	w.speed = *(float*)&temp;
-	w.spread = readInt(bPtr, offset);
-	w.shuffle = (bool)readByte(bPtr, offset);
-	w.spellCount = readByte(bPtr, offset);
-	//w.alwaysCast = (Spell)readShort(bPtr, offset);
+	WandData w = {};
+	memcpy(&w, wPtr, 37);
 	return w;
 }
 
@@ -186,7 +172,7 @@ __device__ void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
 		{
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			n += 35 + dat.spellCount * 2;
+			n += 37 + dat.spellCount * 3;
 		}
 
 		else
@@ -238,7 +224,7 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 		{
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			n += 36 + dat.spellCount * 3;
+			n += 37 + dat.spellCount * 3;
 		}
 
 	}
@@ -277,9 +263,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 
 		if (c == DATA_WAND)
 		{
-			n += 34;
-			byte spellCount = (&s->contents)[n];
-			n++;
+			n += 35;
 			if (sf.asAlwaysCast)
 			{
 				int offset = n + 1;
@@ -293,23 +277,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 					}
 				}
 			}
-			else
-			{
-				for (int j = 0; j < spellCount; j++)
-				{
-					int offset = n + 4 + 3 * j;
-					Spell spell = (Spell)readShort((byte*)(&s->contents), offset);
-					for (int i = 0; i < FILTER_OR_COUNT; i++)
-					{
-						if (sf.spells[i] != SPELL_NONE && spell == sf.spells[i])
-						{
-							foundCount++;
-							break;
-						}
-					}
-				}
-			}
-			n += 3 + 3 * spellCount;
+			n += 2;
 			continue;
 		}
 	}
@@ -334,7 +302,7 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			if (dat.capacity >= howBig) return true;
 			
-			n += 36 + dat.spellCount * 3;
+			n += 37 + dat.spellCount * 3;
 			continue;
 		}
 	}
@@ -346,7 +314,6 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 	int relevantSpawnableCount = 0;
 	Spawnable* relevantSpawnables[10];
 
-	
 	if (cfg.aggregate)
 	{
 		int itemsPassed[TOTAL_FILTER_COUNT];
@@ -483,7 +450,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 				WandFilterPassed(b.seed, sPtr, cfg.howBig, true);
 			else
 			{
-				constexpr int buffer_size = 1000;
+				constexpr int buffer_size = 3000;
 				char buffer[buffer_size];
 				int offset = 0;
 
@@ -500,7 +467,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 
 				for (int n = 0; n < s.count; n++)
 				{
-					//if (offset > buffer_size - 100) printf("Dangerously high offset reached! Offset: %i, buffer size %i\n", offset, buffer_size);
+					if (offset > buffer_size - 50) printf("Dangerously high offset reached! Offset: %i, buffer size %i\n", offset, buffer_size);
 					Item item = *(&sPtr->contents + n);
 					if (item == DATA_MATERIAL)
 					{
@@ -515,7 +482,8 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 						int offset2 = n + 1;
 						short m = readShort((byte*)(&sPtr->contents), offset2);
 						_putstr_offset("SPELL_", buffer, offset);
-						//_putstr_offset(SpellNames[m], buffer, offset);
+						//_itoa_offset(m, buffer, 10, offset);
+						_putstr_offset(SpellNames[m], buffer, offset);
 						n += 2;
 					}
 					else if (item == DATA_WAND)
@@ -548,7 +516,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 						_putstr_offset(" SPREAD, ", buffer, offset);
 
 						_putstr_offset(dat.shuffle ? "SHUFFLE] AC_" : "NON-SHUFFLE] AC_", buffer, offset);
-						n += 33;// +dat.spellCount * 2;
+						n += 33;
 						continue;
 					}
 					else if (GOLD_NUGGETS > item || item > MIMIC_SIGN)

@@ -52,8 +52,6 @@ __device__ uint StaticRandom(WorldgenPRNG* prng)
 class NollaPRNG
 {
 public:
-	int randomCTR = 0;
-
 	__host__ __device__
 		NollaPRNG(uint worldSeed)
 	{
@@ -130,11 +128,9 @@ public:
 		return (((uint)(v9 << 10) ^ (uint)(v7 - v9 - v8)) >> 15) ^ (uint)(v8 - v9 - ((uint)(v9 << 10) ^ (uint)(v7 - v9 - v8)));
 	}
 
-	__host__ __device__
+	__host__ __device__ __noinline__
 		void SetRandomSeed(double x, double y)
 	{
-		randomCTR = 0;
-
 		uint ws = world_seed;
 		uint a = ws ^ 0x93262e6f;
 		uint b = a & 0xfff;
@@ -203,7 +199,6 @@ public:
 	__host__ __device__
 		float Next()
 	{
-		randomCTR++;
 		int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
 		if (v4 < 0)
 		{
@@ -216,7 +211,6 @@ public:
 	__host__ __device__
 		int Random(int a, int b)
 	{
-		randomCTR++;
 		int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
 		if (v4 < 0)
 		{
@@ -246,7 +240,7 @@ public:
 		return Random(a, b);
 	}
 
-	__host__ __device__
+	__host__ __device__ __noinline__
 		float GetDistribution(float mean, float sharpness, float baseline)
 	{
 		int i = 0;
