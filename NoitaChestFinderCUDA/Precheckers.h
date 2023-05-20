@@ -119,7 +119,7 @@ __device__ bool CheckStartingWands(NollaPRNG* random, Spell projectileSpell, Spe
 	if (projectileSpell != SPELL_NONE)
 	{
 		Spell selectedProj = SPELL_NONE;
-		random->SetRandomSeed(0, -11);
+		random->SetRandomSeedInt(0, -11);
 		random->Next();
 		random->Next();
 		random->Next();
@@ -141,7 +141,7 @@ __device__ bool CheckStartingWands(NollaPRNG* random, Spell projectileSpell, Spe
 	if (bombSpell != SPELL_NONE)
 	{
 		Spell selectedBomb = SPELL_NONE;
-		random->SetRandomSeed(-1, 0);
+		random->SetRandomSeedInt(-1, 0);
 		random->Next();
 		random->Next();
 		random->Next();
@@ -163,22 +163,18 @@ __device__ bool CheckStartingWands(NollaPRNG* random, Spell projectileSpell, Spe
 __device__ bool CheckAlchemy(NollaPRNG* random, AlchemyRecipe LC, AlchemyRecipe AP, AlchemyOrdering ordered)
 {
 	NollaPRNG prng((int)(random->world_seed * 0.17127 + 1323.5903));
-	for (int i = 0; i < 5; i++) prng.Next();
+	for (int i = 0; i < 6; i++) prng.Next();
 	AlchemyRecipe lc = MaterialPicker(prng, random->world_seed);
 	AlchemyRecipe ap = MaterialPicker(prng, random->world_seed);
-	//printf("%i %i %i, %i %i %i\n", lc.mats[0], lc.mats[1], lc.mats[2], ap.mats[0], ap.mats[1], ap.mats[2]);
-	//if (lc.mats[0] == MUD && lc.mats[1] == WATER && lc.mats[2] == SOIL) return true;
 	return AlchemyRecipe::Equals(LC, lc, ordered) && AlchemyRecipe::Equals(AP, ap, ordered);
 }
 
 __device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[maxFungalShifts])
 {
-	//return true;
-
 	FungalShift generatedShifts[maxFungalShifts];
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
-		random->SetRandomSeed(89346, 42345 + i);
+		random->SetRandomSeedInt(89346, 42345 + i);
 		IntPair rnd = { 9123,58925 + i };
 		generatedShifts[i].from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, &rnd)];
 		generatedShifts[i].to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, &rnd)];
@@ -193,7 +189,7 @@ __device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[ma
 
 	Material variables[4 * materialVarEntryCount];
 	int ptrs[4] = { 0,0,0,0 };
-
+	
 	//populate vars
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
@@ -207,9 +203,10 @@ __device__ bool CheckFungalShifts(NollaPRNG* random, FungalShift shiftFilters[ma
 			}
 		}
 	}
-
+	
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
+		if (shiftFilters[i].minIdx == shiftFilters[i].maxIdx) continue;
 		bool found = false;
 		for (int j = shiftFilters[i].minIdx; j < shiftFilters[i].maxIdx; j++)
 		{
@@ -243,7 +240,7 @@ __device__ bool CheckBiomeModifiers(NollaPRNG* random, BiomeModifier biomeModifi
 
 __device__ bool CheckPerks(NollaPRNG* random, PerkInfo perks[20])
 {
-	random->SetRandomSeed(1, 2);
+	random->SetRandomSeedInt(1, 2);
 
 	constexpr int maxPerkCount = 130;
 	byte perkDeck[maxPerkCount];
@@ -348,7 +345,7 @@ __device__ bool CheckUpwarps(NollaPRNG* random, FilterConfig fCfg, LootConfig lC
 	Spawnable* spawnables[] = { (Spawnable*)bytes, (Spawnable*)ptr1 };
 	SpawnableBlock b = { random->world_seed, 2, spawnables };
 
-	return SpawnablesPassed(b, fCfg, false);
+	return SpawnablesPassed(b, fCfg);
 }
 
 __device__ bool CheckPacifists(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
@@ -366,7 +363,7 @@ __device__ bool CheckPacifists(NollaPRNG* random, FilterConfig fCfg, LootConfig 
 		mountains[hm_level] = (Spawnable*)mountainStart;
 	}
 	SpawnableBlock b = { random->world_seed, 7, mountains };
-	return SpawnablesPassed(b, fCfg, false);
+	return SpawnablesPassed(b, fCfg);
 }
 
 __device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx, int _itemCount, bool checkSpells, bool checkWands)
@@ -378,13 +375,14 @@ __device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg
 	{
 		bool passed = false;
 
-		byte bytes[3000];
+		byte bytes[5000];
 		Spawnable* mountains[7] = { NULL,NULL,NULL,NULL,NULL,NULL,NULL };
 		int offset = 0;
 		for (int hm_level = minIdx; hm_level < min(maxIdx, pw == 0 ? 7 : 6); hm_level++)
 		{
 			int x = temple_x[hm_level] + shopOffsetX + 70 * 512 * pw;
 			int y = temple_y[hm_level] + shopOffsetY;
+			int tier = temple_tiers[hm_level];
 			random->SetRandomSeed(x, y);
 			int sale_item = random->Random(0, itemCount - 1);
 			bool wands = random->Random(0, 100) > 50;
@@ -402,8 +400,8 @@ __device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg
 
 				for (int i = 0; i < itemCount; i++)
 				{
-					Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, hm_level));
-					writeByte(bytes, offset, DATA_WAND); //-1
+					Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier));
+					writeByte(bytes, offset, DATA_WAND);
 					memcpy(bytes + offset, &w.capacity, 37);
 					offset += 37;
 					memcpy(bytes + offset, w.spells, w.spellCount * 3);
@@ -425,16 +423,16 @@ __device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg
 				for (int i = 0; i < itemCount; i++)
 				{
 					writeByte(bytes, offset, DATA_SPELL);
-					writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y - 30, hm_level, 0));
+					writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y - 30, tier, 0));
 					writeByte(bytes, offset, DATA_SPELL);
-					writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y, hm_level, 0));
+					writeShort(bytes, offset, GetRandomAction(random->world_seed, x + i * stepSize, y, tier, 0));
 				}
 				mountains[hm_level] = (Spawnable*)mountainStart;
 			}
 }
 
 		SpawnableBlock b = { random->world_seed, 7, mountains };
-		passed = SpawnablesPassed(b, fCfg, true);
+		passed = SpawnablesPassed(b, fCfg);
 		if (passed) return true;
 	}
 	return false;
@@ -452,29 +450,28 @@ __device__ bool PrecheckSeed(uint seed, PrecheckConfig config)
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
 	if (config.checkStartingFlask)
-		if (!CheckStartingFlask(&sharedRandom, config.startingFlask)) return false;										//555ms
-	if (config.checkAlchemy)
-		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP, config.orderedAlchemy)) return false;					//805ms
+		if (!CheckStartingFlask(&sharedRandom, config.startingFlask)) return false;										//555ms->970ms
 	if (config.checkStartingWands)
-		if (!CheckStartingWands(&sharedRandom, config.projectileSpell, config.bombSpell)) return false;					//1014ms
+		if (!CheckStartingWands(&sharedRandom, config.projectileSpell, config.bombSpell)) return false;					//1014ms->1270ms
+	if (config.checkAlchemy)
+		if (!CheckAlchemy(&sharedRandom, config.LC, config.AP, config.orderedAlchemy)) return false;					//805ms->1310ms
 	if (config.checkRain)
-		if (!CheckRain(&sharedRandom, config.rain)) return false;														//1450ms
+		if (!CheckRain(&sharedRandom, config.rain)) return false;														//1450ms->1740ms
 	if (config.checkBiomeModifiers)
-		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;									//5817ms
+		if (!CheckBiomeModifiers(&sharedRandom, config.biomeModifiers)) return false;									//5817ms->9309ms
 	if (config.checkFungalShifts)
-		if (!CheckFungalShifts(&sharedRandom, config.shifts)) return false;												//4500ms (3 shifts, 1 filter)
-	//#ifdef DO_WORLDGEN
+		if (!CheckFungalShifts(&sharedRandom, config.shifts)) return false;												//6200ms->12600ms
 	if (config.checkUpwarps)
-		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;										//7600ms
-	//#endif
-	if (config.checkPacifists)
-		if (!CheckPacifists(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;	//13800ms (7 HMs, 1 filter)
+		if (!CheckUpwarps(&sharedRandom, config.fCfg, config.lCfg)) return false;										//7600ms->Untested
 	if (config.checkPerks)
-		if (!CheckPerks(&sharedRandom, config.perks)) return false;														//38000ms
+		if (!CheckPerks(&sharedRandom, config.perks)) return false;														//38000ms->47000ms
+	if (config.checkPacifists)
+		if (!CheckPacifists(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx)) return false;	//13800ms->71000ms
 	if (config.checkShopSpells || config.checkShopWands)
-		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx, config.itemCount, config.checkShopSpells, config.checkShopWands)) return false;		//50sec, 6500sec (without/with wands, 7 HMs, 1 filter)
-	//Worldgen (Wang only): mines, temple	//260,000 sec, 440,000 sec
-	//Worldgen + Spawnables: mines, temple	//360,000 sec, 750,000 sec
+		if (!CheckShops(&sharedRandom, config.fCfg, config.lCfg, config.minHMidx, config.maxHMidx, config.itemCount, config.checkShopSpells, config.checkShopWands)) return false;		
+																														//230sec->89sec, 23000sec->6500sec (without/with wands, 7 HMs, 1 filter)
+																														//Worldgen (Wang only): mines, temple	//260,000 sec, 440,000 sec
+																														//Worldgen + Spawnables: mines, temple	//360,000 sec, 750,000 sec
 	if (config.printPassed) printf("Precheck passed: %i\n", seed);
 
 	return true;

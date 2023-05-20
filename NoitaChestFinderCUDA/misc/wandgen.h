@@ -73,6 +73,13 @@ struct WandData
 };
 #pragma pack(pop)
 
+__device__ WandData readMisalignedWand(WandData* wPtr)
+{
+	WandData w = {};
+	memcpy(&w, wPtr, 37);
+	return w;
+}
+
 __device__ int GetBestSprite(NollaPRNG* rnd, Wand w)
 {
 	WandSpaceDat gunInWandSpace = {};
@@ -232,7 +239,7 @@ __device__ Spell GetRandomAction(uint seed, double x, double y, int level, int o
 
 	const SpellProb* tierProbs = allSpellProbs[level];
 
-	float sum = tierProbs[spellTierCounts[level] - 1].p;
+	float sum = tierProbs[high - 1].p;
 	float cutoff = random.Next() * sum;
 
 	while (low < high)
@@ -258,7 +265,7 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 
 	const SpellProb* tierProbs = spellProbs_Types[level][type];
 
-	float sum = tierProbs[spellProbs_Counts[level][type] - 1].p;
+	float sum = tierProbs[high - 1].p;
 	float rnd = random.Next();
 	float cutoff = sum * rnd;
 
@@ -849,7 +856,7 @@ __device__ Wand GetWandBetter(uint seed, double x, double y, int cost, int level
 	return wand;
 }
 
-__device__ Wand GetWandWithLevel(uint seed, double x, double y, int level, bool nonshuffle, bool better)
+__device__ __noinline__ Wand GetWandWithLevel(uint seed, double x, double y, int level, bool nonshuffle, bool better)
 {
 	if (nonshuffle)
 		switch (level)

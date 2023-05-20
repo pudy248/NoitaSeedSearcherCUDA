@@ -7,13 +7,15 @@
 
 __device__ float random_next(float min, float max, NollaPRNG* random, IntPair* rnd)
 {
-	float result = random->ProceduralRandomf(rnd->x, rnd->y, min, max);
+	random->SetRandomSeedInt(rnd->x, rnd->y);
+	float result = min + ((max - min) * random->Next());
 	rnd->y += 1;
 	return result;
 }
 __device__ int random_nexti(float min, float max, NollaPRNG* random, IntPair* rnd)
 {
-	int result = random->ProceduralRandomi(rnd->x, rnd->y, min, max);
+	random->SetRandomSeedInt(rnd->x, rnd->y);
+	int result = random->Random(min, max);
 	rnd->y += 1;
 	return result;
 }

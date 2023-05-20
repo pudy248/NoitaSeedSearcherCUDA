@@ -144,6 +144,7 @@ __device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint worldSeed)
 	}
 
 	NollaPRNG prng2((worldSeed >> 1) + 12534);
+	prng2.Next();
 	for (int i = 3; i >= 0; i--)
 	{
 		int r = (int)(prng2.Next() * (i + 1));

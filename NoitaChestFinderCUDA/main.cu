@@ -61,7 +61,11 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 		if (!seedPassed)
 		{
 #ifdef DO_ATOMICS
-			if(counter % globalCfg.atomicGranularity == globalCfg.atomicGranularity - 1) atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
+			if (counter > globalCfg.atomicGranularity)
+			{
+				atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
+				counter -= globalCfg.atomicGranularity;
+			}
 #endif
 			continue;
 		}
@@ -83,14 +87,22 @@ __global__ void Kernel(byte* outputBlock, byte* dMapData, byte* dMiscMem, byte* 
 
 		printf("Seed passed: %i\n", seed);
 #ifdef DO_ATOMICS
-		if (counter % globalCfg.atomicGranularity == globalCfg.atomicGranularity - 1) atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
 		counter2++;
-		if (counter2 % globalCfg.passedGranularity == globalCfg.passedGranularity - 1) atomicAdd(passedSeeds, globalCfg.passedGranularity);
+		if (counter >= globalCfg.atomicGranularity)
+		{
+			atomicAdd(checkedSeeds, globalCfg.atomicGranularity);
+			counter -= globalCfg.atomicGranularity;
+		}
+		if (counter2 >= globalCfg.passedGranularity)
+		{
+			atomicAdd(passedSeeds, globalCfg.passedGranularity);
+			counter2 -= globalCfg.passedGranularity;
+		}
 #endif
 	}
 #ifdef DO_ATOMICS
-	atomicAdd(checkedSeeds, counter % globalCfg.atomicGranularity);
-	atomicAdd(passedSeeds, counter2 % globalCfg.passedGranularity);
+	atomicAdd(checkedSeeds, counter);
+	atomicAdd(passedSeeds, counter2);
 #endif
 }
 
@@ -141,13 +153,6 @@ int main()
 	return;
 	for (int capacity = 0; capacity < 8; capacity++)
 	{
-		for(int multicast = 0; multicast < )
-		for (int i = 0; i < 1000; i++)
-		{
-			WandSprite s = wandSprites[i];
-			counters[s.deck_capacity]++;
-		}
-		/*
 		for (int t = 0; t < 8; t++)
 		{
 			double sum = 0;
@@ -244,21 +249,21 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, 1, 100, 1 };
+		GlobalConfig globalCfg = { 1, INT_MAX, 10, 100, 1 };
 
-		Item iF1[FILTER_OR_COUNT] = { WAND_T1, WAND_T1NS, WAND_T2, WAND_T2NS };
+		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Material mF1[FILTER_OR_COUNT] = { BRASS };
-		Spell sF1[FILTER_OR_COUNT] = { SPELL_REGENERATION_FIELD };
+		Spell sF1[FILTER_OR_COUNT] = { SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER, SPELL_SPITTER, SPELL_SPITTER_TIMER };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
-		ItemFilter iFilters[] = { ItemFilter(iF1), ItemFilter(iF2) };
+		ItemFilter iFilters[] = { ItemFilter(iF1, 4), ItemFilter(iF2) };
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
-		SpellFilter sFilters[] = { SpellFilter(sF1, 5), SpellFilter(sF2, 2) };
+		SpellFilter sFilters[] = { SpellFilter(sF1, 8), SpellFilter(sF2, 2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 27);
-		LootConfig lootCfg = LootConfig(0, 20, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, true, 27);
+		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
 			false,
@@ -267,10 +272,10 @@ int main()
 			false, WATER,
 			false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL},
 			false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_GOLD_VEIN_SUPER},
-			false, {FungalShift(SS_ROCK_STATIC, SD_CHEESE_STATIC, 0, 3)},
+			false, {FungalShift(SS_FLASK, SD_CHEESE_STATIC, 0, 4), FungalShift(), FungalShift(), FungalShift()},
 			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, -3, -1}},
 			false, filterCfg, lootCfg,
-			true, false, false, 1, 6, 5
+			false, true, false, 0, 1, 5
 		};
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg))

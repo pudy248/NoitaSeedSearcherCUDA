@@ -9,8 +9,9 @@
 
 #include "WorldgenSearch.h"
 #include "misc/wandgen.h"
+#include "Output.h"
 
-#define FILTER_OR_COUNT 5
+#define FILTER_OR_COUNT 10
 #define TOTAL_FILTER_COUNT 10
 struct ItemFilter
 {
@@ -119,25 +120,6 @@ struct FilterConfig
 		memcpy(spellFilters, _spellFilters, sizeof(SpellFilter) * spellFilterCount);
 	}
 };
-
-__device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
-{
-	byte* bPtr = (byte*)sPtr;
-	Spawnable s;
-	int offset = 0;
-	s.x = readInt(bPtr, offset);
-	s.y = readInt(bPtr, offset);
-	s.sType = (SpawnableMetadata)readByte(bPtr, offset);
-	s.count = readInt(bPtr, offset);
-	return s;
-}
-
-__device__ WandData readMisalignedWand(WandData* wPtr)
-{
-	WandData w = {};
-	memcpy(&w, wPtr, 37);
-	return w;
-}
 
 __device__ void PrintBytes(byte* ptr, int count)
 {
@@ -283,7 +265,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 	}
 }
 
-__device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print)
+__device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -301,15 +283,14 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig, bool print
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			if (dat.capacity >= howBig) return true;
-			
-			n += 37 + dat.spellCount * 3;
+			n += 36 + dat.spellCount * 3;
 			continue;
 		}
 	}
 	return false;
 }
 
-__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
+__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 {
 	int relevantSpawnableCount = 0;
 	Spawnable* relevantSpawnables[10];
@@ -427,7 +408,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 			if (failed) continue;
 
 			if (cfg.checkBigWands) {
-				if (!WandFilterPassed(b.seed, s, cfg.howBig, false)) continue;
+				if (!WandFilterPassed(b.seed, s, cfg.howBig)) continue;
 			}
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
@@ -439,106 +420,6 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg, bool print)
 		}
 	}
 
-	if (print)
-	{
-		for (int i = 0; i < relevantSpawnableCount; i++)
-		{
-			Spawnable* sPtr = relevantSpawnables[i];
-			Spawnable s = readMisalignedSpawnable(sPtr);
-
-			if (cfg.checkBigWands)
-				WandFilterPassed(b.seed, sPtr, cfg.howBig, true);
-			else
-			{
-				constexpr int buffer_size = 3000;
-				char buffer[buffer_size];
-				int offset = 0;
-
-				_itoa_offset(b.seed, buffer, 10, offset);
-				_putstr_offset(" @ (", buffer, offset);
-				_itoa_offset(s.x, buffer, 10, offset);
-				_putstr_offset(", ", buffer, offset);
-				_itoa_offset(s.y, buffer, 10, offset);
-				_putstr_offset("): ", buffer, offset);
-				_putstr_offset(SpawnableTypeNames[s.sType - TYPE_CHEST], buffer, offset);
-				_putstr_offset(", ", buffer, offset);
-				_itoa_offset(s.count, buffer, 10, offset);
-				_putstr_offset(" bytes: (", buffer, offset);
-
-				for (int n = 0; n < s.count; n++)
-				{
-					if (offset > buffer_size - 50) printf("Dangerously high offset reached! Offset: %i, buffer size %i\n", offset, buffer_size);
-					Item item = *(&sPtr->contents + n);
-					if (item == DATA_MATERIAL)
-					{
-						int offset2 = n + 1;
-						short m = readShort((byte*)(&sPtr->contents), offset2);
-						_putstr_offset("POTION_", buffer, offset);
-						_putstr_offset(MaterialNames[m], buffer, offset);
-						n += 2;
-					}
-					else if (item == DATA_SPELL)
-					{
-						int offset2 = n + 1;
-						short m = readShort((byte*)(&sPtr->contents), offset2);
-						_putstr_offset("SPELL_", buffer, offset);
-						//_itoa_offset(m, buffer, 10, offset);
-						_putstr_offset(SpellNames[m], buffer, offset);
-						n += 2;
-					}
-					else if (item == DATA_WAND)
-					{
-						n++;
-						WandData dat = readMisalignedWand((WandData*)(&sPtr->contents + n));
-						_putstr_offset("[", buffer, offset);
-
-						_itoa_offset_decimal((int)(dat.capacity * 100), buffer, 10, 2, offset);
-						_putstr_offset(" CAPACITY, ", buffer, offset);
-
-						_itoa_offset(dat.multicast, buffer, 10, offset);
-						_putstr_offset(" MULTI, ", buffer, offset);
-
-						_itoa_offset(dat.delay, buffer, 10, offset);
-						_putstr_offset(" DELAY, ", buffer, offset);
-
-						_itoa_offset(dat.reload, buffer, 10, offset);
-						_putstr_offset(" RELOAD, ", buffer, offset);
-
-						_itoa_offset(dat.mana, buffer, 10, offset);
-						_putstr_offset(" MANA, ", buffer, offset);
-
-						_itoa_offset(dat.regen, buffer, 10, offset);
-						_putstr_offset(" REGEN, ", buffer, offset);
-
-						//speed... float?
-
-						_itoa_offset(dat.spread, buffer, 10, offset);
-						_putstr_offset(" SPREAD, ", buffer, offset);
-
-						_putstr_offset(dat.shuffle ? "SHUFFLE] AC_" : "NON-SHUFFLE] AC_", buffer, offset);
-						n += 33;
-						continue;
-					}
-					else if (GOLD_NUGGETS > item || item > MIMIC_SIGN)
-					{
-						_putstr_offset("0x", buffer, offset);
-						_itoa_offset_zeroes(item, buffer, 16, 2, offset);
-					}
-					else
-					{
-						int idx = item - GOLD_NUGGETS;
-						_putstr_offset(ItemNames[idx], buffer, offset);
-					}
-
-					if (n < s.count - 1)
-						_putstr_offset(" ", buffer, offset);
-				}
-				_putstr_offset(")\n", buffer, offset);
-				buffer[offset] = '\0';
-				printf("%s", buffer);
-			}
-		}
-	}
-
+	//PrintSpawnableBlock(b.seed, relevantSpawnables, relevantSpawnableCount);
 	return true;
 }

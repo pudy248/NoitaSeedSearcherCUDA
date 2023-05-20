@@ -244,3 +244,15 @@ __device__ int readMisaligned(int* ptr2)
 	int offset = 0;
 	return readInt(ptr, offset);
 }
+
+__device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
+{
+	byte* bPtr = (byte*)sPtr;
+	Spawnable s;
+	int offset = 0;
+	s.x = readInt(bPtr, offset);
+	s.y = readInt(bPtr, offset);
+	s.sType = (SpawnableMetadata)readByte(bPtr, offset);
+	s.count = readInt(bPtr, offset);
+	return s;
+}

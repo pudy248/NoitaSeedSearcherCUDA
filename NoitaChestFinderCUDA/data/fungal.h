@@ -99,7 +99,7 @@ struct FungalShift {
 	}
 };
 
-constexpr auto maxFungalShifts = 3;
+constexpr auto maxFungalShifts = 4;
 
 constexpr auto fungalMaterialsFromCount = 18;
 __device__ const ShiftSource fungalMaterialsFrom[] = {

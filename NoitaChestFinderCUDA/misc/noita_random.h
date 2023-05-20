@@ -57,7 +57,6 @@ public:
 	{
 		world_seed = worldSeed;
 		Seed = worldSeed;
-		Next();
 	}
 
 	uint world_seed = 0;
@@ -189,12 +188,89 @@ public:
 		}
 	}
 
-	//__host__ __device__
-	//	uint NextU()
-	//{
-	//	Next();
-	//	return (uint)((Seed * 4.656612875e-10) * 2147483645.0);
-	//}
+	__host__ __device__
+		ulong SetRandomSeedHelperInt(long long r)
+	{
+		double dr = r;
+		ulong e = *(ulong*)&dr;
+
+		e <<= 1;
+		e >>= 1;
+		double s = *(double*)&e;
+		ulong i = 0;
+		if (e != 0)
+		{
+			ulong f = (e & 0xfffffffffffff) | 0x0010000000000000;
+			ulong g = 0x433 - (e >> 0x34);
+			ulong h = f >> (int)g;
+
+			uint j = ~(uint)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
+			i = (ulong)j << 0x20 | j;
+			i = ~i & h | f << (((int)s >> 0x34) - 0x433) & i;
+			i = ~(~(uint)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint)(r == s ? 1 : 0) + 1);
+		}
+		return i & 0xffffffff;
+	}
+
+	__host__ __device__ __noinline__
+		void SetRandomSeedInt(int x, int y)
+	{
+		uint ws = world_seed;
+		uint a = ws ^ 0x93262e6f;
+		int b = a & 0xfff;
+		int c = (a >> 0xc) & 0xfff;
+
+		int x_ = x + b;
+
+		int y_ = y + c;
+
+		long long r = x_ * 134217727LLU;
+		ulong e = SetRandomSeedHelperInt(r);
+
+		int _x = abs(x_);
+		int _y = abs(y_);
+		if (102400 <= _y || _x <= 1)
+		{
+			r = y_ * 134217727LLU;
+		}
+		else
+		{
+			double y__ = y_ * 3483.328;
+			double t = (double)e;
+			y__ += t;
+			r = y_ * y__;
+		}
+
+		ulong f = SetRandomSeedHelperInt(r);
+
+		uint g = SetRandomSeedHelper2((uint)e, (uint)f, ws);
+
+		//double s = g;
+		//s /= 4294967295.0;
+		//s *= 2147483639.0;
+		//s += 1.0;
+		//Seed = (int)s;
+
+		//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
+		const uint diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
+		constexpr uint magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
+		uint t = g;
+		t = g + (g < 2147483648) + (g == 0);
+		t -= g / magic_number;
+		t += (g % magic_number < diddle_table[g / magic_number]) && (g < 0xc3c3c3c3 + 4 || g >= 0xc3c3c3c3 + 62);
+		t = (t + (g > 0x80000000)) >> 1;
+		t = (int)t + (g == 0xffffffff);
+		Seed = t;
+
+		Next();
+
+		uint h = ws & 3;
+		while (h > 0)
+		{
+			Next();
+			h--;
+		}
+	}
 
 	__host__ __device__
 		float Next()
@@ -220,12 +296,6 @@ public:
 		return a + (int)(((ulong)(b + 1 - a) * (ulong)Seed) >> 31);
 	}
 
-	//__host__ __device__
-	//	int Random(int a, int b)
-	//{
-	//	return a + (int)((b + 1 - a) * (double)Next());
-	//}
-
 	__host__ __device__
 		float ProceduralRandomf(double x, double y, float a, float b)
 	{
@@ -249,11 +319,11 @@ public:
 			float r1 = Next();
 			float r2 = Next();
 			float div = fabsf(r1 - mean);
-			if (r2 < ((1.0 - div) * baseline))
+			if (r2 < ((1.0f - div) * baseline))
 			{
 				return r1;
 			}
-			if (div < 0.5)
+			if (div < 0.5f)
 			{
 				// double v11 = sin(((0.5f - mean) + r1) * M_PI);
 				float v11 = sinf(((0.5f - mean) + r1) * 3.1415f);
