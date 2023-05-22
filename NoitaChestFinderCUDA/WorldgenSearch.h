@@ -252,7 +252,7 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, 
 				else createPotion(roundRNGPos(x) + 510, y + 683, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes, offset);
 			}
 		}
-		else if (rnd <= 54) writeByte(bytes, offset, SPELL_REFRESH);
+		else if (rnd <= 54) writeByte(bytes, offset, Item::SPELL_REFRESH);
 		else if (rnd <= 60)
 		{
 			Item opts[8] = { KAMMI, KUU, UKKOSKIVI, PAHA_SILMA, KIUASKIVI, (Item)127, CHAOS_DIE, SHINY_ORB };

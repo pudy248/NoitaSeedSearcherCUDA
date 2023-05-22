@@ -151,31 +151,66 @@ int main()
 		printf("multicast %i: %i wands\n", i, h_buckets[i]);
 	}
 	return;
-	for (int capacity = 0; capacity < 8; capacity++)
+	int counters2[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
+	double sums[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
+	for (int t = 0; t < 11; t++)
 	{
-		for (int t = 0; t < 8; t++)
+		printf("__device__ const static SpellProb spellProbs_%i[] = {\n", t);
+		for (int j = 0; j < 393; j++)
 		{
+			if (allSpells[j].spawn_probabilities[t] > 0)
+			{
+				counters2[t]++;
+				sums[t] += allSpells[j].spawn_probabilities[t];
+				printf("{%f,SPELL_%s},\n", sums[t], SpellNames[j + 1]);
+			}
+		}
+		printf("};\n");
+	}
+
+	printf("__device__ const static int spellProbs_Counts[] = {\n");
+	for (int t = 0; t < 11; t++)
+	{
+		printf("%i,\n", counters2[t]);
+	}
+	printf("};\n\n");
+
+	printf("__device__ const static int spellProbs_Sums[] = {\n");
+	for (int t = 0; t < 11; t++)
+	{
+		printf("%f,\n", sums[t]);
+	}
+	printf("};\n\n");
+
+
+	for (int tier = 0; tier < 11; tier++)
+	{
+		int counters[8] = { 0,0,0,0,0,0,0,0 };
+		for(int t = 0; t < 8; t++) {
 			double sum = 0;
-			printf("__device__ const static SpellProb spellProbs_%i_T%i[] = {\n", capacity, t);
+			printf("__device__ const static SpellProb spellProbs_%i_T%i[] = {\n", tier, t);
 			for (int j = 0; j < 393; j++)
 			{
-				if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[capacity] > 0)
+				if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[tier] > 0)
 				{
 					counters[t]++;
-					sum += allSpells[j].spawn_probabilities[capacity];
+					sum += allSpells[j].spawn_probabilities[tier];
 					printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
 				}
 			}
 			printf("};\n\n");
 		}
-		printf("__device__ const static SpellProb* spellProbs_%i_Types[] = {\n", capacity);
+		printf("__device__ const static SpellProb* spellProbs_%i_Types[] = {\n", tier);
 		for (int t = 0; t < 8; t++)
 		{
-			printf("spellProbs_%i_T%i,\n", capacity, t);
+			if(counters[t] > 0)
+				printf("spellProbs_%i_T%i,\n", tier, t);
+			else
+				printf("NULL,\n");
 		}
 		printf("};\n\n");
 
-		printf("__device__ const static int spellProbs_%i_Counts[] = {\n", capacity);
+		printf("__device__ const static int spellProbs_%i_Counts[] = {\n", tier);
 		for (int t = 0; t < 8; t++)
 		{
 			printf("%i,\n", counters[t]);
@@ -249,21 +284,21 @@ int main()
 			worldCfg.map_w * worldCfg.map_h
 		};
 
-		GlobalConfig globalCfg = { 1, INT_MAX, 10, 100, 1 };
+		GlobalConfig globalCfg = { 1, INT_MAX, 5, 100, 1 };
 
 		Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 		Item iF2[FILTER_OR_COUNT] = { MIMIC };
 		Material mF1[FILTER_OR_COUNT] = { BRASS };
-		Spell sF1[FILTER_OR_COUNT] = { SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER, SPELL_SPITTER, SPELL_SPITTER_TIMER };
+		Spell sF1[FILTER_OR_COUNT] = { SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER };
 		Spell sF2[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE_DEATH_TRIGGER, SPELL_BLACK_HOLE };
 		//Spell sF3[FILTER_OR_COUNT] = { SPELL_BLACK_HOLE };
 
 		ItemFilter iFilters[] = { ItemFilter(iF1, 4), ItemFilter(iF2) };
 		MaterialFilter mFilters[] = { MaterialFilter(mF1) };
-		SpellFilter sFilters[] = { SpellFilter(sF1, 8), SpellFilter(sF2, 2) };
+		SpellFilter sFilters[] = { SpellFilter(sF1, 10), SpellFilter(sF2, 2) };
 
-		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, true, 27);
-		LootConfig lootCfg = LootConfig(0, 0, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
+		FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 27);
+		LootConfig lootCfg = LootConfig(0, 500, true, false, false, false, false, filterCfg.materialFilterCount > 0, false, biomeIdx, false);
 
 		PrecheckConfig precheckCfg = {
 			false,
@@ -275,7 +310,7 @@ int main()
 			false, {FungalShift(SS_FLASK, SD_CHEESE_STATIC, 0, 4), FungalShift(), FungalShift(), FungalShift()},
 			false, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_UNLIMITED_SPELLS, false, -3, -1}},
 			false, filterCfg, lootCfg,
-			false, true, false, 0, 1, 5
+			true, false, false, 0, 1, 5
 		};
 
 		if (precheckCfg.checkBiomeModifiers && !ValidateBiomeModifierConfig(precheckCfg))

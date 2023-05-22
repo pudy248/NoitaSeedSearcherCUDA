@@ -94,9 +94,8 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 	bool pathFound = false;
 
 	int stackSize = 1;
-	IntPair* stackMem = (IntPair*)stackMemArea;//(IntPair*)malloc(sizeof(IntPair) * (map_w + map_h));
+	IntPair* stackMem = (IntPair*)stackMemArea;
 	memset(visited, 0, map_w * map_h);
-	//memset(stackMem, 0, sizeof(IntPair) * rmw * rmh);
 
 	stackMem[0] = { x , y };
 

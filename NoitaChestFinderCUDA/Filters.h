@@ -420,6 +420,6 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 		}
 	}
 
-	//PrintSpawnableBlock(b.seed, relevantSpawnables, relevantSpawnableCount);
+	PrintSpawnableBlock(b.seed, relevantSpawnables, relevantSpawnableCount);
 	return true;
 }
