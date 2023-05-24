@@ -56,12 +56,12 @@ __device__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
 __device__ int roundRNGPos(int num)
 {
 	if (-1000000 < num && num < 1000000) return num;
-	else if (-10000000 < num && num < 10000000) return roundf(num / 10.0) * 10;
-	else if (-100000000 < num && num < 100000000) return roundf(num / 100.0) * 100;
+	else if (-10000000 < num && num < 10000000) return rintf(num / 10.0) * 10;
+	else if (-100000000 < num && num < 100000000) return rintf(num / 100.0) * 100;
 	return num;
 }
 
-__device__ void _itoa_offset(int num, char* buffer, int base, int& offset)
+__device__ __host__ void _itoa_offset(int num, int base, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -95,7 +95,7 @@ __device__ void _itoa_offset(int num, char* buffer, int base, int& offset)
 		buffer[offset++] = internal_buffer[j];
 }
 
-__device__ void _itoa_offset_decimal(int num, char* buffer, int base, int fixedPoint, int& offset)
+__device__ __host__ void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -131,7 +131,7 @@ __device__ void _itoa_offset_decimal(int num, char* buffer, int base, int fixedP
 		buffer[offset++] = internal_buffer[j];
 }
 
-__device__ void _itoa_offset_zeroes(int num, char* buffer, int base, int leadingZeroes, int& offset)
+__device__ __host__ void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -159,7 +159,7 @@ __device__ void _itoa_offset_zeroes(int num, char* buffer, int base, int leading
 		buffer[offset++] = internal_buffer[j];
 }
 
-__device__ void _putstr_offset(const char* str, char* buffer, int& offset)
+__device__ __host__ void _putstr_offset(const char* str, char* buffer, int& offset)
 {
 	int i = 0;
 	while (str[i] != '\0')

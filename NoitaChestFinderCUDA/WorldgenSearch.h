@@ -563,9 +563,10 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, 
 			writeInt(bytes, offset, nx + 5);
 			writeInt(bytes, offset, ny + 5);
 			writeByte(bytes, offset, TYPE_WAND_PEDESTAL);
-			writeInt(bytes, offset, 1);
+			int countOffset = offset;
+			offset += 4;
 			createWand(nx + 5, ny + 5, wandSet.levels[i].id, false, seed, cfg, bytes, offset);
-			//writeByte(bytes, offset, wandSet.levels[i].id);
+			writeInt(bytes, countOffset, offset - countOffset - 4);
 			return;
 		}
 		r -= wandSet.levels[i].prob;
@@ -592,7 +593,7 @@ __device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, b
 	if (rnd != 1) return;
 
 	float fOffset = random.ProceduralRandomf(x + 1, y, -4, 4);
-	int intOffset = (int)roundf(fOffset);
+	int intOffset = (int)rintf(fOffset);
 	int pos_x = x + intOffset;
 	int pos_y = y + intOffset;
 

@@ -319,7 +319,7 @@ __device__ bool CheckPerks(NollaPRNG* random, PerkInfo perks[20])
 			{
 				if (perkToCkeck.lottery)
 				{
-					int x = temple_x[(j / 3)] + (int)roundf(((j % 3) + 0.5f) * 20);
+					int x = temple_x[(j / 3)] + (int)rintf(((j % 3) + 0.5f) * 20);
 					int y = temple_y[(j / 3)];
 					rnd.SetRandomSeed(x, y);
 					if (rnd.Random(1, 100) > 50)
@@ -336,7 +336,7 @@ __device__ bool CheckPerks(NollaPRNG* random, PerkInfo perks[20])
 
 __device__ bool CheckUpwarps(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg)
 {
-	byte bytes[1000];
+	byte bytes[2000];
 	int offset = 0;
 	int _ = 0;
 	spawnChest(315, 17, random->world_seed, lCfg, bytes, offset, _);

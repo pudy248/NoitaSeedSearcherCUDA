@@ -278,43 +278,6 @@ __device__ Spell GetRandomActionWithType(uint seed, double x, double y, int leve
 			high = mid;
 	}
 	return tierProbs[low].s;
-	/*
-	NollaPRNG random = NollaPRNG((uint)(seed + offset));
-	random.SetRandomSeed(x, y);
-	float sum = 0;
-	level = min(level, 10);
-	// all_spells length is 393
-	for (int i = 0; i < 393; i++)
-	{
-		if (allSpells[i].type == type)
-			sum += allSpells[i].spawn_probabilities[level];
-	}
-
-	float multiplier = random.Next();
-	float accumulated = sum * multiplier;
-
-	for (int i = 0; i < 393; i++)
-	{
-		if (allSpells[i].type != type) continue;
-
-		float probability = allSpells[i].spawn_probabilities[level];
-		if (probability >= accumulated)
-		{
-			return (Spell)(i + 1);
-		}
-		accumulated -= probability;
-	}
-	int rand = (int)(random.Next() * 393);
-	for (int j = 0; j < 393; j++)
-	{
-		SpellData spell = allSpells[(j + rand) % 393];
-		if (spell.type == type && spell.spawn_probabilities[level] > 0.0)
-		{
-			return (Spell)(((j + rand) % 393) + 1);
-		}
-		j++;
-	}
-	return SPELL_NONE;*/
 }
 
 __device__ StatProb getGunProbs(WandStat s, StatProbBlock* dict, NollaPRNG* random)

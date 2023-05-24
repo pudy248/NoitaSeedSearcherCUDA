@@ -348,7 +348,7 @@ public:
 
 		float adjMean = (mean - min) / (float)(max - min);
 		float v7 = GetDistribution(adjMean, sharpness, 0.005f); // Baseline is always this
-		int d = (int)roundf((max - min) * v7);
+		int d = (int)rintf((max - min) * v7);
 		return min + d;
 	}
 

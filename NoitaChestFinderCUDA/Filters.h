@@ -129,7 +129,7 @@ __device__ void PrintBytes(byte* ptr, int count)
 	for (int i = 0; i < count; i++)
 	{
 		_putstr_offset("0x", buffer, offset);
-		_itoa_offset_zeroes(*(ptr + i), buffer, 16, 2, offset);
+		_itoa_offset_zeroes(*(ptr + i), 16, 2, buffer, offset);
 		if (i < count - 1)
 			_putstr_offset(" ", buffer, offset);
 	}
