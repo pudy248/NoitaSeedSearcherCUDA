@@ -217,12 +217,12 @@ __global__ void wandExperiment(const int level, const bool nonShuffle)
 DeviceConfig CreateConfigs()
 {
 	//MINES
-	//MapConfig mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
-	//const char* fileName = "wang/minesWang.bin";
-	//constexpr auto NUMBLOCKS = 128;
-	//constexpr auto BLOCKSIZE = 64;
-	//constexpr auto mapMemMult = 1;
-	//constexpr auto miscMemMult = 6;
+	MapConfig mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
+	const char* fileName = "wang/minesWang.bin";
+	constexpr auto NUMBLOCKS = 128;
+	constexpr auto BLOCKSIZE = 64;
+	constexpr auto mapMemMult = 1;
+	constexpr auto miscMemMult = 6;
 
 	//EXCAVATION SITE
 	//MapConfig mapCfg = { 344, 440, 409, 102, 31, 17, -100000, 100000, -100000, 100000, false, false, 1, 100 };
@@ -249,12 +249,12 @@ DeviceConfig CreateConfigs()
 	//constexpr auto miscMemMult = 10;
 
 	//OVERGROWN CAVERNS
-	MapConfig mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
-	const char* fileName = "wang/fungiforestWang.bin";
-	constexpr auto NUMBLOCKS = 16;
-	constexpr auto BLOCKSIZE = 32;
-	constexpr auto mapMemMult = 3;
-	constexpr auto miscMemMult = 8;
+	//MapConfig mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
+	//const char* fileName = "wang/fungiforestWang.bin";
+	//constexpr auto NUMBLOCKS = 16;
+	//constexpr auto BLOCKSIZE = 32;
+	//constexpr auto mapMemMult = 3;
+	//constexpr auto miscMemMult = 8;
 
 	//HELL
 	//MapConfig mapCfg = { 156, 364, 921, 256, 25, 43, -100000, 100000, -100000, 100000, false, true, 0, 100 };
@@ -272,7 +272,7 @@ DeviceConfig CreateConfigs()
 		4096
 	};
 
-	GeneralConfig generalCfg = { 0, 1, INT_MAX, 1, 1, 1, 1 };
+	GeneralConfig generalCfg = { LLONG_MAX, 1, INT_MAX, 65536, 1, 1, 1 };
 	SpawnableConfig spawnableCfg = {0, 0, 0, 0, false, false, false, false, true, false, false, true, false, false, false};
 
 	Item iF1[FILTER_OR_COUNT] = { SAMPO, TRUE_ORB };
@@ -295,22 +295,26 @@ DeviceConfig CreateConfigs()
 		{false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
 		{false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_GOLD_VEIN_SUPER}},
 		{false, {FungalShift(SS_FLASK, SD_CHEESE_STATIC, 0, 4), FungalShift(), FungalShift(), FungalShift()}},
-		{false, {{PERK_ANGRY_GHOST, false, 0, 3}}},
+		{true, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EDIT_WANDS_EVERYWHERE, false, 0, 3}}},
 	};
 
 	size_t freeMem;
 	size_t totalMem;
 	cudaMemGetInfo(&freeMem, &totalMem);
-	freeMem = (freeMem * 90) / 100;
-	generalCfg.requestedMemory = freeMem;
+	freeMem *= 0.9f;
+	generalCfg.requestedMemory = min(freeMem, generalCfg.requestedMemory);
 
 	printf("memory free: %lli of %lli bytes\n", freeMem, totalMem);
 
+#ifdef DO_WORLDGEN
 	size_t minMemoryPerThread = memSizes.outputSize * 2 + memSizes.mapDataSize + memSizes.miscMemSize + memSizes.visitedMemSize;
 	int numThreads = freeMem / minMemoryPerThread;
 	int numBlocks = numThreads / BLOCKSIZE;
 	int numBlocksRounded = numBlocks - numBlocks % 8;
 	printf("creating %i thread blocks\n", numBlocksRounded);
+#else
+	int numBlocksRounded = NUMBLOCKS;
+#endif
 
 	return { numBlocksRounded, BLOCKSIZE, memSizes, generalCfg, precheckCfg, mapCfg, spawnableCfg, filterCfg, fileName };
 }
@@ -321,8 +325,8 @@ AllPointers AllocateMemory(DeviceConfig config)
 	cudaSetDeviceFlags(cudaDeviceMapHost);
 
 	size_t outputSize = config.NumBlocks * config.BlockSize * config.memSizes.outputSize;
-#ifdef DO_WORLDGEN
 	size_t tileDataSize = 3 * config.mapCfg.tiles_w * config.mapCfg.tiles_h;
+#ifdef DO_WORLDGEN
 	size_t mapDataSize = config.NumBlocks * config.BlockSize * config.memSizes.mapDataSize;
 	size_t miscMemSize = config.NumBlocks * config.BlockSize * config.memSizes.miscMemSize;
 	size_t visitedMemSize = config.NumBlocks * config.BlockSize * config.memSizes.visitedMemSize;
@@ -483,7 +487,7 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 			int sCount = readInt(output, memOffset);
 			//if (seed == 0 || sCount == 0) continue;
 			_itoa_offset(seed, 10, buffer, bufOffset);
-			_putstr_offset(": ", buffer, bufOffset);
+			/*_putstr_offset(": ", buffer, bufOffset);
 
 			for (int i = 0; i < sCount; i++)
 			{
@@ -499,11 +503,11 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 				buffer[bufOffset++] = ')';
 				if(i < sCount - 1)
 					buffer[bufOffset++] = ' ';
-			}
+			}*/
 			buffer[bufOffset++] = '\n';
 			buffer[bufOffset++] = '\0';
 			fprintf(outputFile, "%s", buffer);
-			printf("%s", buffer);
+			//printf("%s", buffer);
 		}
 	}
 }
