@@ -2,7 +2,9 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "datatypes.h"
+
+#include "../structs/primitives.h"
+
 #include "worldgen_helpers.h"
 
 /*
@@ -101,10 +103,6 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 
 	while (stackSize > 0 && pathFound != 1)
 	{
-		//if (stackSize >= map_w + map_h) {
-		//	printf("Blew up stack!");
-		//	return false;
-		//}
 		IntPair n = stackMem[--stackSize];
 		//if((n.x + n.y) % 2 == 0) 
 			setPixelColor(map, rmw, n.x, n.y, COLOR_PURPLE);
@@ -119,7 +117,6 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 			tryNext(n.x, n.y + 1, map, stackMem, stackSize, visited, rmw, rmh);
 		}
 	}
-	//free(stackMem);
 	return pathFound;
 }
 

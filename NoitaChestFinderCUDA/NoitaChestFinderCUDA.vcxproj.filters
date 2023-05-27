@@ -11,13 +11,7 @@
     <ClInclude Include="data\coalhax.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="misc\datatypes.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="data\fungal.h">
-      <Filter>data</Filter>
-    </ClInclude>
-    <ClInclude Include="data\materials.h">
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="data\modifiers.h">
@@ -54,9 +48,6 @@
       <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="WorldgenSearch.h" />
-    <ClInclude Include="data\items.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="data\potions.h">
       <Filter>data</Filter>
     </ClInclude>
@@ -69,6 +60,32 @@
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="defines.h" />
+    <ClInclude Include="Output.h" />
+    <ClInclude Include="Configuration.h" />
+    <ClInclude Include="data\temples.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="structs\filterStructs.h">
+      <Filter>structs</Filter>
+    </ClInclude>
+    <ClInclude Include="structs\primitives.h">
+      <Filter>structs</Filter>
+    </ClInclude>
+    <ClInclude Include="structs\spawnableStructs.h">
+      <Filter>structs</Filter>
+    </ClInclude>
+    <ClInclude Include="structs\staticPrecheckStructs.h">
+      <Filter>structs</Filter>
+    </ClInclude>
+    <ClInclude Include="structs\enums.h">
+      <Filter>structs</Filter>
+    </ClInclude>
+    <ClInclude Include="data\uiNames.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="misc\memory.h">
+      <Filter>misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">
@@ -76,6 +93,9 @@
     </Filter>
     <Filter Include="misc">
       <UniqueIdentifier>{d214c577-367d-405c-9fc8-9fdc8f24932b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="structs">
+      <UniqueIdentifier>{2eec412a-a9ca-4218-8bb0-35b276204df8}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

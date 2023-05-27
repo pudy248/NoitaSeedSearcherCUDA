@@ -3,16 +3,9 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "../misc/datatypes.h"
-
-struct wandLevel {
-	float prob;
-	Item id;
-};
-struct BiomeWands {
-	int count;
-	wandLevel levels[6];
-};
+#include "../structs/primitives.h"
+#include "../structs/enums.h"
+#include "../structs/spawnableStructs.h"
 
 __device__ const static BiomeWands wandLevels[] = {
 { //coalmine
@@ -155,7 +148,6 @@ __device__ bool wandCheck_coalmine(NollaPRNG& random, int x, int y)
 	r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
 	return r > 0.755;
 }
-
 __device__ bool wandCheck_coalminealt(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x, y, 0, 1);
@@ -163,54 +155,47 @@ __device__ bool wandCheck_coalminealt(NollaPRNG& random, int x, int y)
 	r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
 	return r > 0.725;
 }
-
 __device__ bool wandCheck_excavationsite(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
 	return r > 0.725;
 }
-
 __device__ bool wandCheck_fungicave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.06;
 }
-
 __device__ bool wandCheck_snowcave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.45;
 }
-
 __device__ bool wandCheck_snowcastle(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.2;
 }
-
 __device__ bool wandCheck_rainforest(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.27;
 }
-
 __device__ bool wandCheck_vault(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.93;
 }
-
 __device__ bool wandCheck_crypt(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.38;
 }
-
 __device__ bool wandCheck_sandcave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.94;
 }
+
 __device__ bool(*wandChecks[])(NollaPRNG&, int, int) = {
 	wandCheck_coalmine,
 	wandCheck_coalminealt,

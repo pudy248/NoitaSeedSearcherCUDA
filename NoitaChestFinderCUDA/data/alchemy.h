@@ -2,55 +2,10 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "materials.h"
-#include "../misc/datatypes.h"
 
-enum AlchemyOrdering
-{
-	UNORDERED,
-	ONLY_CONSUMED,
-	STRICT_ORDERED
-};
+#include "../structs/enums.h"
 
-struct AlchemyRecipe {
-	Material mats[4];
-
-	__host__ __device__ AlchemyRecipe() {}
-	__host__ __device__ AlchemyRecipe(Material mat1, Material mat2, Material mat3) {
-		mats[0] = mat1;
-		mats[1] = mat2;
-		mats[2] = mat3;
-	}
-
-	__host__ __device__ static bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered) {
-		if (ordered == STRICT_ORDERED)
-		{
-			bool passed1 = reference.mats[0] == MATERIAL_NONE || reference.mats[0] == test.mats[0];
-			bool passed2 = reference.mats[1] == MATERIAL_NONE || reference.mats[1] == test.mats[1];
-			bool passed3 = reference.mats[2] == MATERIAL_NONE || reference.mats[2] == test.mats[2];
-
-			return passed1 && passed2 && passed3;
-		}
-		else if (ordered == ONLY_CONSUMED)
-		{
-			bool passed1 = reference.mats[0] == MATERIAL_NONE || (reference.mats[0] == test.mats[0] || reference.mats[0] == test.mats[2]);
-			bool passed2 = reference.mats[1] == MATERIAL_NONE || (reference.mats[1] == test.mats[1]);
-			bool passed3 = reference.mats[2] == MATERIAL_NONE || (reference.mats[2] == test.mats[0] || reference.mats[2] == test.mats[2]);
-
-			return passed1 && passed2 && passed3;
-		}
-		else
-		{
-			bool passed1 = reference.mats[0] == MATERIAL_NONE || (reference.mats[0] == test.mats[0] || reference.mats[0] == test.mats[1] || reference.mats[0] == test.mats[2]);
-			bool passed2 = reference.mats[1] == MATERIAL_NONE || (reference.mats[1] == test.mats[0] || reference.mats[1] == test.mats[1] || reference.mats[1] == test.mats[2]);
-			bool passed3 = reference.mats[2] == MATERIAL_NONE || (reference.mats[2] == test.mats[0] || reference.mats[2] == test.mats[1] || reference.mats[2] == test.mats[2]);
-
-			return passed1 && passed2 && passed3;
-		}
-	}
-};
-
-#define alchemyLiquidCount 30
+constexpr int alchemyLiquidCount = 30;
 __device__ const Material alchemyLiquids[] = {
 	Material::ACID,
 	Material::ALCOHOL,
@@ -84,7 +39,7 @@ __device__ const Material alchemyLiquids[] = {
 	Material::MAGIC_LIQUID_RANDOM_POLYMORPH
 };
 
-#define alchemySolidCount 18
+constexpr int alchemySolidCount = 18;
 __device__ const Material alchemySolids[] = {
 	Material::BONE,
 	Material::BRASS,
@@ -105,55 +60,3 @@ __device__ const Material alchemySolids[] = {
 	Material::WAX,
 	Material::HONEY
 };
-
-__device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint worldSeed)
-{
-	AlchemyRecipe result;
-	int counter = 0;
-	int failed = 0;
-	while (counter < 3 && failed < 99999)
-	{
-		int r = (int)(prng.Next() * alchemyLiquidCount);
-		Material picked = alchemyLiquids[r];
-		bool duplicate = false;
-		for (int i = 0; i < counter; i++)
-		{
-			if (picked == result.mats[i]) duplicate = true;
-		}
-		if (duplicate) failed++;
-		else
-		{
-			result.mats[counter++] = picked;
-		}
-	}
-	failed = 0;
-	while (counter < 4 && failed < 99999)
-	{
-		int r = (int)(prng.Next() * alchemySolidCount);
-		Material picked = alchemySolids[r];
-		bool duplicate = false;
-		for (int i = 0; i < counter; i++)
-		{
-			if (picked == result.mats[i]) duplicate = true;
-		}
-		if (duplicate) failed++;
-		else
-		{
-			result.mats[counter++] = picked;
-		}
-	}
-
-	NollaPRNG prng2((worldSeed >> 1) + 12534);
-	prng2.Next();
-	for (int i = 3; i >= 0; i--)
-	{
-		int r = (int)(prng2.Next() * (i + 1));
-		Material temp = result.mats[i];
-		result.mats[i] = result.mats[r];
-		result.mats[r] = temp;
-	}
-
-	prng.Next();
-	prng.Next();
-	return result;
-}

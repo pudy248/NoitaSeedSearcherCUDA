@@ -3,82 +3,16 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include <cmath>
+#include "../structs/primitives.h"
+#include "../structs/enums.h"
+#include "../structs/spawnableStructs.h"
+
+#include "../data/spells.h"
 #include "../data/wand_sprites.h"
 
 #include "noita_random.h"
-#include "../data/spells.h"
-#include "../data/items.h"
 
-enum WandStat
-{
-	RELOAD,
-	CAST_DELAY,
-	SPREAD,
-	SPEED_MULT,
-	CAPACITY,
-	MULTICAST,
-	SHUFFLE
-};
-
-#pragma pack(push, 1)
-struct LabelledSpell
-{
-	SpawnableMetadata d;
-	Spell s;
-};
-#pragma pack(pop)
-
-struct Wand
-{
-	int level;
-	bool isBetter;
-	float cost;
-
-	float prob_unshuffle;
-	float prob_draw_many;
-	bool force_unshuffle;
-	bool is_rare;
-
-	float capacity;
-	int multicast;
-	int mana;
-	int regen;
-	int delay;
-	int reload;
-	float speed;
-	int spread;
-	bool shuffle;
-	byte spellCount;
-	LabelledSpell alwaysCast;
-	LabelledSpell spells[67];
-};
-
-//DON'T REARRANGE CONTENTS! THE ORDER IS HARDCODED
-#pragma pack(push, 1)
-struct WandData
-{
-	float capacity;
-	int multicast;
-	int mana;
-	int regen;
-	int delay;
-	int reload;
-	float speed;
-	int spread;
-	bool shuffle;
-	byte spellCount;
-	LabelledSpell alwaysCast;
-	LabelledSpell spells;
-};
-#pragma pack(pop)
-
-__device__ WandData readMisalignedWand(WandData* wPtr)
-{
-	WandData w = {};
-	memcpy(&w, wPtr, 37);
-	return w;
-}
+#include <cmath>
 
 __device__ int GetBestSprite(NollaPRNG* rnd, Wand w)
 {
@@ -252,7 +186,7 @@ __device__ Spell GetRandomAction(uint seed, double x, double y, int level, int o
 	}
 	return tierProbs[low].s;
 }
-__device__ Spell GetRandomActionWithType(uint seed, double x, double y, int level, ACTION_TYPE type, int offset)
+__device__ Spell GetRandomActionWithType(uint seed, double x, double y, int level, ActionType type, int offset)
 {
 	NollaPRNG random = NollaPRNG((uint)(seed + offset));
 	random.SetRandomSeed(x, y);

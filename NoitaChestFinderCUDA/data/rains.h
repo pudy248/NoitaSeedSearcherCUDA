@@ -2,9 +2,10 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "materials.h"
 
-#define rainCount 4
+#include "../structs/enums.h"
+
+constexpr int rainCount = 4;
 
 __device__ const Material rainMaterials[] = {
 	Material::WATER,
@@ -13,7 +14,7 @@ __device__ const Material rainMaterials[] = {
 	Material::SLIME,
 };
 
-#define rainProbSum 0.0513f
+constexpr float rainProbSum = 0.0513f;
 __device__ const float rainProbs[] = {
 	0.05f,
 	0.001f,

@@ -3,35 +3,9 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "misc/datatypes.h"
-
-#include <cmath>
-
-struct WandSprite
-{
-	const char* name;
-	int fileNum;
-	sbyte grip_x;
-	sbyte grip_y;
-	sbyte tip_x;
-	sbyte tip_y;
-	sbyte fire_rate_wait;
-	sbyte actions_per_round;
-	bool shuffle_deck_when_empty;
-	sbyte deck_capacity;
-	sbyte spread_degrees;
-	sbyte reload_time;
-};
-
-struct WandSpaceDat
-{
-	float fire_rate_wait;
-	float actions_per_round;
-	bool shuffle_deck_when_empty;
-	float deck_capacity;
-	float spread_degrees;
-	float reload_time;
-};
+#include "../structs/primitives.h"
+#include "../structs/enums.h"
+#include "../structs/spawnableStructs.h"
 
 __device__ const static WandSprite wandSprites[] = {
 {"Spread staff",0,2,2,21,5,4,1,true,5,1,1},

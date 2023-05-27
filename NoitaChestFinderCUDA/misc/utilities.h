@@ -2,25 +2,27 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "datatypes.h"
+
+#include "../structs/primitives.h"
+
 #include "noita_random.h"
 
-__device__ float random_next(float min, float max, NollaPRNG* random, IntPair* rnd)
+__device__ float random_next(float min, float max, NollaPRNG& random, IntPair& rnd)
 {
-	random->SetRandomSeedInt(rnd->x, rnd->y);
-	float result = min + ((max - min) * random->Next());
-	rnd->y += 1;
+	random.SetRandomSeedInt(rnd.x, rnd.y);
+	float result = min + ((max - min) * random.Next());
+	rnd.y += 1;
 	return result;
 }
-__device__ int random_nexti(float min, float max, NollaPRNG* random, IntPair* rnd)
+__device__ int random_nexti(float min, float max, NollaPRNG& random, IntPair& rnd)
 {
-	random->SetRandomSeedInt(rnd->x, rnd->y);
-	int result = random->Random(min, max);
-	rnd->y += 1;
+	random.SetRandomSeedInt(rnd.x, rnd.y);
+	int result = random.Random(min, max);
+	rnd.y += 1;
 	return result;
 }
 
-__device__ int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG* random, IntPair* rnd)
+__device__ int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, IntPair& rnd)
 {
 	for (int i = length - 1; i > 0; i--)
 	{
@@ -29,7 +31,7 @@ __device__ int pick_random_from_table_backwards(const float* probs, int length, 
 	return 0;
 }
 
-__device__ int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG* random, IntPair* rnd)
+__device__ int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, IntPair& rnd)
 {
 	float val = random_next(0, sum, random, rnd);
 	for (int i = 0; i < length; i++)
@@ -45,11 +47,10 @@ __device__ uint createRGB(const byte r, const byte g, const byte b)
 	return (r << 16) | (g << 8) | b;
 }
 
-
-__device__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
+__device__ __host__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
 {
-	int gx = (int)(((x - 35) * 512) / 10) * 10 + px - 15;
-	int gy = (int)(((y - 14) * 512) / 10) * 10 + py - 13;
+	int gx = ((512 * x) / 10 - (512 * 35) / 10) * 10 + px - 5;
+	int gy = ((512 * y) / 10 - (512 * 14) / 10) * 10 + py - 13;
 	return { gx, gy };
 }
 

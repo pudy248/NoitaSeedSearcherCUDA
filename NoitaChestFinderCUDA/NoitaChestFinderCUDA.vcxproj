@@ -90,16 +90,23 @@
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="data\items.h" />
+    <ClInclude Include="Configuration.h" />
     <ClInclude Include="data\temples.h" />
+    <ClInclude Include="data\uiNames.h" />
     <ClInclude Include="data\wand_sprites.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="Filters.h" />
+    <ClInclude Include="misc\memory.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
     <ClInclude Include="Output.h" />
     <ClInclude Include="Precheckers.h" />
     <ClInclude Include="misc\wandgen.h" />
+    <ClInclude Include="structs\enums.h" />
+    <ClInclude Include="structs\filterStructs.h" />
+    <ClInclude Include="structs\primitives.h" />
+    <ClInclude Include="structs\spawnableStructs.h" />
+    <ClInclude Include="structs\staticPrecheckStructs.h" />
     <ClInclude Include="Worldgen.h" />
     <ClInclude Include="data\alchemy.h" />
     <ClInclude Include="data\coalhax.h" />
@@ -107,9 +114,7 @@
     <ClInclude Include="data\perks.h" />
     <ClInclude Include="data\spells.h" />
     <ClInclude Include="data\wand_levels.h" />
-    <ClInclude Include="data\materials.h" />
     <ClInclude Include="data\fungal.h" />
-    <ClInclude Include="misc\datatypes.h" />
     <ClInclude Include="misc\error.h" />
     <ClInclude Include="misc\stb_hbwang.h" />
     <ClInclude Include="misc\noita_random.h" />

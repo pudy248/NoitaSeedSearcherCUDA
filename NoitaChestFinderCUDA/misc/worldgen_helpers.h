@@ -1,9 +1,11 @@
 #pragma once
 
+#include "../structs/primitives.h"
+
 #include "../data/coalhax.h"
+
 #include "noita_random.h"
 #include "stb_hbwang.h"
-#include "datatypes.h"
 
 constexpr uint COLOR_PURPLE = 0x7f007fU;
 constexpr uint COLOR_BLACK = 0x000000U;
@@ -69,20 +71,18 @@ __device__ void doCoalMineHax(byte* map, uint map_w, uint map_h)
 			uint pix = createRGB(coalmine_overlay[overlayPos], coalmine_overlay[overlayPos + 1], coalmine_overlay[overlayPos + 2]);
 			if (pix == 0x4000)
 			{
-				// pudy248 note: is not actually air, this is the main rock portion of the overlay
 				map[i] = 0xFF;
 				map[i + 1] = 0xFF;
 				map[i + 2] = 0xFF;
 			}
 			if (pix == 0x0040)
-			{ // blue. Looks like air?
+			{
 				map[i] = 0x00;
 				map[i + 1] = 0x00;
 				map[i + 2] = 0x00;
 			}
 			if (pix == 0xFEFEFE)
-			{ // white. Stairs. rock_static_intro
-			   // In the debug it's not shown, but used in path finding.
+			{
 				map[i] = 0x0a;
 				map[i + 1] = 0x33;
 				map[i + 2] = 0x44;

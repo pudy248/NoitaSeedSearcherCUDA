@@ -1,6 +1,11 @@
 #pragma once
 
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
 #include "noita_random.h"
+#include "memory.h"
+
 #include <iostream>
 
 /* stbhw - v0.7 -  http://nothings.org/gamedev/herringbone
@@ -15,12 +20,12 @@ publish, and distribute this file as you see fit.
 
 #define INCLUDE_STB_HWANG_H
 
-typedef struct
+struct stbhw_tile
 {
 	signed char a, b, c, d, e, f;
 
-	unsigned char pixels[1];
-} stbhw_tile;
+	byte pixels[1];
+};
 
 struct stbhw_tileset
 {
@@ -33,9 +38,7 @@ struct stbhw_tileset
 	int num_v_tiles, max_v_tiles;
 };
 
-__device__ stbhw_tileset dTileSet;
-
-typedef struct
+struct stbhw_config
 {
 	int is_corner;      // using corner colors or edge colors?
 	int short_side_len; // rectangles is 2n x n, n = short_side_len
@@ -48,21 +51,7 @@ typedef struct
 	// if corner_type_color_template[s][t] is non-zero, then any
 	// corner of type s generated as color t will get a little
 	// corner sample markup in the template image data
-
-} stbhw_config;
-
-__device__ int stbhw_build_tileset_from_image(unsigned char* pixels, int stride_in_bytes, int w, int h);
-
-__device__ void stbhw_free_tileset();
-
-__device__ int stbhw_generate_image(unsigned char* pixels, int stride_in_bytes, int w, int h, uint(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng);
-
-__device__ void stbhw_get_template_size(stbhw_config* c, int* w, int* h);
-
-__device__ int stbhw_make_template(stbhw_config* c, unsigned char* data, int w, int h, int stride_in_bytes);
-
-#include <string.h> // memcpy
-#include <stdlib.h> // malloc
+};
 
 // map size
 #ifndef STB_HBWANG_MAX_X
@@ -76,16 +65,16 @@ __device__ int stbhw_make_template(stbhw_config* c, unsigned char* data, int w, 
 typedef struct stbhw__process
 {
 	stbhw_config* c;
-	unsigned char* data;
+	byte* data;
 	int stride, w, h;
 } stbhw__process;
 
 __device__
-static void stbhw__parse_h_rect(stbhw__process* p, int xpos, int ypos,
+static void stbhw__parse_h_rect(stbhw__process* p, stbhw_tileset* tileSet, MemoryArena& arena, int xpos, int ypos,
 	int a, int b, int c, int d, int e, int f)
 {
 	int len = p->c->short_side_len;
-	stbhw_tile* h = (stbhw_tile*)malloc(sizeof(*h) - 1 + 3 * (len * 2) * len);
+	stbhw_tile* h = (stbhw_tile*)ArenaAlloc(arena, sizeof(*h) - 1 + 3 * (len * 2) * len);
 	int i, j;
 	++xpos;
 	++ypos;
@@ -93,15 +82,15 @@ static void stbhw__parse_h_rect(stbhw__process* p, int xpos, int ypos,
 	for (j = 0; j < len; ++j)
 		for (i = 0; i < len * 2; ++i)
 			memcpy(h->pixels + j * (3 * len * 2) + i * 3, p->data + (ypos + j) * p->stride + (xpos + i) * 3, 3);
-	dTileSet.h_tiles[dTileSet.num_h_tiles++] = h;
+	tileSet->h_tiles[tileSet->num_h_tiles++] = h;
 }
 
 __device__
-static void stbhw__parse_v_rect(stbhw__process* p, int xpos, int ypos,
+static void stbhw__parse_v_rect(stbhw__process* p, stbhw_tileset* tileSet, MemoryArena& arena, int xpos, int ypos,
 	int a, int b, int c, int d, int e, int f)
 {
 	int len = p->c->short_side_len;
-	stbhw_tile* h = (stbhw_tile*)malloc(sizeof(*h) - 1 + 3 * (len * 2) * len);
+	stbhw_tile* h = (stbhw_tile*)ArenaAlloc(arena, sizeof(*h) - 1 + 3 * (len * 2) * len);
 	int i, j;
 	++xpos;
 	++ypos;
@@ -109,11 +98,11 @@ static void stbhw__parse_v_rect(stbhw__process* p, int xpos, int ypos,
 	for (j = 0; j < len * 2; ++j)
 		for (i = 0; i < len; ++i)
 			memcpy(h->pixels + j * (3 * len) + i * 3, p->data + (ypos + j) * p->stride + (xpos + i) * 3, 3);
-	dTileSet.v_tiles[dTileSet.num_v_tiles++] = h;
+	tileSet->v_tiles[tileSet->num_v_tiles++] = h;
 }
 
 __device__
-static void stbhw__process_h_row(stbhw__process* p,
+static void stbhw__process_h_row(stbhw__process* p, stbhw_tileset* tileSet, MemoryArena& arena,
 	int xpos, int ypos,
 	int a0, int a1,
 	int b0, int b1,
@@ -133,13 +122,13 @@ static void stbhw__process_h_row(stbhw__process* p,
 						for (b = b0; b <= b1; ++b)
 							for (a = a0; a <= a1; ++a)
 							{
-								stbhw__parse_h_rect(p, xpos, ypos, a, b, c, d, e, f);
+								stbhw__parse_h_rect(p, tileSet, arena, xpos, ypos, a, b, c, d, e, f);
 								xpos += 2 * p->c->short_side_len + 3;
 							}
 }
 
 __device__
-static void stbhw__process_v_row(stbhw__process* p,
+static void stbhw__process_v_row(stbhw__process* p, stbhw_tileset* tileSet, MemoryArena& arena,
 	int xpos, int ypos,
 	int a0, int a1,
 	int b0, int b1,
@@ -159,7 +148,7 @@ static void stbhw__process_v_row(stbhw__process* p,
 						for (b = b0; b <= b1; ++b)
 							for (a = a0; a <= a1; ++a)
 							{
-								stbhw__parse_v_rect(p, xpos, ypos, a, b, c, d, e, f);
+								stbhw__parse_v_rect(p, tileSet, arena, xpos, ypos, a, b, c, d, e, f);
 								xpos += p->c->short_side_len + 3;
 							}
 }
@@ -226,7 +215,7 @@ __device__ void stbhw_get_template_size(stbhw_config* c, int* w, int* h)
 }
 
 __device__
-static int stbhw__process_template(stbhw__process* p)
+static int stbhw__process_template(stbhw__process* p, stbhw_tileset* tileSet, MemoryArena& arena)
 {
 	int i, j, k, q, ypos;
 	int size_x, size_y;
@@ -245,7 +234,7 @@ static int stbhw__process_template(stbhw__process* p)
 				{
 					for (q = 0; q < c->num_vary_y; ++q)
 					{
-						stbhw__process_h_row(p, 0, ypos,
+						stbhw__process_h_row(p, tileSet, arena, 0, ypos,
 							0, c->num_color[1] - 1, 0, c->num_color[2] - 1, 0, c->num_color[3] - 1,
 							i, i, j, j, k, k,
 							c->num_vary_x);
@@ -263,7 +252,7 @@ static int stbhw__process_template(stbhw__process* p)
 				{
 					for (q = 0; q < c->num_vary_x; ++q)
 					{
-						stbhw__process_v_row(p, 0, ypos,
+						stbhw__process_v_row(p, tileSet, arena, 0, ypos,
 							0, c->num_color[0] - 1, 0, c->num_color[3] - 1, 0, c->num_color[2] - 1,
 							i, i, j, j, k, k,
 							c->num_vary_y);
@@ -284,7 +273,7 @@ static int stbhw__process_template(stbhw__process* p)
 				{
 					for (q = 0; q < c->num_vary_y; ++q)
 					{
-						stbhw__process_h_row(p, 0, ypos,
+						stbhw__process_h_row(p, tileSet, arena, 0, ypos,
 							0, c->num_color[2] - 1, k, k,
 							0, c->num_color[1] - 1, j, j,
 							0, c->num_color[0] - 1, i, i,
@@ -303,7 +292,7 @@ static int stbhw__process_template(stbhw__process* p)
 				{
 					for (q = 0; q < c->num_vary_x; ++q)
 					{
-						stbhw__process_v_row(p, 0, ypos,
+						stbhw__process_v_row(p, tileSet, arena, 0, ypos,
 							0, c->num_color[0] - 1, i, i,
 							0, c->num_color[1] - 1, j, j,
 							0, c->num_color[5] - 1, k, k,
@@ -318,13 +307,13 @@ static int stbhw__process_template(stbhw__process* p)
 }
 
 __device__
-static void stbhw__draw_pixel(unsigned char* output, int stride, int x, int y, unsigned char c[3])
+static void stbhw__draw_pixel(byte* output, int stride, int x, int y, byte c[3])
 {
 	memcpy(output + y * stride + x * 3, c, 3);
 }
 
 __device__
-static void stbhw__draw_h_tile(unsigned char* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
+static void stbhw__draw_h_tile(byte* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
 {
 	int i, j;
 	for (j = 0; j < sz; ++j)
@@ -335,7 +324,7 @@ static void stbhw__draw_h_tile(unsigned char* output, int stride, int xmax, int 
 }
 
 __device__
-static void stbhw__draw_v_tile(unsigned char* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
+static void stbhw__draw_v_tile(byte* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
 {
 	int i, j;
 	for (j = 0; j < sz * 2; ++j)
@@ -411,13 +400,13 @@ static int stbhw__change_color(int old_color, int num_options, uint(*getRandom)(
 // generate a map that is w * h pixels (3-bytes each)
 // returns 1 on success, 0 on error
 __device__
-int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
+int stbhw_generate_image(byte* output, stbhw_tileset* tileSet, int stride, int w, int h, uint(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
 {
 	signed char c_color[STB_HBWANG_MAX_Y + 6][STB_HBWANG_MAX_X + 6];
 	signed char v_color[STB_HBWANG_MAX_Y + 6][STB_HBWANG_MAX_X + 5];
 	signed char h_color[STB_HBWANG_MAX_Y + 5][STB_HBWANG_MAX_X + 6];
 
-	int sidelen = dTileSet.short_side_len;
+	int sidelen = tileSet->short_side_len;
 	int xmax = (w / sidelen) + 6;
 	int ymax = (h / sidelen) + 6;
 	if (xmax > STB_HBWANG_MAX_X + 6 || ymax > STB_HBWANG_MAX_Y + 6)
@@ -425,10 +414,10 @@ int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*
 		return 0;
 	}
 
-	if (dTileSet.is_corner)
+	if (tileSet->is_corner)
 	{
 		int i, j, ypos;
-		int* cc = dTileSet.num_color;
+		int* cc = tileSet->num_color;
 
 		for (j = 0; j < ymax; ++j)
 		{
@@ -486,7 +475,7 @@ int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*
 				if (xpos + sidelen * 2 >= 0 && ypos >= 0)
 				{
 					stbhw_tile* t = stbhw__choose_tile(
-						dTileSet.h_tiles, dTileSet.num_h_tiles,
+						tileSet->h_tiles, tileSet->num_h_tiles,
 						&c_color[j + 2][i + 2], &c_color[j + 2][i + 3], &c_color[j + 2][i + 4],
 						&c_color[j + 3][i + 2], &c_color[j + 3][i + 3], &c_color[j + 3][i + 4],
 						getRandom, prng);
@@ -501,7 +490,7 @@ int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*
 				if (xpos < w)
 				{
 					stbhw_tile* t = stbhw__choose_tile(
-						dTileSet.v_tiles, dTileSet.num_v_tiles,
+						tileSet->v_tiles, tileSet->num_v_tiles,
 						&c_color[j + 2][i + 5], &c_color[j + 3][i + 5], &c_color[j + 4][i + 5],
 						&c_color[j + 2][i + 6], &c_color[j + 3][i + 6], &c_color[j + 4][i + 6],
 						getRandom, prng);
@@ -544,7 +533,7 @@ int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*
 				if (xpos + sidelen * 2 >= 0 && ypos >= 0)
 				{
 					stbhw_tile* t = stbhw__choose_tile(
-						dTileSet.h_tiles, dTileSet.num_h_tiles,
+						tileSet->h_tiles, tileSet->num_h_tiles,
 						&h_color[j + 2][i + 2], &h_color[j + 2][i + 3],
 						&v_color[j + 2][i + 2], &v_color[j + 2][i + 4],
 						&h_color[j + 3][i + 2], &h_color[j + 3][i + 3],
@@ -560,7 +549,7 @@ int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*
 				if (xpos < w)
 				{
 					stbhw_tile* t = stbhw__choose_tile(
-						dTileSet.v_tiles, dTileSet.num_v_tiles,
+						tileSet->v_tiles, tileSet->num_v_tiles,
 						&h_color[j + 2][i + 5],
 						&v_color[j + 2][i + 5], &v_color[j + 2][i + 6],
 						&v_color[j + 3][i + 5], &v_color[j + 3][i + 6],
@@ -578,10 +567,12 @@ int stbhw_generate_image(unsigned char* output, int stride, int w, int h, uint(*
 }
 
 __device__
-int stbhw_build_tileset_from_image(unsigned char* data, int stride, int w, int h)
+int stbhw_build_tileset_from_image(byte* data, MemoryArena& arena, int stride, int w, int h)
 {
+	stbhw_tileset* tileSet = (stbhw_tileset*)ArenaAlloc(arena, sizeof(stbhw_tileset));
+
 	int i, h_count, v_count;
-	unsigned char header[9];
+	byte header[9];
 	stbhw_config c = { 0 };
 	stbhw__process p = { 0 };
 
@@ -624,17 +615,17 @@ int stbhw_build_tileset_from_image(unsigned char* data, int stride, int w, int h
 
 	stbhw__get_template_info(&c, NULL, NULL, &h_count, &v_count);
 
-	dTileSet.is_corner = c.is_corner;
-	dTileSet.short_side_len = c.short_side_len;
-	memcpy(dTileSet.num_color, c.num_color, sizeof(dTileSet.num_color));
+	tileSet->is_corner = c.is_corner;
+	tileSet->short_side_len = c.short_side_len;
+	memcpy(tileSet->num_color, c.num_color, sizeof(tileSet->num_color));
 
-	dTileSet.max_h_tiles = h_count;
-	dTileSet.max_v_tiles = v_count;
+	tileSet->max_h_tiles = h_count;
+	tileSet->max_v_tiles = v_count;
 
-	dTileSet.num_h_tiles = dTileSet.num_v_tiles = 0;
+	tileSet->num_h_tiles = tileSet->num_v_tiles = 0;
 
-	dTileSet.h_tiles = (stbhw_tile**)malloc(sizeof(*dTileSet.h_tiles) * h_count);
-	dTileSet.v_tiles = (stbhw_tile**)malloc(sizeof(*dTileSet.v_tiles) * v_count);
+	tileSet->h_tiles = (stbhw_tile**)ArenaAlloc(arena, sizeof(*tileSet->h_tiles) * h_count);
+	tileSet->v_tiles = (stbhw_tile**)ArenaAlloc(arena, sizeof(*tileSet->v_tiles) * v_count);
 
 	p.data = data;
 	p.stride = stride;
@@ -643,9 +634,10 @@ int stbhw_build_tileset_from_image(unsigned char* data, int stride, int w, int h
 	p.c = &c;
 
 	// load all the tiles out of the image
-	return stbhw__process_template(&p);
+	return stbhw__process_template(&p, tileSet, arena);
 }
 
+/*
 __device__
 void stbhw_free_tileset()
 {
@@ -660,4 +652,4 @@ void stbhw_free_tileset()
 	dTileSet.v_tiles = NULL;
 	dTileSet.num_h_tiles = dTileSet.max_h_tiles = 0;
 	dTileSet.num_v_tiles = dTileSet.max_v_tiles = 0;
-}
+}*/

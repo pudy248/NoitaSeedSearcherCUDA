@@ -1,59 +1,27 @@
 #pragma once
 
-#include "defines.h"
-
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "misc/noita_random.h"
-#include "misc/datatypes.h"
-#include "misc/utilities.h"
-#include "data/items.h"
+#include "structs/primitives.h"
+#include "structs/enums.h"
+#include "structs/spawnableStructs.h"
+#include "structs/staticPrecheckStructs.h"
+
 #include "data/potions.h"
 #include "data/spells.h"
 #include "data/wand_levels.h"
 
-#include "Worldgen.h"
+#include "defines.h"
+#include "misc/noita_random.h"
+#include "misc/utilities.h"
 #include "misc/wandgen.h"
 
-#include <iostream>
+#include "Configuration.h"
 
-struct LootConfig
+__device__ void createPotion(double x, double y, Item type, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset)
 {
-	int pwCenter;
-	int pwWidth;
-
-	bool searchChests;
-	bool searchPedestals;
-	bool searchWandAltars;
-	bool searchPixelScenes;
-
-	bool greedCurse;
-	bool checkPotions;
-	bool checkWands;
-
-	int biomeIdx;
-
-	bool checkCards;
-	LootConfig(int _pwCenter, int _pwWidth, bool _chests, bool _pedestals, bool _wandAltars, bool _pixelScenes, bool _greed, bool _potions, bool _wands, int _biomeIdx, bool _spells)
-	{
-		pwCenter = _pwCenter;
-		pwWidth = _pwWidth;
-		searchChests = _chests;
-		searchPedestals = _pedestals;
-		searchWandAltars = _wandAltars;
-		searchPixelScenes = _pixelScenes;
-		greedCurse = _greed;
-		checkPotions = _potions;
-		checkWands = _wands;
-		biomeIdx = _biomeIdx;
-		checkCards = _spells;
-	}
-};
-
-__device__ void createPotion(double x, double y, Item type, uint seed, LootConfig cfg, byte* bytes, int& offset)
-{
-	if (!cfg.checkPotions) writeByte(bytes, offset, type);
+	if (!sCfg.genPotions) writeByte(bytes, offset, type);
 	else
 	{
 		writeByte(bytes, offset, DATA_MATERIAL);
@@ -88,18 +56,17 @@ __device__ void createPotion(double x, double y, Item type, uint seed, LootConfi
 	}
 }
 
-__device__ void createWand(double x, double y, Item type, bool addOffset, uint seed, LootConfig cfg, byte* bytes, int& offset)
+__device__ void createWand(double x, double y, Item type, bool addOffset, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset)
 {
 	writeByte(bytes, offset, type);
+
+	int wandNum = (int)type - (int)WAND_T1;
+	int tier = wandNum / 3;
+	bool nonshuffle = wandNum % 3 == 1;
+	bool better = wandNum % 3 == 2;
+
 #ifdef DO_WANDGEN
-	if (!cfg.checkWands ||
-		type == WAND_T1B ||
-		type == WAND_T2B ||
-		type == WAND_T3B ||
-		type == WAND_T4B ||
-		type == WAND_T5B ||
-		type == WAND_T6B
-		);
+	if (!sCfg.genWands || better) return;
 	else
 	{
 		int rand_x = (int)x;
@@ -111,49 +78,7 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, uint s
 			rand_y += 683;
 		}
 
-		Wand w;
-		if (type == WAND_T6)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, false);
-		else if (type == WAND_T6NS)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 6, true, false);
-		//else if (type == WAND_T6B)
-		//	w = GetWandWithLevel(seed, rand_x, rand_y, 6, false, true);
-		
-		else if (type == WAND_T5)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, false);
-		else if (type == WAND_T5NS)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 5, true, false);
-		//else if (type == WAND_T5B)
-		//	w = GetWandWithLevel(seed, rand_x, rand_y, 5, false, true);
-
-		else if (type == WAND_T4)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, false);
-		else if (type == WAND_T4NS)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 4, true, false);
-		//else if (type == WAND_T4B)
-		//	w = GetWandWithLevel(seed, rand_x, rand_y, 4, false, true);
-
-		else if (type == WAND_T3)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, false);
-		else if (type == WAND_T3NS)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 3, true, false);
-		//else if (type == WAND_T3B)
-		//	w = GetWandWithLevel(seed, rand_x, rand_y, 3, false, true);
-
-		else if (type == WAND_T2)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, false);
-		else if (type == WAND_T2NS)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 2, true, false);
-		//else if (type == WAND_T2B)
-		//	w = GetWandWithLevel(seed, rand_x, rand_y, 2, false, true);
-
-		else if (type == WAND_T1)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, false);
-		else if (type == WAND_T1NS)
-			w = GetWandWithLevel(seed, rand_x, rand_y, 1, true, false);
-		//else if (type == WAND_T1B)
-		//	w = GetWandWithLevel(seed, rand_x, rand_y, 1, false, true);
-
+		Wand w = GetWandWithLevel(seed, rand_x, rand_y, tier, nonshuffle, better);
 		writeByte(bytes, offset, DATA_WAND); //-1
 		memcpy(bytes + offset, &w.capacity, 37);
 		offset += 37;
@@ -163,13 +88,13 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, uint s
 #endif
 }
 
-__device__ Spell MakeRandomCard(NollaPRNG* random)
+__device__ Spell MakeRandomCard(NollaPRNG& random)
 {
 	Spell res = SPELL_NONE;
 	char valid = 0;
 	while (valid == 0)
 	{
-		int itemno = random->Random(0, 392);
+		int itemno = random.Random(0, 392);
 		if (spellSpawnableInChests[itemno])
 		{
 			return (Spell)(itemno + 1);
@@ -178,7 +103,7 @@ __device__ Spell MakeRandomCard(NollaPRNG* random)
 	return res;
 }
 
-__device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
+__device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, MapConfig mCfg, SpawnableConfig sCfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
 	writeInt(bytes, offset, x);
@@ -243,13 +168,13 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, 
 		{
 			rnd = random.Random(1, 100);
 			if (rnd <= 94)
-				createPotion(roundRNGPos(x) + 510, y + 683, POTION_NORMAL, worldSeed, cfg, bytes, offset);
+				createPotion(roundRNGPos(x) + 510, y + 683, POTION_NORMAL, worldSeed, mCfg, sCfg, bytes, offset);
 			else if (rnd <= 98) writeByte(bytes, offset, POWDER);
 			else
 			{
 				rnd = random.Random(0, 100);
-				if (rnd <= 98) createPotion(roundRNGPos(x) + 510, y + 683, POTION_SECRET, worldSeed, cfg, bytes, offset);
-				else createPotion(roundRNGPos(x) + 510, y + 683, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes, offset);
+				if (rnd <= 98) createPotion(roundRNGPos(x) + 510, y + 683, POTION_SECRET, worldSeed, mCfg, sCfg, bytes, offset);
+				else createPotion(roundRNGPos(x) + 510, y + 683, POTION_RANDOM_MATERIAL, worldSeed, mCfg, sCfg, bytes, offset);
 			}
 		}
 		else if (rnd <= 54) writeByte(bytes, offset, Item::SPELL_REFRESH);
@@ -283,27 +208,27 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, 
 			for (int i = 0; i < amount; i++)
 			{
 				random.Next();
-				Spell s = MakeRandomCard(&random);
-				if (cfg.checkCards)
+				Spell s = MakeRandomCard(random);
+				if (sCfg.genSpells)
 				{
 					writeByte(bytes, offset, DATA_SPELL);
 					writeShort(bytes, offset, s);
 				}
 			}
-			if (!cfg.checkCards)
+			if (!sCfg.genSpells)
 				writeByte(bytes, offset, RANDOM_SPELL);
 		}
 		else if (rnd <= 84)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) createWand(x, y, WAND_T1, true, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 50) createWand(x, y, WAND_T1NS, true, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 75) createWand(x, y, WAND_T2, true, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 90) createWand(x, y, WAND_T2NS, true, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 96) createWand(x, y, WAND_T3, true, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 98) createWand(x, y, WAND_T3NS, true, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 99)createWand(x, y, WAND_T4, true, worldSeed, cfg, bytes, offset);
-			else createWand(x, y, WAND_T4NS, true, worldSeed, cfg, bytes, offset);
+			if (rnd <= 25) createWand(x, y, WAND_T1, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 50) createWand(x, y, WAND_T1NS, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 75) createWand(x, y, WAND_T2, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 90) createWand(x, y, WAND_T2NS, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 96) createWand(x, y, WAND_T3, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 98) createWand(x, y, WAND_T3NS, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 99)createWand(x, y, WAND_T4, true, worldSeed, mCfg, sCfg, bytes, offset);
+			else createWand(x, y, WAND_T4NS, true, worldSeed, mCfg, sCfg, bytes, offset);
 		}
 		else if (rnd <= 95)
 		{
@@ -322,7 +247,7 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint worldSeed, 
 	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
-__device__ __noinline__ void CheckGreatChestLoot(int x, int y, uint worldSeed, LootConfig cfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
+__device__ __noinline__ void CheckGreatChestLoot(int x, int y, uint worldSeed, MapConfig mCfg, SpawnableConfig sCfg, bool hasMimicSign, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
 	writeInt(bytes, offset, x);
@@ -356,15 +281,15 @@ __device__ __noinline__ void CheckGreatChestLoot(int x, int y, uint worldSeed, L
 			rnd = random.Random(0, 100);
 			if (rnd <= 30)
 			{
-				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes, offset);
-				createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes, offset);
-				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes, offset);
+				createPotion(x, y, POTION_NORMAL, worldSeed, mCfg, sCfg, bytes, offset);
+				createPotion(x, y, POTION_NORMAL, worldSeed, mCfg, sCfg, bytes, offset);
+				createPotion(x, y, POTION_SECRET, worldSeed, mCfg, sCfg, bytes, offset);
 			}
 			else
 			{
-				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes, offset);
-				createPotion(x, y, POTION_SECRET, worldSeed, cfg, bytes, offset);
-				createPotion(x, y, POTION_RANDOM_MATERIAL, worldSeed, cfg, bytes, offset);
+				createPotion(x, y, POTION_SECRET, worldSeed, mCfg, sCfg, bytes, offset);
+				createPotion(x, y, POTION_SECRET, worldSeed, mCfg, sCfg, bytes, offset);
+				createPotion(x, y, POTION_RANDOM_MATERIAL, worldSeed, mCfg, sCfg, bytes, offset);
 			}
 		}
 		else if (rnd <= 33)
@@ -381,14 +306,14 @@ __device__ __noinline__ void CheckGreatChestLoot(int x, int y, uint worldSeed, L
 		else if (rnd <= 39)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) createWand(x, y, WAND_T3, false, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 50) createWand(x, y, WAND_T3NS, false, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 75) createWand(x, y, WAND_T4, false, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 90) createWand(x, y, WAND_T4NS, false, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 96) createWand(x, y, WAND_T5, false, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 98) createWand(x, y, WAND_T5NS, false, worldSeed, cfg, bytes, offset);
-			else if (rnd <= 99)createWand(x, y, WAND_T6, false, worldSeed, cfg, bytes, offset);
-			else createWand(x, y, WAND_T6NS, false, worldSeed, cfg, bytes, offset);
+			if (rnd <= 25) createWand(x, y, WAND_T3, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 50) createWand(x, y, WAND_T3NS, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 75) createWand(x, y, WAND_T4, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 90) createWand(x, y, WAND_T4NS, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 96) createWand(x, y, WAND_T5, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 98) createWand(x, y, WAND_T5NS, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else if (rnd <= 99)createWand(x, y, WAND_T6, false, worldSeed, mCfg, sCfg, bytes, offset);
+			else createWand(x, y, WAND_T6NS, false, worldSeed, mCfg, sCfg, bytes, offset);
 		}
 		else if (rnd <= 60)
 		{
@@ -405,7 +330,7 @@ __device__ __noinline__ void CheckGreatChestLoot(int x, int y, uint worldSeed, L
 	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
-__device__ __noinline__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ __noinline__ void CheckItemPedestalLoot(int x, int y, uint worldSeed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 	sCount++;
 	writeInt(bytes, offset, x);
@@ -420,7 +345,7 @@ __device__ __noinline__ void CheckItemPedestalLoot(int x, int y, uint worldSeed,
 	int rnd = random.Random(1, 91);
 
 	if (rnd <= 65)
-		createPotion(x, y, POTION_NORMAL, worldSeed, cfg, bytes, offset);
+		createPotion(x, y, POTION_NORMAL, worldSeed, mCfg, sCfg, bytes, offset);
 	else if (rnd <= 70)
 		writeByte(bytes, offset, POWDER);
 	else if (rnd <= 71)
@@ -450,7 +375,7 @@ __device__ __noinline__ void CheckItemPedestalLoot(int x, int y, uint worldSeed,
 	writeInt(bytes, countOffset, offset - countOffset - 4);
 }
 
-__device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnHeart(int x, int y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
@@ -469,9 +394,9 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 				hasSign = true;
 			}
 			if (rnd >= 1000)
-				CheckGreatChestLoot(x, y, seed, cfg, hasSign, bytes, offset, sCount);
+				CheckGreatChestLoot(x, y, seed, mCfg, sCfg, hasSign, bytes, offset, sCount);
 			else
-				CheckNormalChestLoot(x, y, seed, cfg, hasSign, bytes, offset, sCount);
+				CheckNormalChestLoot(x, y, seed, mCfg, sCfg, hasSign, bytes, offset, sCount);
 		}
 		else
 		{
@@ -495,29 +420,29 @@ __device__ void spawnHeart(int x, int y, uint seed, LootConfig cfg, byte* bytes,
 	}
 }
 
-__device__ void spawnChest(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnChest(int x, int y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
-	int super_chest_spawn_rate = cfg.greedCurse ? 100 : 2000;
+	int super_chest_spawn_rate = sCfg.greedCurse ? 100 : 2000;
 	int rnd = random.Random(1, super_chest_spawn_rate);
 
 	if (rnd >= super_chest_spawn_rate - 1)
-		CheckGreatChestLoot(x, y, seed, cfg, false, bytes, offset, sCount);
+		CheckGreatChestLoot(x, y, seed, mCfg, sCfg, false, bytes, offset, sCount);
 	else
-		CheckNormalChestLoot(x, y, seed, cfg, false, bytes, offset, sCount);
+		CheckNormalChestLoot(x, y, seed, mCfg, sCfg, false, bytes, offset, sCount);
 }
 
-__device__ void spawnPotion(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnPotion(int x, int y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	float rnd = random.ProceduralRandomf(x, y, 0, 1);
 
 	if (rnd > 0.65f)
-		CheckItemPedestalLoot(x + 5, y - 4, seed, cfg, bytes, offset, sCount);
+		CheckItemPedestalLoot(x + 5, y - 4, seed, mCfg, sCfg, bytes, offset, sCount);
 }
 
-__device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
@@ -527,30 +452,30 @@ __device__ void spawnPixelScene(int x, int y, uint seed, byte oiltank, LootConfi
 		float rnd2 = random.ProceduralRandomf(x, y, 0, 1) * 3;
 		if (0.5f < rnd2 && rnd2 < 1)
 		{
-			spawnChest(x + 94, y + 224, seed, cfg, bytes, offset, sCount);
+			spawnChest(x + 94, y + 224, seed, mCfg, sCfg, bytes, offset, sCount);
 		}
 	}
 }
 
-__device__ void spawnPixelScene1(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnPixelScene1(int x, int y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
-	spawnPixelScene(x, y, seed, 0, cfg, bytes, offset, sCount);
+	spawnPixelScene(x, y, seed, 0, mCfg, sCfg, bytes, offset, sCount);
 }
 
-__device__ void spawnOilTank(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnOilTank(int x, int y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
-	spawnPixelScene(x, y, seed, 1, cfg, bytes, offset, sCount);
+	spawnPixelScene(x, y, seed, 1, mCfg, sCfg, bytes, offset, sCount);
 }
 
-__device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnWand(int x, int y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 	NollaPRNG random = NollaPRNG(seed);
 
-	if (!wandChecks[cfg.biomeIdx](random, x, y)) return;
+	if (!wandChecks[mCfg.biomeIdx](random, x, y)) return;
 
 	int nx = x - 5;
 	int ny = y - 14;
-	BiomeWands wandSet = wandLevels[cfg.biomeIdx]; //biomeIndex
+	BiomeWands wandSet = wandLevels[mCfg.biomeIdx]; //biomeIndex
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
 	float r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
@@ -565,7 +490,7 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, 
 			writeByte(bytes, offset, TYPE_WAND_PEDESTAL);
 			int countOffset = offset;
 			offset += 4;
-			createWand(nx + 5, ny + 5, wandSet.levels[i].id, false, seed, cfg, bytes, offset);
+			createWand(nx + 5, ny + 5, wandSet.levels[i].id, false, seed, mCfg, sCfg, bytes, offset);
 			writeInt(bytes, countOffset, offset - countOffset - 4);
 			return;
 		}
@@ -573,7 +498,7 @@ __device__ void spawnWand(int x, int y, uint seed, LootConfig cfg, byte* bytes, 
 	}
 }
 
-__device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, byte* bytes, int& offset, int& sCount)
+__device__ void spawnNightmareEnemy(int _x, int _y, uint seed, MapConfig mCfg, SpawnableConfig sCfg, byte* bytes, int& offset, int& sCount)
 {
 #ifdef DO_WANDGEN_
 	//t10 wands only
@@ -621,29 +546,29 @@ __device__ void spawnNightmareEnemy(int _x, int _y, uint seed, LootConfig cfg, b
 }
 
 
-__device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output, WorldgenConfig wCfg, LootConfig lCfg, int maxMemory)
+__device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output, MapConfig mCfg, SpawnableConfig sCfg, int maxMemory)
 {
-	static void (*spawnFuncs[7])(int, int, uint, LootConfig, byte*, int&, int&) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand, spawnNightmareEnemy };
+	static void (*spawnFuncs[7])(int, int, uint, MapConfig, SpawnableConfig, byte*, int&, int&) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand, spawnNightmareEnemy };
 	int offset = 0;
-	byte* map = res + 4 * 3 * wCfg.map_w;
+	byte* map = res + 4 * 3 * mCfg.map_w;
 	writeInt(bytes, offset, seed);
 	int countOffset = offset;
 	offset += 4;
 	int sCount = 0;
 
-	for (int px = 0; px < wCfg.map_w; px++)
+	for (int px = 0; px < mCfg.map_w; px++)
 	{
-		for (int py = 0; py < wCfg.map_h; py++)
+		for (int py = 0; py < mCfg.map_h; py++)
 		{
-			int pixelPos = 3 * (px + py * wCfg.map_w);
+			int pixelPos = 3 * (px + py * mCfg.map_w);
 			if (map[pixelPos] == 0 && map[pixelPos + 1] == 0)
 				continue;
 			if (map[pixelPos] == 255 && map[pixelPos + 1] == 255)
 				continue;
 
-			IntPair gp = GetGlobalPos(wCfg.worldX, wCfg.worldY, px * 10, py * 10);
+			IntPair gp = GetGlobalPos(mCfg.worldX, mCfg.worldY, px * 10, py * 10);
 
-			const int PWSize = wCfg.isNightmare ? 64 * 512 : 70 * 512;
+			const int PWSize = mCfg.isNightmare ? 64 * 512 : 70 * 512;
 
 			//avoids having to switch every loop
 			auto func = spawnFuncs[0];
@@ -653,7 +578,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 			switch (pix)
 			{
 			case 0x78ffff:
-				if (lCfg.searchChests)
+				if (sCfg.biomeChests)
 				{
 					func = spawnFuncs[0];
 					check = true;
@@ -661,7 +586,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 				else continue;
 				break;
 			case 0x55ff8c:
-				if (lCfg.searchChests)
+				if (sCfg.biomeChests)
 				{
 					func = spawnFuncs[1];
 					check = true;
@@ -669,7 +594,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 				else continue;
 				break;
 			case 0xff0aff:
-				if (lCfg.searchPixelScenes)
+				if (sCfg.pixelScenes)
 				{
 					func = spawnFuncs[2];
 					check = true;
@@ -677,7 +602,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 				else continue;
 				break;
 			case 0xc35700:
-				if (lCfg.searchPixelScenes)
+				if (sCfg.pixelScenes)
 				{
 					func = spawnFuncs[3];
 					check = true;
@@ -685,7 +610,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 				else continue;
 				break;
 			case 0x50a000:
-				if (lCfg.searchPedestals)
+				if (sCfg.biomePedestals)
 				{
 					func = spawnFuncs[4];
 					check = true;
@@ -693,7 +618,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 				else continue;
 				break;
 			case 0x00ff00:
-				if (lCfg.searchWandAltars)
+				if (sCfg.biomeAltars)
 				{
 					func = spawnFuncs[5];
 					check = true;
@@ -709,8 +634,8 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 			}
 
 			if (check)
-				for (int i = lCfg.pwCenter - lCfg.pwWidth; i <= lCfg.pwCenter + lCfg.pwWidth; i++)
-					func(gp.x + PWSize * i, gp.y, seed, lCfg, bytes, offset, sCount);
+				for (int i = sCfg.pwCenter - sCfg.pwWidth; i <= sCfg.pwCenter + sCfg.pwWidth; i++)
+					func(gp.x + PWSize * i, gp.y, seed, mCfg, sCfg, bytes, offset, sCount);
 		}
 	}
 	writeInt(bytes, countOffset, sCount);
@@ -719,7 +644,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 	//memcpy(output, origin, *bytes - origin);
 }
 
-__device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* putSpawnablesHere, byte* output, LootConfig cfg, int maxMemory)
+__device__ SpawnableBlock ParseSpawnableBlock(byte* bytes, byte* putSpawnablesHere, byte* output, MapConfig mCfg, SpawnableConfig sCfg, int maxMemory)
 {
 	int offset = 0;
 	uint seed = readInt(bytes, offset);

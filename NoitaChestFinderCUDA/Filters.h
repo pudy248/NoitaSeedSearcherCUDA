@@ -3,123 +3,14 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "misc/datatypes.h"
-#include "data/items.h"
-#include "data/spells.h"
+#include "structs/primitives.h"
+#include "structs/enums.h"
+#include "structs/spawnableStructs.h"
 
-#include "WorldgenSearch.h"
-#include "misc/wandgen.h"
+#include "data/uiNames.h"
+
 #include "Output.h"
-
-#define FILTER_OR_COUNT 10
-#define TOTAL_FILTER_COUNT 10
-struct ItemFilter
-{
-	Item items[FILTER_OR_COUNT];
-	int duplicates;
-
-	ItemFilter()
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = ITEM_NONE;
-		duplicates = 0;
-	}
-
-	ItemFilter(Item _items[FILTER_OR_COUNT])
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = _items[i];
-		duplicates = 1;
-	}
-
-	ItemFilter(Item _items[FILTER_OR_COUNT], int _dupes)
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = _items[i];
-		duplicates = _dupes;
-	}
-};
-
-struct MaterialFilter
-{
-	Material materials[FILTER_OR_COUNT];
-	int duplicates;
-
-	MaterialFilter()
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = MATERIAL_NONE;
-		duplicates = 0;
-	}
-
-	MaterialFilter(Material _materials[FILTER_OR_COUNT])
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = _materials[i];
-		duplicates = 1;
-	}
-
-	MaterialFilter(Material _materials[FILTER_OR_COUNT], int _dupes)
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = _materials[i];
-		duplicates = _dupes;
-	}
-};
-
-struct SpellFilter
-{
-	Spell spells[FILTER_OR_COUNT];
-	int duplicates;
-	bool asAlwaysCast;
-
-	SpellFilter()
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = SPELL_NONE;
-		duplicates = 0;
-		asAlwaysCast = false;
-	}
-
-	SpellFilter(Spell _spells[FILTER_OR_COUNT])
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
-		duplicates = 1;
-		asAlwaysCast = false;
-	}
-
-	SpellFilter(Spell _spells[FILTER_OR_COUNT], int _dupes)
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
-		duplicates = _dupes;
-		asAlwaysCast = false;
-	}
-
-	SpellFilter(Spell _spells[FILTER_OR_COUNT], int _dupes, bool _asAlwaysCast)
-	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
-		duplicates = _dupes;
-		asAlwaysCast = _asAlwaysCast;
-	}
-};
-
-struct FilterConfig
-{
-	bool aggregate;
-	int itemFilterCount;
-	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
-	int materialFilterCount;
-	MaterialFilter materialFilters[TOTAL_FILTER_COUNT];
-	int spellFilterCount;
-	SpellFilter spellFilters[TOTAL_FILTER_COUNT];
-	bool checkBigWands;
-	int howBig;
-	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, MaterialFilter* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, bool _checkBigWands, int _howBig)
-	{
-		aggregate = _aggregate;
-		itemFilterCount = _itemFilterCount;
-		materialFilterCount = _materialFilterCount;
-		spellFilterCount = _spellFilterCount;
-		checkBigWands = _checkBigWands;
-		howBig = _howBig;
-		memcpy(itemFilters, _itemFilters, sizeof(ItemFilter) * itemFilterCount);
-		memcpy(materialFilters, _materialFilters, sizeof(MaterialFilter) * materialFilterCount);
-		memcpy(spellFilters, _spellFilters, sizeof(SpellFilter) * spellFilterCount);
-	}
-};
+#include "Configuration.h"
 
 __device__ void PrintBytes(byte* ptr, int count)
 {
@@ -290,20 +181,20 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig)
 	return false;
 }
 
-__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
+__device__ bool SpawnablesPassed(SpawnableBlock b, MapConfig mCfg, FilterConfig fCfg, byte* output, byte* bufferMem, bool write)
 {
 	int relevantSpawnableCount = 0;
 	Spawnable* relevantSpawnables[10];
 
-	if (cfg.aggregate)
+	if (fCfg.aggregate)
 	{
 		int itemsPassed[TOTAL_FILTER_COUNT];
 		int materialsPassed[TOTAL_FILTER_COUNT];
 		int spellsPassed[TOTAL_FILTER_COUNT];
 
-		for (int i = 0; i < cfg.itemFilterCount; i++) itemsPassed[i] = 0;
-		for (int i = 0; i < cfg.materialFilterCount; i++) materialsPassed[i] = 0;
-		for (int i = 0; i < cfg.spellFilterCount; i++) spellsPassed[i] = 0;
+		for (int i = 0; i < fCfg.itemFilterCount; i++) itemsPassed[i] = 0;
+		for (int i = 0; i < fCfg.materialFilterCount; i++) materialsPassed[i] = 0;
+		for (int i = 0; i < fCfg.spellFilterCount; i++) spellsPassed[i] = 0;
 
 		for (int j = 0; j < b.count; j++)
 		{
@@ -311,10 +202,10 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 			if (s == NULL) continue;
 			bool added = false;
 
-			for (int i = 0; i < cfg.itemFilterCount; i++)
+			for (int i = 0; i < fCfg.itemFilterCount; i++)
 			{
 				int prevPassCount = itemsPassed[i];
-				ItemFilterPassed(s, cfg.itemFilters[i], itemsPassed[i]);
+				ItemFilterPassed(s, fCfg.itemFilters[i], itemsPassed[i]);
 				if (itemsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -322,10 +213,10 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 				}
 			}
 
-			for (int i = 0; i < cfg.materialFilterCount; i++)
+			for (int i = 0; i < fCfg.materialFilterCount; i++)
 			{
 				int prevPassCount = materialsPassed[i];
-				MaterialFilterPassed(s, cfg.materialFilters[i], materialsPassed[i]);
+				MaterialFilterPassed(s, fCfg.materialFilters[i], materialsPassed[i]);
 				if (materialsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -333,10 +224,10 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 				}
 			}
 
-			for (int i = 0; i < cfg.spellFilterCount; i++)
+			for (int i = 0; i < fCfg.spellFilterCount; i++)
 			{
 				int prevPassCount = spellsPassed[i];
-				SpellFilterPassed(b.seed, s, cfg.spellFilters[i], spellsPassed[i]);
+				SpellFilterPassed(b.seed, s, fCfg.spellFilters[i], spellsPassed[i]);
 				if (spellsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -346,16 +237,16 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 		}
 
 		bool failed = false;
-		for (int i = 0; i < cfg.itemFilterCount; i++)
-			if (itemsPassed[i] < cfg.itemFilters[i].duplicates)
+		for (int i = 0; i < fCfg.itemFilterCount; i++)
+			if (itemsPassed[i] < fCfg.itemFilters[i].duplicates)
 				failed = true;
 
-		for (int i = 0; i < cfg.materialFilterCount; i++)
-			if (materialsPassed[i] < cfg.materialFilters[i].duplicates)
+		for (int i = 0; i < fCfg.materialFilterCount; i++)
+			if (materialsPassed[i] < fCfg.materialFilters[i].duplicates)
 				failed = true;
 
-		for (int i = 0; i < cfg.spellFilterCount; i++)
-			if (spellsPassed[i] < cfg.spellFilters[i].duplicates)
+		for (int i = 0; i < fCfg.spellFilterCount; i++)
+			if (spellsPassed[i] < fCfg.spellFilters[i].duplicates)
 				failed = true;
 
 		if (failed)
@@ -370,12 +261,15 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 			Spawnable* s = b.spawnables[j];
 			if (s == NULL) continue;
 
+			Spawnable sDat = readMisalignedSpawnable(s);
+			if (sDat.x < mCfg.minX || sDat.x > mCfg.maxX || sDat.y < mCfg.minY || sDat.y > mCfg.maxY) continue;
+
 			bool failed = false;
-			for (int i = 0; i < cfg.itemFilterCount; i++)
+			for (int i = 0; i < fCfg.itemFilterCount; i++)
 			{
 				int passCount = 0;
-				ItemFilterPassed(s, cfg.itemFilters[i], passCount);
-				if (passCount < cfg.itemFilters[i].duplicates)
+				ItemFilterPassed(s, fCfg.itemFilters[i], passCount);
+				if (passCount < fCfg.itemFilters[i].duplicates)
 				{
 					failed = true;
 					break;
@@ -383,11 +277,11 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 			}
 			if (failed) continue;
 
-			for (int i = 0; i < cfg.materialFilterCount; i++)
+			for (int i = 0; i < fCfg.materialFilterCount; i++)
 			{
 				int passCount = 0;
-				MaterialFilterPassed(s, cfg.materialFilters[i], passCount);
-				if (passCount < cfg.materialFilters[i].duplicates)
+				MaterialFilterPassed(s, fCfg.materialFilters[i], passCount);
+				if (passCount < fCfg.materialFilters[i].duplicates)
 				{
 					failed = true;
 					break;
@@ -395,11 +289,11 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 			}
 			if (failed) continue;
 
-			for (int i = 0; i < cfg.spellFilterCount; i++)
+			for (int i = 0; i < fCfg.spellFilterCount; i++)
 			{
 				int passCount = 0;
-				SpellFilterPassed(b.seed, s, cfg.spellFilters[i], passCount);
-				if (passCount < cfg.spellFilters[i].duplicates)
+				SpellFilterPassed(b.seed, s, fCfg.spellFilters[i], passCount);
+				if (passCount < fCfg.spellFilters[i].duplicates)
 				{
 					failed = true;
 					break;
@@ -407,8 +301,8 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 			}
 			if (failed) continue;
 
-			if (cfg.checkBigWands) {
-				if (!WandFilterPassed(b.seed, s, cfg.howBig)) continue;
+			if (fCfg.checkBigWands) {
+				if (!WandFilterPassed(b.seed, s, fCfg.howBig)) continue;
 			}
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
@@ -420,6 +314,7 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig cfg)
 		}
 	}
 
-	PrintSpawnableBlock(b.seed, relevantSpawnables, relevantSpawnableCount);
+	if(write) WriteOutputBlock(output, b.seed, relevantSpawnables, relevantSpawnableCount);
+	//PrintSpawnableBlock(b.seed, relevantSpawnables, relevantSpawnableCount, bufferMem);
 	return true;
 }

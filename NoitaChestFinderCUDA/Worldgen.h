@@ -3,36 +3,22 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "misc/datatypes.h"
+#include "structs/primitives.h"
+
 #include "misc/noita_random.h"
 #include "misc/stb_hbwang.h"
 #include "misc/worldgen_helpers.h"
 #include "misc/pathfinding.h"
 
-struct WorldgenConfig
-{
-	uint tiles_w;
-	uint tiles_h;
-	uint map_w;
-	uint map_h;
-	int worldX;
-	int worldY;
-	bool isCoalMine;
-	bool isNightmare;
+#include "Configuration.h"
 
-	int maxTries;
-};
-
-__global__ void buildTS(byte* data, int tiles_w, int tiles_h)
+__global__ void buildTS(byte* dTileData, byte* dTileSet, int tiles_w, int tiles_h)
 {
-	stbhw_build_tileset_from_image(data, tiles_w * 3, tiles_w, tiles_h);
-}
-__global__ void freeTS()
-{
-	stbhw_free_tileset();
+	MemoryArena arena = { dTileSet, 0 };
+	stbhw_build_tileset_from_image(dTileData, arena, tiles_w * 3, tiles_w, tiles_h);
 }
 
-__device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visited, byte* miscMem, WorldgenConfig c, int idx)
+__device__ byte* GenerateMap(uint worldSeed, byte* tileSet, byte* output, byte* res, byte* visited, byte* miscMem, MapConfig c, int idx)
 {
 	WorldgenPRNG rng = GetRNG(worldSeed, c.map_w);
 	if (c.isNightmare) rng.Next();
@@ -45,7 +31,7 @@ __device__ byte* GenerateMap(uint worldSeed, byte* output, byte* res, byte* visi
 		if (tries >= c.maxTries - 1 + worldSeed) break;
 		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 
-		stbhw_generate_image(res, c.map_w * 3, c.map_w, c.map_h + 4, StaticRandom, &rng2);
+		stbhw_generate_image(res, (stbhw_tileset*)tileSet, c.map_w * 3, c.map_w, c.map_h + 4, StaticRandom, &rng2);
 
 		blockOutRooms(map, c.map_w, c.map_h, COLOR_WHITE);
 		if (c.isCoalMine)

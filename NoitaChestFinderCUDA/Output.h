@@ -1,11 +1,13 @@
 #pragma once
 
-#include "misc/datatypes.h"
-#include "data/items.h"
-#include "data/spells.h"
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
-#include "WorldgenSearch.h"
-#include "misc/wandgen.h"
+#include "structs/primitives.h"
+#include "structs/enums.h"
+#include "structs/spawnableStructs.h"
+
+#include <iostream>
 
 enum ThreadState : byte
 {
@@ -17,7 +19,7 @@ enum ThreadState : byte
 	ThreadStop, //Thread execution ended
 };
 
-constexpr int seedBlockSize = 1024*64;
+constexpr int seedBlockSize = 1;
 
 struct UnifiedOutputFlags
 {
@@ -25,7 +27,23 @@ struct UnifiedOutputFlags
 	ThreadState state;
 };
 
-__device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount)
+__device__ void WriteOutputBlock(byte* output, int seed, Spawnable** spawnables, int sCount)
+{
+	int offset = 0;
+	writeInt(output, offset, seed);
+	writeInt(output, offset, sCount);
+
+	for (int i = 0; i < sCount; i++)
+	{
+		Spawnable* sPtr = spawnables[i];
+		Spawnable s = readMisalignedSpawnable(sPtr);
+		writeInt(output, offset, s.x);
+		writeInt(output, offset, s.y);
+		writeByte(output, offset, s.contents);
+	}
+}
+
+__device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount, byte* bufferMem)
 {
 	for (int i = 0; i < sCount; i++)
 	{
@@ -35,8 +53,7 @@ __device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount
 		//printf("%i %i %i %i\n", seed, s.x, s.y, s.sType);
 		//continue;
 
-		constexpr int buffer_size = 3000;
-		char buffer[buffer_size];
+		char* buffer = (char*)bufferMem;
 		int offset = 0;
 
 		_itoa_offset(seed, 10, buffer, offset);
@@ -60,7 +77,6 @@ __device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount
 
 		for (int n = 0; n < s.count; n++)
 		{
-			if (offset > buffer_size - 50) printf("Dangerously high offset reached! Offset: %i, buffer size %i\n", offset, buffer_size);
 			Item item = *(&sPtr->contents + n);
 			if (item == DATA_MATERIAL)
 			{
@@ -111,7 +127,7 @@ __device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount
 				n += 33;
 				continue;
 			}
-			else if (GOLD_NUGGETS > item || item > MIMIC_SIGN)
+			else if (GOLD_NUGGETS > item || item > TRUE_ORB)
 			{
 				_putstr_offset("0x", buffer, offset);
 				_itoa_offset_zeroes(item, 16, 2, buffer, offset);

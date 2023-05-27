@@ -2,8 +2,6 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-#include "../misc/datatypes.h"
-#include "../misc/wandgen.h"
 
 __device__ const int temple_x[] = {
 	-32,
@@ -40,10 +38,3 @@ constexpr int shopOffsetY = -15;
 
 constexpr int chestOffsetX = -46;
 constexpr int chestOffsetY = -39;
-
-__device__ Wand GetShopWand(NollaPRNG* random, double x, double y, int level)
-{
-	random->SetRandomSeed(x, y);
-	bool shuffle = random->Random(0, 100) <= 50;
-	return GetWandWithLevel(random->world_seed, x, y, level, shuffle, false);
-}
