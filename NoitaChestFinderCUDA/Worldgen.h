@@ -28,7 +28,7 @@ __device__ byte* GenerateMap(uint worldSeed, byte* tileSet, byte* output, byte* 
 	byte* map = res + 4 * 3 * c.map_w;
 	while (!has_path)
 	{
-		if (tries >= c.maxTries - 1 + worldSeed) break;
+		if (tries >= c.maxTries) break;
 		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 
 		stbhw_generate_image(res, (stbhw_tileset*)tileSet, c.map_w * 3, c.map_w, c.map_h + 4, StaticRandom, &rng2);
@@ -55,5 +55,5 @@ __device__ byte* GenerateMap(uint worldSeed, byte* tileSet, byte* output, byte* 
 	setPixelColor(map, c.map_w, center_x + 1, center_y, 0x0000FF);
 	setPixelColor(map, c.map_w, center_x, center_y + 1, 0x0000FF);
 
-	memcpy(output, map, 3 * c.map_w * c.map_h);*/
+	memcpy(output + 4, map, 3 * c.map_w * c.map_h);*/
 }

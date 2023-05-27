@@ -37,10 +37,11 @@ __device__ void WriteOutputBlock(byte* output, int seed, Spawnable** spawnables,
 		Spawnable s = readMisalignedSpawnable(sPtr);
 		writeInt(output, offset, s.x);
 		writeInt(output, offset, s.y);
-		writeByte(output, offset, s.contents);
+		writeByte(output, offset, sPtr->contents);
 	}
 }
 
+/*
 __device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount, byte* bufferMem)
 {
 	for (int i = 0; i < sCount; i++)
@@ -143,4 +144,4 @@ __device__ void PrintSpawnableBlock(int seed, Spawnable** spawnables, int sCount
 		buffer[offset] = '\0';
 		printf("%s", buffer);
 	}
-}
+}*/

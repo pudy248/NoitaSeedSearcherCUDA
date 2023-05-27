@@ -2,6 +2,7 @@
 #include "device_launch_parameters.h"
 
 #include "misc/error.h"
+#include "misc/pngutils.h"
 
 #include "Configuration.h"
 #include "Precheckers.h"
@@ -13,8 +14,6 @@
 #include <fstream>
 #include <chrono>
 #include <thread>
-
-//#define SEED_OUTPUT
 
 //tired of seeing an error for it being undefined
 __device__ int atomicAdd(int* address, int val);
@@ -89,7 +88,7 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 			if (state == HostLock || state == SeedFound || state == QueueEmpty) continue; //Stall until host updates
 		}
 
-		if (seedIndex >= config.generalCfg.seedBlockSize)
+		if (seedIndex >= dConfig.generalCfg.seedBlockSize)
 		{
 			flags->state = QueueEmpty;
 			pollState = true;
@@ -163,7 +162,8 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 		}
 #endif
 
-		//flags->state = DeviceLock;
+		flags->state = DeviceLock;
+		memcpy(output, &currentSeed, 4);
 		memcpy(uOutput, output, dConfig.memSizes.outputSize);
 		flags->state = SeedFound;
 		pollState = true;
@@ -217,12 +217,12 @@ __global__ void wandExperiment(const int level, const bool nonShuffle)
 DeviceConfig CreateConfigs()
 {
 	//MINES
-	MapConfig mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
-	const char* fileName = "wang/minesWang.bin";
-	constexpr auto NUMBLOCKS = 128;
-	constexpr auto BLOCKSIZE = 64;
-	constexpr auto mapMemMult = 1;
-	constexpr auto miscMemMult = 6;
+	//MapConfig mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
+	//const char* fileName = "wang/minesWang.bin";
+	//constexpr auto NUMBLOCKS = 128;
+	//constexpr auto BLOCKSIZE = 64;
+	//constexpr auto mapMemMult = 1;
+	//constexpr auto miscMemMult = 6;
 
 	//EXCAVATION SITE
 	//MapConfig mapCfg = { 344, 440, 409, 102, 31, 17, -100000, 100000, -100000, 100000, false, false, 1, 100 };
@@ -249,12 +249,12 @@ DeviceConfig CreateConfigs()
 	//constexpr auto miscMemMult = 10;
 
 	//OVERGROWN CAVERNS
-	//MapConfig mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
-	//const char* fileName = "wang/fungiforestWang.bin";
-	//constexpr auto NUMBLOCKS = 16;
-	//constexpr auto BLOCKSIZE = 32;
-	//constexpr auto mapMemMult = 3;
-	//constexpr auto miscMemMult = 8;
+	MapConfig mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
+	const char* fileName = "wang/fungiforestWang.bin";
+	constexpr auto NUMBLOCKS = 16;
+	constexpr auto BLOCKSIZE = 32;
+	constexpr auto mapMemMult = 3;
+	constexpr auto miscMemMult = 8;
 
 	//HELL
 	//MapConfig mapCfg = { 156, 364, 921, 256, 25, 43, -100000, 100000, -100000, 100000, false, true, 0, 100 };
@@ -265,14 +265,14 @@ DeviceConfig CreateConfigs()
 	//constexpr auto miscMemMult = 10;
 
 	MemSizeConfig memSizes = {
-		4096,
+		4096, //4 * mapCfg.map_w * mapCfg.map_h,
 		mapMemMult * 3 * mapCfg.map_w * (mapCfg.map_h + 4),
 		miscMemMult * mapCfg.map_w * mapCfg.map_h,
 		mapCfg.map_w * mapCfg.map_h,
 		4096
 	};
 
-	GeneralConfig generalCfg = { 0, 1, INT_MAX, 1, 60, 1, 1 };
+	GeneralConfig generalCfg = { 0, 1, INT_MAX, 1, 1, 1, 1 };
 	SpawnableConfig spawnableCfg = {0, 0, 0, 0, false, false, false, false, true, false, false, true, false, false, false};
 
 	Item iF1[FILTER_OR_COUNT] = { SAMPO, TRUE_ORB };
@@ -301,6 +301,7 @@ DeviceConfig CreateConfigs()
 	size_t freeMem;
 	size_t totalMem;
 	cudaMemGetInfo(&freeMem, &totalMem);
+	freeMem = (freeMem * 90) / 100;
 	generalCfg.requestedMemory = freeMem;
 
 	printf("memory free: %lli of %lli bytes\n", freeMem, totalMem);
@@ -387,7 +388,7 @@ AllPointers AllocateMemory(DeviceConfig config)
 	return { {dCheckedSeeds, dPassedSeeds, dFlags, dUnifiedOutput, dTileData, dTileSet, dArena}, {hCheckedSeeds, hPassedSeeds, hFlags, hUnifiedOutput, hOutput, hTileData} };
 }
 
-void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, ofstream& outputStream)
+void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, FILE* outputFile)
 {
 	chrono::steady_clock::time_point time1 = chrono::steady_clock::now();
 	int intervals = 0;
@@ -461,13 +462,26 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 			pointers.hFlags[index].state = HostLock;
 			memcpy(output, uOutput, config.memSizes.outputSize);
 			pointers.hFlags[index].state = Running;
+			foundSeeds++;
 
+			/*int _ = 0;
+			int seed = readInt(output, _);
+
+			char buffer[30];
+			int bufOffset = 0;
+			_putstr_offset("outputs/", buffer, bufOffset);
+			_itoa_offset(seed, 10, buffer, bufOffset);
+			_putstr_offset(".png", buffer, bufOffset);
+			buffer[bufOffset++] = '\0';
+
+			WriteImage(buffer, output + 4, config.mapCfg.map_w, config.mapCfg.map_h);*/
 
 			char buffer[100];
 			int bufOffset = 0;
 			int memOffset = 0;
 			int seed = readInt(output, memOffset);
 			int sCount = readInt(output, memOffset);
+			//if (seed == 0 || sCount == 0) continue;
 			_itoa_offset(seed, 10, buffer, bufOffset);
 			_putstr_offset(": ", buffer, bufOffset);
 
@@ -486,11 +500,10 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 				if(i < sCount - 1)
 					buffer[bufOffset++] = ' ';
 			}
-
 			buffer[bufOffset++] = '\n';
-			outputStream.write(buffer, bufOffset);
-			printf("%s\n", buffer);
-			foundSeeds++;
+			buffer[bufOffset++] = '\0';
+			fprintf(outputFile, "%s", buffer);
+			printf("%s", buffer);
 		}
 	}
 }
@@ -625,7 +638,7 @@ int main()
 		DeviceConfig config = CreateConfigs();
 		AllPointers pointers = AllocateMemory(config);
 
-		std::ofstream f = ofstream("output.txt", std::ios::binary);
+		FILE* f = fopen("output.txt", "wb");
 
 		cudaEvent_t _event;
 		checkCudaErrors(cudaEventCreateWithFlags(&_event, cudaEventDisableTiming));
@@ -641,6 +654,6 @@ int main()
 		printf("Search finished in %ims. Checked %i seeds, found %i valid seeds.\n", (int)(duration.count() / 1000000), *pointers.hPointers.hCheckedSeeds, *pointers.hPointers.hPassedSeeds);
 
 		FreeMemory(pointers);
-		f.close();
+		fclose(f);
 	}
 }

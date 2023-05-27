@@ -638,6 +638,7 @@ __device__ void CheckSpawnables(byte* res, uint seed, byte* bytes, byte* output,
 					func(gp.x + PWSize * i, gp.y, seed, mCfg, sCfg, bytes, offset, sCount);
 		}
 	}
+
 	writeInt(bytes, countOffset, sCount);
 	if (offset > maxMemory) printf("ran out of misc memory: %i of %i bytes used\n", offset, maxMemory);
 	//printf("%i, %i\n", offset, maxMemory);

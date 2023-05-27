@@ -97,6 +97,7 @@
     <ClInclude Include="defines.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="misc\memory.h" />
+    <ClInclude Include="misc\pngutils.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
     <ClInclude Include="Output.h" />
