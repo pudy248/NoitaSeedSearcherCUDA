@@ -89,7 +89,7 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 			if (state == HostLock || state == SeedFound || state == QueueEmpty) continue; //Stall until host updates
 		}
 
-		if (seedIndex >= seedBlockSize)
+		if (seedIndex >= config.generalCfg.seedBlockSize)
 		{
 			flags->state = QueueEmpty;
 			pollState = true;
@@ -272,8 +272,8 @@ DeviceConfig CreateConfigs()
 		4096
 	};
 
-	GeneralConfig generalCfg = { 0, 1, INT_MAX, 8, 60, 1, 1 };
-	SpawnableConfig spawnableCfg = {0, 0, 0, 0, false, false, false, false, true, false, false, false, false, false, false};
+	GeneralConfig generalCfg = { 0, 1, INT_MAX, 1, 60, 1, 1 };
+	SpawnableConfig spawnableCfg = {0, 0, 0, 0, false, false, false, false, true, false, false, true, false, false, false};
 
 	Item iF1[FILTER_OR_COUNT] = { SAMPO, TRUE_ORB };
 	Item iF2[FILTER_OR_COUNT] = { MIMIC };
@@ -421,7 +421,7 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 					size_t freeMem;
 					size_t totalMem;
 					cudaMemGetInfo(&freeMem, &totalMem);
-					printf(">%i: %2.3f%% complete. Searched %i (+%i this interval), found %i valid seeds. (%lli/%lliMB used)\n", intervals, percentComplete * 100, *pointers.hCheckedSeeds, lastDiff, *pointers.hPassedSeeds, (totalMem - freeMem) / 1MB, totalMem / 1MB);
+					printf(">%i: %2.3f%% complete. Searched %i (+%i this interval), found %i valid seeds. (%lli/%lliMB used)\n", intervals, percentComplete * 100, *pointers.hCheckedSeeds, lastDiff, *pointers.hPassedSeeds, (totalMem - freeMem) / 1049576, totalMem / 1049576);
 				}
 			}
 		}
@@ -448,7 +448,7 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 				//printf("Assigning thread %i seed block %i\n", index, currentSeed);
 				pointers.hFlags[index].seed = currentSeed;
 				pointers.hFlags[index].state = Running;
-				currentSeed += seedBlockSize;
+				currentSeed += config.generalCfg.seedBlockSize;
 				continue;
 			}
 		}
@@ -489,6 +489,7 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 
 			buffer[bufOffset++] = '\n';
 			outputStream.write(buffer, bufOffset);
+			printf("%s\n", buffer);
 			foundSeeds++;
 		}
 	}

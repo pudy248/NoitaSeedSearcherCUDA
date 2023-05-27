@@ -19,8 +19,6 @@ enum ThreadState : byte
 	ThreadStop, //Thread execution ended
 };
 
-constexpr int seedBlockSize = 1;
-
 struct UnifiedOutputFlags
 {
 	uint seed;

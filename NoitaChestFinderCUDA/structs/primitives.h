@@ -28,13 +28,3 @@ struct IntPair {
 		return { x * scalar, y * scalar };
 	}
 };
-
-ulong operator""MB(ulong x)
-{
-	return x * 1024 * 1024;
-}
-
-ulong operator""GB(ulong x)
-{
-	return x * 1024 * 1024 * 1024;
-}
