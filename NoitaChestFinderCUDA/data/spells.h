@@ -412,6 +412,7 @@ __device__ const static SpellData allSpells[] =
 {SPELL_COLOUR_INVIS, MODIFIER, {0,0,0.1,0.1,0.1,0,0,0,0,0,0.1}},
 {SPELL_RAINBOW_TRAIL, MODIFIER, {0,0,0,0,0,0,0,0,0,0,0}},
 };
+
 __device__ const static bool spellSpawnableInChests[] = {
 true,
 true,
@@ -811,6 +812,9 @@ true,
 true,
 true,
 true,
+true,
+true,
+false,
 };
 __device__ const static SpellProb spellProbs_0[] = {
 {1.000000,SPELL_BOMB},
@@ -1323,6 +1327,8 @@ __device__ const static SpellProb spellProbs_2[] = {
 {134.430000,SPELL_COLOUR_YELLOW},
 {134.530000,SPELL_COLOUR_PURPLE},
 {134.930000,SPELL_COLOUR_BLUE},
+{135.030000,SPELL_COLOUR_RAINBOW},
+{135.130000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_3[] = {
 {1.000000,SPELL_BOMB},
@@ -1576,6 +1582,8 @@ __device__ const static SpellProb spellProbs_3[] = {
 {126.300000,SPELL_COLOUR_YELLOW},
 {126.400000,SPELL_COLOUR_PURPLE},
 {126.500000,SPELL_COLOUR_BLUE},
+{126.600000,SPELL_COLOUR_RAINBOW},
+{126.700000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_4[] = {
 {0.500000,SPELL_BOMB},
@@ -1859,6 +1867,8 @@ __device__ const static SpellProb spellProbs_4[] = {
 {140.700000,SPELL_COLOUR_YELLOW},
 {141.100000,SPELL_COLOUR_PURPLE},
 {141.200000,SPELL_COLOUR_BLUE},
+{141.300000,SPELL_COLOUR_RAINBOW},
+{141.400000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_5[] = {
 {0.500000,SPELL_BOMB},
@@ -2405,32 +2415,34 @@ __device__ const static SpellProb spellProbs_10[] = {
 {54.400000,SPELL_IF_HALF},
 {55.400000,SPELL_IF_END},
 {56.400000,SPELL_IF_ELSE},
+{56.600000,SPELL_COLOUR_RAINBOW},
+{56.700000,SPELL_COLOUR_INVIS},
 };
 __device__ const static int spellTierCounts[] = {
 74,
 166,
-266,
-251,
-281,
+268,
+253,
+283,
 255,
 178,
 6,
 0,
 0,
-99,
+101,
 };
 __device__ const static float spellTierSums[] = {
 44.800000,
 83.150000,
-134.930000,
-126.500000,
-141.200000,
+135.130000,
+126.700000,
+141.400000,
 121.750000,
 79.200000,
 0.600000,
 0.000000,
 0.000000,
-56.400000,
+56.700000,
 };
 
 __device__ const static SpellProb spellProbs_0_T0[] = {
@@ -2974,6 +2986,8 @@ __device__ const static SpellProb spellProbs_2_T2[] = {
 {38.500000,SPELL_COLOUR_YELLOW},
 {38.600000,SPELL_COLOUR_PURPLE},
 {39.000000,SPELL_COLOUR_BLUE},
+{39.100000,SPELL_COLOUR_RAINBOW},
+{39.200000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_2_T3[] = {
 {0.800000,SPELL_BURST_2},
@@ -3038,7 +3052,7 @@ spellProbs_2_T7,
 __device__ const static int spellProbs_2_Counts[] = {
 96,
 30,
-100,
+102,
 12,
 10,
 3,
@@ -3267,6 +3281,8 @@ __device__ const static SpellProb spellProbs_3_T2[] = {
 {44.900000,SPELL_COLOUR_YELLOW},
 {45.000000,SPELL_COLOUR_PURPLE},
 {45.100000,SPELL_COLOUR_BLUE},
+{45.200000,SPELL_COLOUR_RAINBOW},
+{45.300000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_3_T3[] = {
 {0.800000,SPELL_BURST_2},
@@ -3326,7 +3342,7 @@ spellProbs_3_T7,
 __device__ const static int spellProbs_3_Counts[] = {
 79,
 24,
-113,
+115,
 11,
 10,
 8,
@@ -3577,6 +3593,8 @@ __device__ const static SpellProb spellProbs_4_T2[] = {
 {52.000000,SPELL_COLOUR_YELLOW},
 {52.400000,SPELL_COLOUR_PURPLE},
 {52.500000,SPELL_COLOUR_BLUE},
+{52.600000,SPELL_COLOUR_RAINBOW},
+{52.700000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_4_T3[] = {
 {0.800000,SPELL_BURST_2},
@@ -3644,7 +3662,7 @@ spellProbs_4_T7,
 __device__ const static int spellProbs_4_Counts[] = {
 90,
 28,
-120,
+122,
 8,
 15,
 8,
@@ -4267,6 +4285,8 @@ __device__ const static SpellProb spellProbs_10_T2[] = {
 {6.000000,SPELL_LARPA_UPWARDS},
 {6.100000,SPELL_LARPA_CHAOS_2},
 {6.300000,SPELL_LARPA_DEATH},
+{6.500000,SPELL_COLOUR_RAINBOW},
+{6.600000,SPELL_COLOUR_INVIS},
 };
 __device__ const static SpellProb spellProbs_10_T3[] = {
 {0.500000,SPELL_BURST_8},
@@ -4336,13 +4356,14 @@ NULL,
 __device__ const static int spellProbs_10_Counts[] = {
 18,
 8,
-26,
+28,
 2,
 6,
 27,
 12,
 0,
 };
+
 __device__ const static SpellProb* allSpellProbs[] = {
 	spellProbs_0,
 	spellProbs_1,

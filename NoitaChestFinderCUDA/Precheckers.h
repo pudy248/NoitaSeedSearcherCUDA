@@ -555,19 +555,19 @@ __device__ bool PrecheckSeed(uint seed, StaticPrecheckConfig c)
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
 	if (c.flask.check)
-		if (!CheckStartingFlask(sharedRandom, c.flask)) return false;										//555ms->970ms
+		if (!CheckStartingFlask(sharedRandom, c.flask)) return false;
 	if (c.wands.check)
-		if (!CheckStartingWands(sharedRandom, c.wands)) return false;					//1014ms->1270ms
+		if (!CheckStartingWands(sharedRandom, c.wands)) return false;
 	if (c.alchemy.check)
-		if (!CheckAlchemy(sharedRandom, c.alchemy)) return false;					//805ms->1310ms
+		if (!CheckAlchemy(sharedRandom, c.alchemy)) return false;
 	if (c.rain.check)
-		if (!CheckRain(sharedRandom, c.rain)) return false;														//1450ms->1740ms
+		if (!CheckRain(sharedRandom, c.rain)) return false;
 	if (c.biomes.check)
-		if (!CheckBiomeModifiers(sharedRandom, c.biomes)) return false;									//5817ms->9309ms
+		if (!CheckBiomeModifiers(sharedRandom, c.biomes)) return false;
 	if (c.fungal.check)
-		if (!CheckFungalShifts(sharedRandom, c.fungal)) return false;												//6200ms->12600ms
+		if (!CheckFungalShifts(sharedRandom, c.fungal)) return false;
 	if (c.perks.check)
-		if (!CheckPerks(sharedRandom, c.perks)) return false;														//38000ms->47000ms
+		if (!CheckPerks(sharedRandom, c.perks)) return false;
 
 	return true;
 }

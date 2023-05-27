@@ -3,7 +3,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-__device__ const char* SpawnableTypeNames[] = {
+const char* SpawnableTypeNames[] = {
 	"CHEST",
 	"GREAT_CHEST",
 	"ITEM_PEDESTAL",
@@ -13,7 +13,7 @@ __device__ const char* SpawnableTypeNames[] = {
 	"HM_SHOP"
 };
 
-__device__ const char* ItemNames[] = {
+const char* ItemNames[] = {
 	"GOLD_NUGGETS",
 	"CHEST_TO_GOLD",
 	"RAIN_GOLD",
@@ -80,7 +80,7 @@ __device__ const char* ItemNames[] = {
 	"TRUE_ORB",
 };
 
-__device__ const char* MaterialNames[] = {
+const char* MaterialNames[] = {
 	"MATERIAL_NONE",
 
 	//VARIABLES
@@ -541,7 +541,7 @@ __device__ const char* MaterialNames[] = {
 	"SPARK_TEAL"
 };
 
-__device__ const char* BiomeNames[] = {
+const char* BiomeNames[] = {
 	"NONE",
 	"COALMINE",
 	"COALMINE_ALT",
@@ -554,7 +554,7 @@ __device__ const char* BiomeNames[] = {
 	"CRYPT"
 };
 
-__device__ const char* BiomeModifierNames[] = {
+const char* BiomeModifierNames[] = {
 	"NONE",
 	"MOIST",
 	"FOG_OF_WAR_REAPPEARS",
@@ -580,7 +580,7 @@ __device__ const char* BiomeModifierNames[] = {
 	"WORMY"
 };
 
-__device__ const char* PerkNames[] = {
+const char* PerkNames[] = {
 	"CRITICAL_HIT",
 	"BREATH_UNDERWATER",
 	"EXTRA_MONEY",
@@ -689,7 +689,7 @@ __device__ const char* PerkNames[] = {
 	"MEGA_BEAM_STONE",
 };
 
-__device__ const char* SpellNames[] = {
+const char* SpellNames[] = {
 	"NONE",
 	"BOMB",
 "LIGHT_BULLET",

@@ -295,7 +295,7 @@ DeviceConfig CreateConfigs()
 		{false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
 		{false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_GOLD_VEIN_SUPER}},
 		{false, {FungalShift(SS_FLASK, SD_CHEESE_STATIC, 0, 4), FungalShift(), FungalShift(), FungalShift()}},
-		{true, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EDIT_WANDS_EVERYWHERE, false, 0, 3}}},
+		{true, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EDIT_WANDS_EVERYWHERE, true, 0, 3}, {PERK_NO_MORE_SHUFFLE, false, 0, 6}, {PERK_PROTECTION_EXPLOSION, false, 0, 6}}},
 	};
 
 	size_t freeMem;

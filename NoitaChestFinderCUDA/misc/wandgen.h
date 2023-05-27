@@ -14,7 +14,7 @@
 
 #include <cmath>
 
-__device__ int GetBestSprite(NollaPRNG* rnd, Wand w)
+__device__ void GetBestSprite(NollaPRNG* rnd, Wand w)
 {
 	WandSpaceDat gunInWandSpace = {};
 	gunInWandSpace.fire_rate_wait = fminf(fmaxf(((w.delay + 5) / 7.0f) - 1, 0), 4);
