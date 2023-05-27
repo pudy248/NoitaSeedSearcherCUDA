@@ -406,9 +406,10 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 
 	perkDeckIdx = 0;
 	for (int i = 0; i < maxPerkCount; i++)
-	{
 		if (perkDeck[i] != 0) perkDeck[perkDeckIdx++] = perkDeck[i];
-	}
+
+	bool usedPerks[maxPerkCount];
+	memset(usedPerks, false, maxPerkCount);
 
 	NollaPRNG rnd = NollaPRNG(random.world_seed);
 	for (int i = 0; i < 20; i++)
@@ -418,18 +419,33 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 		bool found = false;
 		for (int j = (perkToCkeck.minPosition + perkDeckIdx) % perkDeckIdx; j < (perkToCkeck.maxPosition + perkDeckIdx) % perkDeckIdx; j++)
 		{
+			if (usedPerks[j]) continue;
 			if (perkToCkeck.p == perkDeck[j])
 			{
 				if (perkToCkeck.lottery)
 				{
-					int x = temple_x[(j / 3)] + (int)rintf(((j % 3) + 0.5f) * 20);
-					int y = temple_y[(j / 3)];
+					int tmp = j;
+					int templeIdx = 0;
+					while (templeIdx < 6 && tmp >= c.perksPerMountain[templeIdx])
+					{
+						tmp -= c.perksPerMountain[templeIdx];
+						templeIdx++;
+					}
+
+					int x = temple_x[templeIdx] + (int)rintf((tmp + 0.5f) * (60.0f / c.perksPerMountain[templeIdx]));
+					int y = temple_y[templeIdx];
 					rnd.SetRandomSeed(x, y);
 					if (rnd.Random(1, 100) > 50)
+					{
+						usedPerks[j] = true;
 						found = true;
+					}
 				}
 				else
+				{
+					usedPerks[j] = true;
 					found = true;
+				}
 			}
 		}
 		if (!found) return false;

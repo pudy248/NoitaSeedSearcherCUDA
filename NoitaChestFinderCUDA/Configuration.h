@@ -65,6 +65,7 @@ struct PerkConfig
 {
 	bool check;
 	PerkInfo perks[20];
+	byte perksPerMountain[7];
 };
 
 struct StaticPrecheckConfig

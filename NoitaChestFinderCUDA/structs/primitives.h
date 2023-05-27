@@ -1,10 +1,14 @@
 #pragma once
 
+#ifdef _MSC_VER //already defined for GCC?
 typedef unsigned char byte;
+#endif
 typedef signed char sbyte;
 typedef unsigned short ushort;
 typedef unsigned int uint;
+#ifdef _MSC_VER //already defined for GCC?
 typedef unsigned long long int ulong;
+#endif
 
 struct IntPair {
 	int x;
@@ -28,3 +32,13 @@ struct IntPair {
 		return { x * scalar, y * scalar };
 	}
 };
+
+size_t operator""_MB(size_t x)
+{
+	return x * 1024 * 1024;
+}
+
+size_t operator""_GB(size_t x)
+{
+	return x * 1024 * 1024 * 1024;
+}

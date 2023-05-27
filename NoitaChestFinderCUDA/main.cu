@@ -219,7 +219,7 @@ DeviceConfig CreateConfigs()
 	//MINES
 	MapConfig mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
 	const char* fileName = "wang/minesWang.bin";
-	constexpr auto NUMBLOCKS = 128;
+	constexpr auto NUMBLOCKS = 256;
 	constexpr auto BLOCKSIZE = 64;
 	constexpr auto mapMemMult = 1;
 	constexpr auto miscMemMult = 6;
@@ -272,7 +272,7 @@ DeviceConfig CreateConfigs()
 		4096
 	};
 
-	GeneralConfig generalCfg = { LLONG_MAX, 1, INT_MAX, 65536, 1, 1, 1 };
+	GeneralConfig generalCfg = { 40_GB, 1, INT_MAX, 65536, 1, 1, 1 };
 	SpawnableConfig spawnableCfg = {0, 0, 0, 0, false, false, false, false, true, false, false, true, false, false, false};
 
 	Item iF1[FILTER_OR_COUNT] = { SAMPO, TRUE_ORB };
@@ -295,24 +295,28 @@ DeviceConfig CreateConfigs()
 		{false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
 		{false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_GOLD_VEIN_SUPER}},
 		{false, {FungalShift(SS_FLASK, SD_CHEESE_STATIC, 0, 4), FungalShift(), FungalShift(), FungalShift()}},
-		{true, {{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EDIT_WANDS_EVERYWHERE, true, 0, 3}, {PERK_NO_MORE_SHUFFLE, false, 0, 6}, {PERK_PROTECTION_EXPLOSION, false, 0, 6}}},
+		{true, //Example: Searches for perk lottery + extra perk in first HM, then any 4 perks in 2nd HM as long as they all are lottery picks
+			{{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EXTRA_PERK, true, 0, 3}, {PERK_NONE, true, 3, 7}, {PERK_NONE, true, 3, 7}, {PERK_NONE, true, 3, 7}, {PERK_NONE, true, 3, 7}},
+			{3, 4, 4, 4, 4, 4, 4} //Also, XX_NONE is considered to be equal to everything for like 90% of calculations
+		},
 	};
 
 	size_t freeMem;
 	size_t totalMem;
 	cudaMemGetInfo(&freeMem, &totalMem);
-	freeMem *= 0.9f;
-	generalCfg.requestedMemory = min(freeMem, generalCfg.requestedMemory);
-
+	freeMem *= 0.9f; //leave a bit of extra
 	printf("memory free: %lli of %lli bytes\n", freeMem, totalMem);
 
 #ifdef DO_WORLDGEN
 	size_t minMemoryPerThread = memSizes.outputSize * 2 + memSizes.mapDataSize + memSizes.miscMemSize + memSizes.visitedMemSize;
 	int numThreads = freeMem / minMemoryPerThread;
 	int numBlocks = numThreads / BLOCKSIZE;
-	int numBlocksRounded = numBlocks - numBlocks % 8;
+	int numBlocksRounded = min(NUMBLOCKS, numBlocks - numBlocks % 8);
+	generalCfg.requestedMemory = minMemoryPerThread * numBLocksRounded * BLOCKSIZE;
 	printf("creating %i thread blocks\n", numBlocksRounded);
 #else
+	size_t minMemoryPerThread = memSizes.outputSize * 2;
+	generalCfg.requestedMemory = minMemoryPerThread * NUMBLOCKS * BLOCKSIZE;
 	int numBlocksRounded = NUMBLOCKS;
 #endif
 
