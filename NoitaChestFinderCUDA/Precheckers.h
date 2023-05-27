@@ -408,19 +408,15 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 	for (int i = 0; i < maxPerkCount; i++)
 		if (perkDeck[i] != 0) perkDeck[perkDeckIdx++] = perkDeck[i];
 
-	bool usedPerks[maxPerkCount];
-	memset(usedPerks, false, maxPerkCount);
-
 	NollaPRNG rnd = NollaPRNG(random.world_seed);
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < maxPerkFilters; i++)
 	{
 		PerkInfo perkToCkeck = c.perks[i];
-		if (c.perks[i].p == PERK_NONE) break;
+		if (c.perks[i].minPosition >= c.perks[i].maxPosition) continue;
 		bool found = false;
 		for (int j = (perkToCkeck.minPosition + perkDeckIdx) % perkDeckIdx; j < (perkToCkeck.maxPosition + perkDeckIdx) % perkDeckIdx; j++)
 		{
-			if (usedPerks[j]) continue;
-			if (perkToCkeck.p == perkDeck[j])
+			if (perkToCkeck.p == perkDeck[j] || perkToCkeck.p == PERK_NONE)
 			{
 				if (perkToCkeck.lottery)
 				{
@@ -437,13 +433,11 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 					rnd.SetRandomSeed(x, y);
 					if (rnd.Random(1, 100) > 50)
 					{
-						usedPerks[j] = true;
 						found = true;
 					}
 				}
 				else
 				{
-					usedPerks[j] = true;
 					found = true;
 				}
 			}

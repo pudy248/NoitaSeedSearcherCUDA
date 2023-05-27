@@ -55,16 +55,18 @@ struct BiomeModifierConfig
 	BiomeModifier modifiers[9];
 };
 
-constexpr auto maxFungalShifts = 4;
+constexpr int maxFungalShifts = 4;
 struct FungalShiftConfig
 {
 	bool check;
 	FungalShift shifts[maxFungalShifts];
 };
+
+constexpr int maxPerkFilters = 24;
 struct PerkConfig
 {
 	bool check;
-	PerkInfo perks[20];
+	PerkInfo perks[maxPerkFilters];
 	byte perksPerMountain[7];
 };
 
