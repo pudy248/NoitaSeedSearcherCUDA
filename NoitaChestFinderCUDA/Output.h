@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-enum ThreadState : byte
+enum ThreadState : uint8_t
 {
 	Running, //Computation ongoing
 	SeedFound, //Waiting for host output read
@@ -21,11 +21,11 @@ enum ThreadState : byte
 
 struct UnifiedOutputFlags
 {
-	uint seed;
+	uint32_t seed;
 	ThreadState state;
 };
 
-__device__ void WriteOutputBlock(byte* output, int seed, Spawnable** spawnables, int sCount)
+__device__ void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount)
 {
 	int offset = 0;
 	writeInt(output, offset, seed);

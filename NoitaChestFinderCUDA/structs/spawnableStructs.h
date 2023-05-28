@@ -19,7 +19,7 @@ struct Spawnable
 #pragma pack(pop)
 struct SpawnableBlock
 {
-	uint seed;
+	uint32_t seed;
 	int count;
 	Spawnable** spawnables;
 };
@@ -64,7 +64,7 @@ struct Wand
 	float speed;
 	int spread;
 	bool shuffle;
-	byte spellCount;
+	uint8_t spellCount;
 	LabelledSpell alwaysCast;
 	LabelledSpell spells[67];
 };
@@ -81,7 +81,7 @@ struct WandData
 	float speed;
 	int spread;
 	bool shuffle;
-	byte spellCount;
+	uint8_t spellCount;
 	LabelledSpell alwaysCast;
 	LabelledSpell spells;
 };
@@ -102,16 +102,16 @@ struct WandSprite
 {
 	const char* name;
 	int fileNum;
-	sbyte grip_x;
-	sbyte grip_y;
-	sbyte tip_x;
-	sbyte tip_y;
-	sbyte fire_rate_wait;
-	sbyte actions_per_round;
+	int8_t grip_x;
+	int8_t grip_y;
+	int8_t tip_x;
+	int8_t tip_y;
+	int8_t fire_rate_wait;
+	int8_t actions_per_round;
 	bool shuffle_deck_when_empty;
-	sbyte deck_capacity;
-	sbyte spread_degrees;
-	sbyte reload_time;
+	int8_t deck_capacity;
+	int8_t spread_degrees;
+	int8_t reload_time;
 };
 struct WandSpaceDat
 {
@@ -125,19 +125,19 @@ struct WandSpaceDat
 
 
 __host__ __device__
-byte readByte(byte* ptr, int& offset)
+uint8_t readByte(uint8_t* ptr, int& offset)
 {
 	return ptr[offset++];
 }
 
 __host__ __device__
-void writeByte(byte* ptr, int& offset, byte b)
+void writeByte(uint8_t* ptr, int& offset, uint8_t b)
 {
 	ptr[offset++] = b;
 }
 
 __host__ __device__
-int readInt(byte* ptr, int& offset)
+int readInt(uint8_t* ptr, int& offset)
 {
 	int tmp;
 	memcpy(&tmp, ptr + offset, 4);
@@ -146,14 +146,14 @@ int readInt(byte* ptr, int& offset)
 }
 
 __host__ __device__
-void writeInt(byte* ptr, int& offset, int val)
+void writeInt(uint8_t* ptr, int& offset, int val)
 {
 	memcpy(ptr + offset, &val, 4);
 	offset += 4;
 }
 
 __host__ __device__
-void incrInt(byte* ptr)
+void incrInt(uint8_t* ptr)
 {
 	int offsetTmp = 0;
 	int tmp = readInt(ptr, offsetTmp);
@@ -162,13 +162,13 @@ void incrInt(byte* ptr)
 }
 
 __host__ __device__
-short readShort(byte* ptr, int& offset)
+short readShort(uint8_t* ptr, int& offset)
 {
 	return (readByte(ptr, offset) | (readByte(ptr, offset) << 8));
 }
 
 __host__ __device__
-void writeShort(byte* ptr, int& offset, short s)
+void writeShort(uint8_t* ptr, int& offset, short s)
 {
 	writeByte(ptr, offset, ((short)s) & 0xff);
 	writeByte(ptr, offset, (((short)s) >> 8) & 0xff);
@@ -176,14 +176,14 @@ void writeShort(byte* ptr, int& offset, short s)
 
 __device__ int readMisaligned(int* ptr2)
 {
-	byte* ptr = (byte*)ptr2;
+	uint8_t* ptr = (uint8_t*)ptr2;
 	int offset = 0;
 	return readInt(ptr, offset);
 }
 
 __device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 {
-	byte* bPtr = (byte*)sPtr;
+	uint8_t* bPtr = (uint8_t*)sPtr;
 	Spawnable s;
 	int offset = 0;
 	s.x = readInt(bPtr, offset);

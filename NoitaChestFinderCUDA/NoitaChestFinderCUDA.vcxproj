@@ -110,7 +110,6 @@
     <ClInclude Include="structs\staticPrecheckStructs.h" />
     <ClInclude Include="Worldgen.h" />
     <ClInclude Include="data\alchemy.h" />
-    <ClInclude Include="data\coalhax.h" />
     <ClInclude Include="data\modifiers.h" />
     <ClInclude Include="data\perks.h" />
     <ClInclude Include="data\spells.h" />

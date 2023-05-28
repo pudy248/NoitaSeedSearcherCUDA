@@ -361,9 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-/NoitaChestFinderCUDA/output.bin
-/NoitaChestFinderCUDA/chests.hex
 /NoitaChestFinderCUDA/out.ncu-rep
 NoitaChestFinderCUDA/output.txt
-NoitaChestFinderCUDA/outputSorted.txt
-NoitaChestFinderCUDA/outputs/384850.png
+NoitaChestFinderCUDA/outputs/*

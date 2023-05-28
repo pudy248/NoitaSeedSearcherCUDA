@@ -461,7 +461,7 @@ enum Material : short
 	SPARK_PLAYER,
 	SPARK_TEAL
 };
-enum Item : byte
+enum Item : uint8_t
 {
 	ITEM_NONE,
 
@@ -530,7 +530,7 @@ enum Item : byte
 	SAMPO,
 	TRUE_ORB,
 };
-enum SpawnableMetadata : byte
+enum SpawnableMetadata : uint8_t
 {
 	BYTE_NONE,
 	TYPE_CHEST = 8,
@@ -621,7 +621,7 @@ enum ShiftDest : short
 	SD_CHEESE_STATIC = Material::CHEESE_STATIC,
 };
 
-enum Biome : byte
+enum Biome : uint8_t
 {
 	B_NONE,
 	B_COALMINE,
@@ -634,7 +634,7 @@ enum Biome : byte
 	B_VAULT,
 	B_CRYPT,
 };
-enum BiomeModifier : byte
+enum BiomeModifier : uint8_t
 {
 	BM_NONE,
 	BM_MOIST,
@@ -661,7 +661,7 @@ enum BiomeModifier : byte
 	BM_WORMY
 };
 
-enum Perk : byte
+enum Perk : uint8_t
 {
 	PERK_NONE,
 	PERK_CRITICAL_HIT,

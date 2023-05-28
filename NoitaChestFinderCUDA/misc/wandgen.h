@@ -162,9 +162,9 @@ __device__ StatProbBlock statProbabilitiesBetter[] = {
 	}
 };
 
-__device__ Spell GetRandomAction(uint seed, double x, double y, int level, int offset)
+__device__ Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset)
 {
-	NollaPRNG random = NollaPRNG((uint)(seed + offset));
+	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
 	random.SetRandomSeed(x, y);
 	level = min(level, 10);
 
@@ -186,9 +186,9 @@ __device__ Spell GetRandomAction(uint seed, double x, double y, int level, int o
 	}
 	return tierProbs[low].s;
 }
-__device__ Spell GetRandomActionWithType(uint seed, double x, double y, int level, ActionType type, int offset)
+__device__ Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset)
 {
-	NollaPRNG random = NollaPRNG((uint)(seed + offset));
+	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
 	random.SetRandomSeed(x, y);
 	level = min(level, 10);
 
@@ -531,7 +531,7 @@ __device__ Wand GetWandStatsBetter(int _cost, int level, NollaPRNG* random)
 	return gun;
 }
 
-__device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _level, NollaPRNG* random)
+__device__ void AddRandomCards(Wand* gun, uint32_t seed, double x, double y, int _level, NollaPRNG* random)
 {
 	bool is_rare = gun->is_rare;
 	int goodCards = 5;
@@ -652,7 +652,7 @@ __device__ void AddRandomCards(Wand* gun, uint seed, double x, double y, int _le
 		}
 	}
 }
-__device__ void AddRandomCardsBetter(Wand* gun, uint seed, double x, double y, int _level, NollaPRNG* random)
+__device__ void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, double y, int _level, NollaPRNG* random)
 {
 	bool is_rare = gun->is_rare;
 	int goodCards = 5;
@@ -732,7 +732,7 @@ __device__ void AddRandomCardsBetter(Wand* gun, uint seed, double x, double y, i
 	}
 }
 
-__device__ Wand GetWand(uint seed, double x, double y, int cost, int level, bool force_unshuffle)
+__device__ Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
@@ -742,7 +742,7 @@ __device__ Wand GetWand(uint seed, double x, double y, int cost, int level, bool
 	AddRandomCards(&wand, seed, x, y, level, &random);
 	return wand;
 }
-__device__ Wand GetWandBetter(uint seed, double x, double y, int cost, int level)
+__device__ Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
@@ -753,7 +753,7 @@ __device__ Wand GetWandBetter(uint seed, double x, double y, int cost, int level
 	return wand;
 }
 
-__device__ __noinline__ Wand GetWandWithLevel(uint seed, double x, double y, int level, bool nonshuffle, bool better)
+__device__ __noinline__ Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better)
 {
 	if (nonshuffle)
 		switch (level)

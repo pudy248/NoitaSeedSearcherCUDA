@@ -69,7 +69,7 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 	return pathFound;
 }*/
 
-__device__ bool traversable(byte* map, int x, int y, int rmw)
+__device__ bool traversable(uint8_t* map, int x, int y, int rmw)
 {
 	long c = getPixelColor(map, rmw, x, y);
 
@@ -77,7 +77,7 @@ __device__ bool traversable(byte* map, int x, int y, int rmw)
 }
 
 __device__
-void tryNext(int x, int y, byte* map, IntPair* stackCache, int& stackSize, byte* visited, int rmw, int rmh)
+void tryNext(int x, int y, uint8_t* map, IntPair* stackCache, int& stackSize, uint8_t* visited, int rmw, int rmh)
 {
 	if (x >= 0 && y >= 0 && x < rmw && y < rmh) {
 		if (visited[y * rmw + x] == 0 && traversable(map, x, y, rmw))
@@ -88,7 +88,7 @@ void tryNext(int x, int y, byte* map, IntPair* stackCache, int& stackSize, byte*
 	}
 }
 
-__device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uint map_w, const uint map_h, int x, int y)
+__device__ bool findPath(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, const uint32_t map_w, const uint32_t map_h, int x, int y)
 {
 	int rmw = map_w; //register map width
 	int rmh = map_h; //register map height
@@ -120,7 +120,7 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 	return pathFound;
 }
 
-__device__ bool HasPathToBottom(byte* map, byte* stackMemArea, byte* visited, uint map_w, uint map_h, uint path_start_x, bool fixed_x)
+__device__ bool HasPathToBottom(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, uint32_t map_w, uint32_t map_h, uint32_t path_start_x, bool fixed_x)
 {
 	if (fixed_x)
 	{
@@ -153,8 +153,8 @@ __device__ bool HasPathToBottom(byte* map, byte* stackMemArea, byte* visited, ui
 	return false;
 }
 
-__device__ bool isValid(byte* map, byte* stackMemArea, byte* visited, uint map_w, uint map_h, int worldX, int worldY, bool isCoalMine) {
-	uint path_start_x = 0;
+__device__ bool isValid(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, uint32_t map_w, uint32_t map_h, int worldX, int worldY, bool isCoalMine) {
+	uint32_t path_start_x = 0;
 	bool mainPath = isMainPath(map_w, worldX);
 	if (isCoalMine)
 	{

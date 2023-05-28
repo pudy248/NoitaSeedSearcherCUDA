@@ -22,7 +22,7 @@
 
 #include <iostream>
 
-__device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint worldSeed)
+__device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed)
 {
 	AlchemyRecipe result;
 	int counter = 0;
@@ -139,22 +139,15 @@ __device__ static bool FungalShiftEquals(FungalShift reference, FungalShift test
 	return true;
 }
 
-__device__ void shuffle_table(byte* perk_deck, NollaPRNG& rng, int iters)
+__device__ void shuffle_table(uint8_t* perk_deck, NollaPRNG& rng, int iters)
 {
 	for (int i = iters; i > 0; i--)
 	{
 		int j = rng.Random(0, i);
-		sbyte tmp = perk_deck[i];
+		int8_t tmp = perk_deck[i];
 		perk_deck[i] = perk_deck[j];
 		perk_deck[j] = tmp;
 	}
-}
-
-__device__ Wand GetShopWand(NollaPRNG* random, double x, double y, int level)
-{
-	random->SetRandomSeed(x, y);
-	bool shuffle = random->Random(0, 100) <= 50;
-	return GetWandWithLevel(random->world_seed, x, y, level, shuffle, false);
 }
 
 __device__ bool CheckRain(NollaPRNG& random, RainConfig c)
@@ -346,7 +339,7 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 	random.SetRandomSeedInt(1, 2);
 
 	constexpr int maxPerkCount = 130;
-	byte perkDeck[maxPerkCount];
+	uint8_t perkDeck[maxPerkCount];
 
 	int perkDeckIdx = 0;
 	for (int i = 0; i < maxPerkCount; i++) perkDeck[i] = PERK_NONE;
@@ -361,7 +354,7 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 
 		if (perkData.stackable)
 		{
-			byte max_perks = random.Random(1, 2);
+			uint8_t max_perks = random.Random(1, 2);
 			if (perkData.max_in_pool != 0)
 			{
 				max_perks = random.Random(1, perkData.max_in_pool);
@@ -385,7 +378,7 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 
 	for (int i = perkDeckIdx - 1; i >= 0; i--)
 	{
-		byte perk = perkDeck[i];
+		uint8_t perk = perkDeck[i];
 		if (perkStackableDistances[perk - 1] != -1)
 		{
 			short min_distance = perkStackableDistances[perk - 1];
@@ -447,10 +440,9 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 	return true;
 }
 
-/*
-__device__ bool CheckUpwarps(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg)
+/*__device__ bool CheckUpwarps(NollaPRNG& random, FilterConfig fCfg, LootConfig lCfg)
 {
-	byte bytes[2000];
+	uint8_t bytes[2000];
 	int offset = 0;
 	int _ = 0;
 	spawnChest(315, 17, random.world_seed, lCfg, bytes, offset, _);
@@ -460,100 +452,9 @@ __device__ bool CheckUpwarps(NollaPRNG* random, FilterConfig fCfg, LootConfig lC
 	SpawnableBlock b = { random.world_seed, 2, spawnables };
 
 	return SpawnablesPassed(b, fCfg, NULL, false);
-}
+}*/
 
-__device__ bool CheckPacifists(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx)
-{
-	byte bytes[3000];
-	Spawnable* mountains[7] = { NULL,NULL,NULL,NULL,NULL,NULL,NULL };
-	int offset = 0;
-	int _ = 0;
-	for (int hm_level = minIdx; hm_level < maxIdx; hm_level++)
-	{
-		int x = temple_x[hm_level] + chestOffsetX;
-		int y = temple_y[hm_level] + chestOffsetY;
-		byte* mountainStart = bytes + offset;
-		CheckNormalChestLoot(x, y, random.world_seed, lCfg, false, bytes, offset, _);
-		mountains[hm_level] = (Spawnable*)mountainStart;
-	}
-	SpawnableBlock b = { random.world_seed, 7, mountains };
-	return SpawnablesPassed(b, fCfg, NULL, false);
-}
-
-__device__ bool CheckShops(NollaPRNG* random, FilterConfig fCfg, LootConfig lCfg, int minIdx, int maxIdx, int _itemCount, bool checkSpells, bool checkWands)
-{
-	int width = 132;
-	constexpr int itemCount = 5;
-	float stepSize = width / (float)itemCount;
-	for (int pw = lCfg.pwCenter - lCfg.pwWidth; pw <= lCfg.pwCenter + lCfg.pwWidth; pw++)
-	{
-		bool passed = false;
-
-		byte bytes[5000];
-		Spawnable* mountains[7] = { NULL,NULL,NULL,NULL,NULL,NULL,NULL };
-		int offset = 0;
-		for (int hm_level = minIdx; hm_level < min(maxIdx, pw == 0 ? 7 : 6); hm_level++)
-		{
-			int x = temple_x[hm_level] + shopOffsetX + 70 * 512 * pw;
-			int y = temple_y[hm_level] + shopOffsetY;
-			int tier = temple_tiers[hm_level];
-			random.SetRandomSeed(x, y);
-			int sale_item = random.Random(0, itemCount - 1);
-			bool wands = random.Random(0, 100) > 50;
-
-			if (wands)
-			{
-				if (!checkWands) continue;
-#ifdef DO_WANDGEN
-				byte* mountainStart = bytes + offset;
-				writeInt(bytes, offset, x);
-				writeInt(bytes, offset, y);
-				writeByte(bytes, offset, TYPE_HM_SHOP);
-				int countOffset = offset;
-				offset += 4;
-
-				for (int i = 0; i < itemCount; i++)
-				{
-					Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier));
-					writeByte(bytes, offset, DATA_WAND);
-					memcpy(bytes + offset, &w.capacity, 37);
-					offset += 37;
-					memcpy(bytes + offset, w.spells, w.spellCount * 3);
-					offset += w.spellCount * 3;
-		}
-				writeInt(bytes, countOffset, offset - countOffset - 4);
-				mountains[hm_level] = (Spawnable*)mountainStart;
-#endif
-	}
-			else
-			{
-				if(!checkSpells) continue;
-				byte* mountainStart = bytes + offset;
-				writeInt(bytes, offset, x);
-				writeInt(bytes, offset, y);
-				writeByte(bytes, offset, TYPE_HM_SHOP);
-				writeInt(bytes, offset, 6 * itemCount);
-
-				for (int i = 0; i < itemCount; i++)
-				{
-					writeByte(bytes, offset, DATA_SPELL);
-					writeShort(bytes, offset, GetRandomAction(random.world_seed, x + i * stepSize, y - 30, tier, 0));
-					writeByte(bytes, offset, DATA_SPELL);
-					writeShort(bytes, offset, GetRandomAction(random.world_seed, x + i * stepSize, y, tier, 0));
-				}
-				mountains[hm_level] = (Spawnable*)mountainStart;
-			}
-}
-
-		SpawnableBlock b = { random.world_seed, 7, mountains };
-		passed = SpawnablesPassed(b, fCfg, NULL, false);
-		if (passed) return true;
-	}
-	return false;
-}
-*/
-
-__device__ bool PrecheckSeed(uint seed, StaticPrecheckConfig c)
+__device__ bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c)
 {
 	NollaPRNG sharedRandom = NollaPRNG(seed);
 	/*for (int max_safe_polymorphs = 0; max_safe_polymorphs < 100; max_safe_polymorphs++)

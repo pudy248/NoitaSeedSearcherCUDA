@@ -12,7 +12,7 @@
 #include "Output.h"
 #include "Configuration.h"
 
-__device__ void PrintBytes(byte* ptr, int count)
+__device__ void PrintBytes(uint8_t* ptr, int count)
 {
 	char buffer[2000];
 	int offset = 0;
@@ -71,7 +71,7 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 		if (c == DATA_MATERIAL)
 		{
 			int offset = n + 1;
-			Material m2 = (Material)readShort((byte*)(&s->contents), offset);
+			Material m2 = (Material)readShort((uint8_t*)(&s->contents), offset);
 
 
 			for (int i = 0; i < FILTER_OR_COUNT; i++)
@@ -103,7 +103,7 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 	}
 }
 
-__device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& foundCount)
+__device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, int& foundCount)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -112,7 +112,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 		if (c == DATA_SPELL && !sf.asAlwaysCast)
 		{
 			int offset = n + 1;
-			Spell sp2 = (Spell)readShort((byte*)(&s->contents), offset);
+			Spell sp2 = (Spell)readShort((uint8_t*)(&s->contents), offset);
 
 
 			for (int i = 0; i < FILTER_OR_COUNT; i++)
@@ -140,7 +140,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 			if (sf.asAlwaysCast)
 			{
 				int offset = n + 1;
-				Spell AC = (Spell)readShort((byte*)(&s->contents), offset);
+				Spell AC = (Spell)readShort((uint8_t*)(&s->contents), offset);
 				for (int i = 0; i < FILTER_OR_COUNT; i++)
 				{
 					if (sf.spells[i] != SPELL_NONE && AC == sf.spells[i])
@@ -156,7 +156,7 @@ __device__ void SpellFilterPassed(uint seed, Spawnable* s, SpellFilter sf, int& 
 	}
 }
 
-__device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig)
+__device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -181,7 +181,7 @@ __device__ bool WandFilterPassed(uint seed, Spawnable* s, int howBig)
 	return false;
 }
 
-__device__ bool SpawnablesPassed(SpawnableBlock b, MapConfig mCfg, FilterConfig fCfg, byte* output, byte* bufferMem, bool write)
+__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* bufferMem, bool write)
 {
 	int relevantSpawnableCount = 0;
 	Spawnable* relevantSpawnables[10];
@@ -262,7 +262,6 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, MapConfig mCfg, FilterConfig 
 			if (s == NULL) continue;
 
 			Spawnable sDat = readMisalignedSpawnable(s);
-			if (sDat.x < mCfg.minX || sDat.x > mCfg.maxX || sDat.y < mCfg.minY || sDat.y > mCfg.maxY) continue;
 
 			bool failed = false;
 			for (int i = 0; i < fCfg.itemFilterCount; i++)

@@ -42,7 +42,7 @@ __device__ int pick_random_from_table_weighted(const float* probs, float sum, in
 	return 0;
 }
 
-__device__ uint createRGB(const byte r, const byte g, const byte b)
+__device__ uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
 {
 	return (r << 16) | (g << 8) | b;
 }

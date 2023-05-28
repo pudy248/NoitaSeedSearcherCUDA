@@ -9,30 +9,30 @@
 
 struct MemoryArena
 {
-	byte* ptr;
-	size_t offset;
+	uint8_t* ptr;
+	uint64_t offset;
 };
 
-__device__ byte* ArenaAlloc(MemoryArena& arena, size_t size)
+__device__ uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size)
 {
-	byte* ptr = arena.ptr + arena.offset;
+	uint8_t* ptr = arena.ptr + arena.offset;
 	arena.offset += size;
 	return ptr;
 }
 
-__device__ byte* ArenaAlloc(MemoryArena& arena, size_t size, size_t alignmentWidth)
+__device__ uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth)
 {
-	byte* ptr = arena.ptr + arena.offset;
-	size_t ptrAddr = (size_t)ptr;
+	uint8_t* ptr = arena.ptr + arena.offset;
+	uint64_t ptrAddr = (uint64_t)ptr;
 	int alignment = ptrAddr % alignmentWidth;
 	arena.offset += alignmentWidth - alignment;
-	byte* alignedPtr = arena.ptr + arena.offset;
+	uint8_t* alignedPtr = arena.ptr + arena.offset;
 	arena.offset += size;
 	return alignedPtr;
 }
 
-__device__ void ArenaSetOffset(MemoryArena& arena, byte* endPointer)
+__device__ void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer)
 {
-	size_t offset = endPointer - arena.ptr;
+	uint64_t offset = endPointer - arena.ptr;
 	arena.offset = offset;
 }

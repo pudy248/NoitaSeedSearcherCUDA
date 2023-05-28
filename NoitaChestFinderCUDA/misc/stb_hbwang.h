@@ -24,7 +24,7 @@ struct stbhw_tile
 {
 	signed char a, b, c, d, e, f;
 
-	byte pixels[1];
+	uint8_t pixels[1];
 };
 
 struct stbhw_tileset
@@ -65,7 +65,7 @@ struct stbhw_config
 typedef struct stbhw__process
 {
 	stbhw_config* c;
-	byte* data;
+	uint8_t* data;
 	int stride, w, h;
 } stbhw__process;
 
@@ -307,13 +307,13 @@ static int stbhw__process_template(stbhw__process* p, stbhw_tileset* tileSet, Me
 }
 
 __device__
-static void stbhw__draw_pixel(byte* output, int stride, int x, int y, byte c[3])
+static void stbhw__draw_pixel(uint8_t* output, int stride, int x, int y, uint8_t c[3])
 {
 	memcpy(output + y * stride + x * 3, c, 3);
 }
 
 __device__
-static void stbhw__draw_h_tile(byte* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
+static void stbhw__draw_h_tile(uint8_t* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
 {
 	int i, j;
 	for (j = 0; j < sz; ++j)
@@ -324,7 +324,7 @@ static void stbhw__draw_h_tile(byte* output, int stride, int xmax, int ymax, int
 }
 
 __device__
-static void stbhw__draw_v_tile(byte* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
+static void stbhw__draw_v_tile(uint8_t* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
 {
 	int i, j;
 	for (j = 0; j < sz * 2; ++j)
@@ -339,7 +339,7 @@ __device__
 static stbhw_tile* stbhw__choose_tile(stbhw_tile** list, int numlist,
 	signed char* a, signed char* b, signed char* c,
 	signed char* d, signed char* e, signed char* f,
-	uint(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
+	uint32_t(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
 {
 	int i, n, m = 1 << 30, pass;
 	for (pass = 0; pass < 2; ++pass)
@@ -391,7 +391,7 @@ static int stbhw__match(int x, int y, signed char c_color[STB_HBWANG_MAX_Y + 6][
 }
 
 __device__
-static int stbhw__change_color(int old_color, int num_options, uint(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
+static int stbhw__change_color(int old_color, int num_options, uint32_t(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
 {
 	int offset = 1 + getRandom(prng) % (num_options - 1);
 	return (old_color + offset) % num_options;
@@ -400,7 +400,7 @@ static int stbhw__change_color(int old_color, int num_options, uint(*getRandom)(
 // generate a map that is w * h pixels (3-bytes each)
 // returns 1 on success, 0 on error
 __device__
-int stbhw_generate_image(byte* output, stbhw_tileset* tileSet, int stride, int w, int h, uint(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
+int stbhw_generate_image(uint8_t* output, stbhw_tileset* tileSet, int stride, int w, int h, uint32_t(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
 {
 	signed char c_color[STB_HBWANG_MAX_Y + 6][STB_HBWANG_MAX_X + 6];
 	signed char v_color[STB_HBWANG_MAX_Y + 6][STB_HBWANG_MAX_X + 5];
@@ -567,12 +567,12 @@ int stbhw_generate_image(byte* output, stbhw_tileset* tileSet, int stride, int w
 }
 
 __device__
-int stbhw_build_tileset_from_image(byte* data, MemoryArena& arena, int stride, int w, int h)
+int stbhw_build_tileset_from_image(uint8_t* data, MemoryArena& arena, int stride, int w, int h)
 {
 	stbhw_tileset* tileSet = (stbhw_tileset*)ArenaAlloc(arena, sizeof(stbhw_tileset));
 
 	int i, h_count, v_count;
-	byte header[9];
+	uint8_t header[9];
 	stbhw_config c = { 0 };
 	stbhw__process p = { 0 };
 
