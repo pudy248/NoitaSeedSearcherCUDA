@@ -11,8 +11,6 @@
 // Check out his orb atlas repository: https://github.com/kaliuresis/noa
 // #include <stdint.h>
 
-using namespace std;
-
 class WorldgenPRNG
 {
 public:
@@ -26,10 +24,10 @@ public:
 	}
 
 	__host__ __device__
-		uint NextU()
+		uint32_t NextU()
 	{
 		Next();
-		return (uint)((Seed * 4.656612875e-10) * 2147483645.0);
+		return (uint32_t)((Seed * 4.656612875e-10) * 2147483645.0);
 	}
 
 	__host__ __device__
@@ -45,7 +43,7 @@ public:
 	}
 };
 
-__device__ uint StaticRandom(WorldgenPRNG* prng)
+__device__ uint32_t StaticRandom(WorldgenPRNG* prng)
 {
 	return prng->NextU();
 }
@@ -54,36 +52,36 @@ class NollaPRNG
 {
 public:
 	__host__ __device__
-		NollaPRNG(uint worldSeed)
+		NollaPRNG(uint32_t worldSeed)
 	{
 		world_seed = worldSeed;
 		Seed = worldSeed;
 	}
 
-	uint world_seed = 0;
+	uint32_t world_seed = 0;
 	int Seed;
 
 	__host__ __device__
-		ulong SetRandomSeedHelper(double r)
+		uint64_t SetRandomSeedHelper(double r)
 	{
-		ulong e = *(ulong*)&r;
+		uint64_t e = *(uint64_t*)&r;
 
 		if (((e >> 0x20 & 0x7fffffff) < 0x7ff00000) && (-9.223372036854776e+18 <= r) && (r < 9.223372036854776e+18))
 		{
 			e <<= 1;
 			e >>= 1;
 			double s = *(double*)&e;
-			ulong i = 0;
+			uint64_t i = 0;
 			if (s != 0.0)
 			{
-				ulong f = (e & 0xfffffffffffff) | 0x0010000000000000;
-				ulong g = 0x433 - (e >> 0x34);
-				ulong h = f >> (int)g;
+				uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
+				uint64_t g = 0x433 - (e >> 0x34);
+				uint64_t h = f >> (int)g;
 
-				uint j = ~(uint)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
-				i = (ulong)j << 0x20 | j;
+				uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
+				i = (uint64_t)j << 0x20 | j;
 				i = ~i & h | f << (((int)s >> 0x34) - 0x433) & i;
-				i = ~(~(uint)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint)(r == s ? 1 : 0) + 1);
+				i = ~(~(uint32_t)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint32_t)(r == s ? 1 : 0) + 1);
 			}
 			return i & 0xffffffff;
 		}
@@ -91,11 +89,11 @@ public:
 	}
 
 	__host__ __device__
-		uint SetRandomSeedHelper2(uint a, uint b, uint ws)
+		uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
 	{
-		uint uVar1;
-		uint uVar2;
-		uint uVar3;
+		uint32_t uVar1;
+		uint32_t uVar2;
+		uint32_t uVar3;
 
 		uVar2 = (a - b) - ws ^ ws >> 0xd;
 		uVar1 = (b - uVar2) - ws ^ uVar2 << 8;
@@ -108,43 +106,43 @@ public:
 		return (uVar3 - uVar2) - uVar1 ^ uVar1 >> 0xf;
 	}
 
-	uint H2(uint a, uint b, uint ws)
+	uint32_t H2(uint32_t a, uint32_t b, uint32_t ws)
 	{
-		uint v3;
-		uint v4;
-		uint v5;
+		uint32_t v3;
+		uint32_t v4;
+		uint32_t v5;
 		int v6;
-		uint v7;
-		uint v8;
+		uint32_t v7;
+		uint32_t v8;
 		int v9;
 
 		v3 = (ws >> 13) ^ (b - a - ws);
 		v4 = (v3 << 8) ^ (a - v3 - ws);
 		v5 = (v4 >> 13) ^ (ws - v3 - v4);
 		v6 = (int)((v5 >> 12) ^ (v3 - v4 - v5));
-		v7 = (uint)(v6 << 16) ^ (uint)(v4 - v6 - v5);
-		v8 = (v7 >> 5) ^ (uint)(v5 - v6 - v7);
-		v9 = (int)((v8 >> 3) ^ (uint)(v6 - v7 - v8));
-		return (((uint)(v9 << 10) ^ (uint)(v7 - v9 - v8)) >> 15) ^ (uint)(v8 - v9 - ((uint)(v9 << 10) ^ (uint)(v7 - v9 - v8)));
+		v7 = (uint32_t)(v6 << 16) ^ (uint32_t)(v4 - v6 - v5);
+		v8 = (v7 >> 5) ^ (uint32_t)(v5 - v6 - v7);
+		v9 = (int)((v8 >> 3) ^ (uint32_t)(v6 - v7 - v8));
+		return (((uint32_t)(v9 << 10) ^ (uint32_t)(v7 - v9 - v8)) >> 15) ^ (uint32_t)(v8 - v9 - ((uint32_t)(v9 << 10) ^ (uint32_t)(v7 - v9 - v8)));
 	}
 
 	__host__ __device__ __noinline__
 		void SetRandomSeed(double x, double y)
 	{
-		uint ws = world_seed;
-		uint a = ws ^ 0x93262e6f;
-		uint b = a & 0xfff;
-		uint c = (a >> 0xc) & 0xfff;
+		uint32_t ws = world_seed;
+		uint32_t a = ws ^ 0x93262e6f;
+		uint32_t b = a & 0xfff;
+		uint32_t c = (a >> 0xc) & 0xfff;
 
 		double x_ = x + b;
 
 		double y_ = y + c;
 
 		double r = x_ * 134217727.0;
-		ulong e = SetRandomSeedHelper(r);
+		uint64_t e = SetRandomSeedHelper(r);
 
-		ulong _x = *(ulong*)&x_ & 0x7fffffffffffffff;
-		ulong _y = *(ulong*)&y_ & 0x7fffffffffffffff;
+		uint64_t _x = *(uint64_t*)&x_ & 0x7fffffffffffffff;
+		uint64_t _y = *(uint64_t*)&y_ & 0x7fffffffffffffff;
 		if (102400.0 <= *(double*)&_y || *(double*)&_x <= 1.0)
 		{
 			r = y_ * 134217727.0;
@@ -158,9 +156,9 @@ public:
 			r = y_;
 		}
 
-		ulong f = SetRandomSeedHelper(r);
+		uint64_t f = SetRandomSeedHelper(r);
 
-		uint g = SetRandomSeedHelper2((uint)e, (uint)f, ws);
+		uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
 
 		//double s = g;
 		//s /= 4294967295.0;
@@ -169,9 +167,9 @@ public:
 		//Seed = (int)s;
 
 		//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
-		const uint diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
-		constexpr uint magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
-		uint t = g;
+		const uint32_t diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
+		constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
+		uint32_t t = g;
 		t = g + (g < 2147483648) + (g == 0);
 		t -= g / magic_number;
 		t += (g % magic_number < diddle_table[g / magic_number]) && (g < 0xc3c3c3c3 + 4 || g >= 0xc3c3c3c3 + 62);
@@ -181,7 +179,7 @@ public:
 
 		Next();
 
-		uint h = ws & 3;
+		uint32_t h = ws & 3;
 		while (h > 0)
 		{
 			Next();
@@ -190,25 +188,25 @@ public:
 	}
 
 	__host__ __device__
-		ulong SetRandomSeedHelperInt(long long r)
+		uint64_t SetRandomSeedHelperInt(long long r)
 	{
 		double dr = r;
-		ulong e = *(ulong*)&dr;
+		uint64_t e = *(uint64_t*)&dr;
 
 		e <<= 1;
 		e >>= 1;
 		double s = *(double*)&e;
-		ulong i = 0;
+		uint64_t i = 0;
 		if (e != 0)
 		{
-			ulong f = (e & 0xfffffffffffff) | 0x0010000000000000;
-			ulong g = 0x433 - (e >> 0x34);
-			ulong h = f >> (int)g;
+			uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
+			uint64_t g = 0x433 - (e >> 0x34);
+			uint64_t h = f >> (int)g;
 
-			uint j = ~(uint)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
-			i = (ulong)j << 0x20 | j;
+			uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
+			i = (uint64_t)j << 0x20 | j;
 			i = ~i & h | f << (((int)s >> 0x34) - 0x433) & i;
-			i = ~(~(uint)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint)(r == s ? 1 : 0) + 1);
+			i = ~(~(uint32_t)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint32_t)(r == s ? 1 : 0) + 1);
 		}
 		return i & 0xffffffff;
 	}
@@ -216,8 +214,8 @@ public:
 	__host__ __device__ __noinline__
 		void SetRandomSeedInt(int x, int y)
 	{
-		uint ws = world_seed;
-		uint a = ws ^ 0x93262e6f;
+		uint32_t ws = world_seed;
+		uint32_t a = ws ^ 0x93262e6f;
 		int b = a & 0xfff;
 		int c = (a >> 0xc) & 0xfff;
 
@@ -226,7 +224,7 @@ public:
 		int y_ = y + c;
 
 		long long r = x_ * 134217727LLU;
-		ulong e = SetRandomSeedHelperInt(r);
+		uint64_t e = SetRandomSeedHelperInt(r);
 
 		int _x = abs(x_);
 		int _y = abs(y_);
@@ -242,9 +240,9 @@ public:
 			r = y_ * y__;
 		}
 
-		ulong f = SetRandomSeedHelperInt(r);
+		uint64_t f = SetRandomSeedHelperInt(r);
 
-		uint g = SetRandomSeedHelper2((uint)e, (uint)f, ws);
+		uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
 
 		//double s = g;
 		//s /= 4294967295.0;
@@ -253,9 +251,9 @@ public:
 		//Seed = (int)s;
 
 		//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
-		const uint diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
-		constexpr uint magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
-		uint t = g;
+		const uint32_t diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
+		constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
+		uint32_t t = g;
 		t = g + (g < 2147483648) + (g == 0);
 		t -= g / magic_number;
 		t += (g % magic_number < diddle_table[g / magic_number]) && (g < 0xc3c3c3c3 + 4 || g >= 0xc3c3c3c3 + 62);
@@ -265,7 +263,7 @@ public:
 
 		Next();
 
-		uint h = ws & 3;
+		uint32_t h = ws & 3;
 		while (h > 0)
 		{
 			Next();
@@ -294,7 +292,7 @@ public:
 			v4 += 0x7fffffff;
 		}
 		Seed = v4;
-		return a + (int)(((ulong)(b + 1 - a) * (ulong)Seed) >> 31);
+		return a + (int)(((uint64_t)(b + 1 - a) * (uint64_t)Seed) >> 31);
 	}
 
 	__host__ __device__

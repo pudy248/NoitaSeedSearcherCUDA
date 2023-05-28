@@ -9,9 +9,9 @@
 
 struct GeneralConfig
 {
-	size_t requestedMemory;
-	uint startSeed;
-	uint endSeed;
+	uint64_t requestedMemory;
+	uint32_t startSeed;
+	uint32_t endSeed;
 	int seedBlockSize;
 	int printInterval;
 	int atomicGranularity;
@@ -19,11 +19,14 @@ struct GeneralConfig
 };
 struct MemSizeConfig
 {
-	size_t outputSize;
-	size_t mapDataSize;
-	size_t miscMemSize;
-	size_t visitedMemSize;
-	size_t bufferSize;
+	uint64_t outputSize;
+	uint64_t mapDataSize;
+	uint64_t miscMemSize;
+	uint64_t visitedMemSize;
+	uint64_t spawnableMemSize;
+	uint64_t bufferSize;
+
+	uint64_t threadMemTotal;
 };
 
 struct StartingFlaskConfig
@@ -67,7 +70,7 @@ struct PerkConfig
 {
 	bool check;
 	PerkInfo perks[maxPerkFilters];
-	byte perksPerMountain[7];
+	uint8_t perksPerMountain[7];
 };
 
 struct StaticPrecheckConfig
@@ -84,10 +87,10 @@ struct StaticPrecheckConfig
 
 struct MapConfig
 {
-	uint tiles_w;
-	uint tiles_h;
-	uint map_w;
-	uint map_h;
+	uint32_t tiles_w;
+	uint32_t tiles_h;
+	uint32_t map_w;
+	uint32_t map_h;
 	int worldX;
 	int worldY;
 

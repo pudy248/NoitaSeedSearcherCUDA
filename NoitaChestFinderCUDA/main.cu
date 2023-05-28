@@ -25,12 +25,11 @@ struct DeviceConfig
 	MemSizeConfig memSizes;
 	GeneralConfig generalCfg;
 	StaticPrecheckConfig precheckCfg;
-	MapConfig mapCfg;
 	SpawnableConfig spawnableCfg;
 	FilterConfig filterCfg;
 
-	//Unused in device code
-	const char* wangPath;
+	int biomeCount;
+	BiomeWangScope biomeScopes[20];
 };
 
 struct DevicePointers
@@ -38,35 +37,34 @@ struct DevicePointers
 	volatile int* uCheckedSeeds;
 	volatile int* uPassedSeeds;
 	volatile UnifiedOutputFlags* uFlags;
-	byte* uOutput;
-	byte* dTileData;
-	byte* dTileSet;
-	byte* dArena;
+	uint8_t* uOutput;
+	uint8_t* dArena;
 };
+
 struct HostPointers
 {
 	volatile int* hCheckedSeeds;
 	volatile int* hPassedSeeds;
 	volatile UnifiedOutputFlags* hFlags;
-	byte* uOutput;
-	byte* hOutput;
-	byte* hTileData;
+	uint8_t* uOutput;
+	uint8_t* hOutput;
 };
+
 struct AllPointers
 {
 	DevicePointers dPointers;
 	HostPointers hPointers;
 };
 
+
 __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 {
-	uint index = blockIdx.x * blockDim.x + threadIdx.x;
+	uint32_t index = blockIdx.x * blockDim.x + threadIdx.x;
 
 	volatile UnifiedOutputFlags* flags = dPointers.uFlags + index;
-	byte* uOutput = dPointers.uOutput + index * dConfig.memSizes.outputSize;
+	uint8_t* uOutput = dPointers.uOutput + index * dConfig.memSizes.outputSize;
 
-	size_t threadMemSize = dConfig.generalCfg.requestedMemory / (dConfig.NumBlocks * dConfig.BlockSize);
-	byte* threadMemPtr = dPointers.dArena + index * threadMemSize;
+	uint8_t* threadMemPtr = dPointers.dArena + index * dConfig.memSizes.threadMemTotal;
 	MemoryArena arena = { threadMemPtr, 0 };
 
 	int checkedCtr = 0;
@@ -74,7 +72,7 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 	int seedIndex = -1;
 
 	bool pollState = true;
-	uint startSeed = 0;
+	uint32_t startSeed = 0;
 
 	while (true)
 	{
@@ -118,49 +116,50 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 		checkedCtr++;
 		bool seedPassed = true;
 
-		byte* output = ArenaAlloc(arena, dConfig.memSizes.outputSize, 4);
+		uint8_t* output = ArenaAlloc(arena, dConfig.memSizes.outputSize, 4);
 
 		seedPassed &= PrecheckSeed(currentSeed, dConfig.precheckCfg);
 
 		if (!seedPassed)
 		{
-#ifdef DO_ATOMICS
 			if (checkedCtr > dConfig.generalCfg.atomicGranularity)
 			{
 				atomicAdd((int*)dPointers.uCheckedSeeds, dConfig.generalCfg.atomicGranularity);
 				checkedCtr -= dConfig.generalCfg.atomicGranularity;
 			}
-#endif
 			continue;
 		}
 
-#ifdef DO_WORLDGEN
-		byte* mapMem = ArenaAlloc(arena, dConfig.memSizes.mapDataSize, 8); //Pointers are 8 bytes
-		byte* miscMem = ArenaAlloc(arena, dConfig.memSizes.miscMemSize, 4);
-		byte* visited = ArenaAlloc(arena, dConfig.memSizes.miscMemSize);
-		GenerateMap(currentSeed, dPointers.dTileSet, output, mapMem, visited, miscMem, dConfig.mapCfg, dConfig.generalCfg.startSeed / 5);
+		uint8_t* mapMem = ArenaAlloc(arena, dConfig.memSizes.mapDataSize, 8); //Pointers are 8 bytes
+		uint8_t* miscMem = ArenaAlloc(arena, dConfig.memSizes.miscMemSize, 4);
+		uint8_t* visited = ArenaAlloc(arena, dConfig.memSizes.visitedMemSize);
+		uint8_t* bufferMem = ArenaAlloc(arena, dConfig.memSizes.bufferSize);
+		uint8_t* spawnables = ArenaAlloc(arena, dConfig.memSizes.spawnableMemSize, 4);
+		int spawnableCount = 0;
+		int spawnableOffset = 8;
+		*(int*)spawnables = currentSeed;
 
-		ArenaSetOffset(arena, miscMem);
-		byte* bufferMem = ArenaAlloc(arena, dConfig.memSizes.bufferSize);
-		byte* spawnableMem = ArenaAlloc(arena, 4, 4);
+		for (int biomeNum = 0; biomeNum < dConfig.biomeCount; biomeNum++)
+		{
+			GenerateMap(currentSeed, dConfig.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
+			CheckSpawnables(mapMem, currentSeed, spawnables, spawnableOffset, spawnableCount, dConfig.biomeScopes[biomeNum].cfg, dConfig.spawnableCfg, dConfig.memSizes.spawnableMemSize);
+		}
 
-		CheckSpawnables(mapMem, currentSeed, spawnableMem, output, dConfig.mapCfg, dConfig.spawnableCfg, dConfig.memSizes.miscMemSize);
-		
-		SpawnableBlock result = ParseSpawnableBlock(spawnableMem, mapMem, output, dConfig.mapCfg, dConfig.spawnableCfg, dConfig.memSizes.mapDataSize);
-		seedPassed &= SpawnablesPassed(result, dConfig.mapCfg, dConfig.filterCfg, output, bufferMem, true);
+		CheckMountains(currentSeed, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
+
+		((int*)spawnables)[1] = spawnableCount;
+		SpawnableBlock result = ParseSpawnableBlock(spawnables, mapMem, dConfig.spawnableCfg, dConfig.memSizes.mapDataSize);
+		seedPassed &= SpawnablesPassed(result, dConfig.filterCfg, output, bufferMem, true);
 
 		if (!seedPassed)
 		{
-#ifdef DO_ATOMICS
 			if (checkedCtr > dConfig.generalCfg.atomicGranularity)
 			{
 				atomicAdd((int*)dPointers.uCheckedSeeds, dConfig.generalCfg.atomicGranularity);
 				checkedCtr -= dConfig.generalCfg.atomicGranularity;
 			}
-#endif
 			continue;
 		}
-#endif
 
 		flags->state = DeviceLock;
 		memcpy(output, &currentSeed, 4);
@@ -168,7 +167,6 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 		flags->state = SeedFound;
 		pollState = true;
 
-#ifdef DO_ATOMICS
 		passedCtr++;
 		if (checkedCtr >= dConfig.generalCfg.atomicGranularity)
 		{
@@ -180,12 +178,9 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 			atomicAdd((int*)dPointers.uPassedSeeds, dConfig.generalCfg.passedGranularity);
 			passedCtr -= dConfig.generalCfg.passedGranularity;
 		}
-#endif
 	}
-#ifdef DO_ATOMICS
 	atomicAdd((int*)dPointers.uCheckedSeeds, checkedCtr);
 	atomicAdd((int*)dPointers.uPassedSeeds, passedCtr);
-#endif
 }
 
 /*
@@ -214,79 +209,112 @@ __global__ void wandExperiment(const int level, const bool nonShuffle)
 }
 */
 
-DeviceConfig CreateConfigs()
+BiomeWangScope InstantiateBiome(const char* path, int& maxMapArea)
 {
-	//MINES
-	MapConfig mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
-	const char* fileName = "wang/minesWang.bin";
+	MapConfig mapCfg;
+	int spawnableMemMult; //to be used Later
+	{
+		if (strcmp(path, "wang_tiles/coalmine.png") == 0)
+		{
+			mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
+			spawnableMemMult = 4;
+		}
+
+		else if (strcmp(path, "wang_tiles/excavationsite.png") == 0)
+		{
+			mapCfg = { 344, 440, 409, 102, 31, 17, -100000, 100000, -100000, 100000, false, false, 1, 100 };
+			spawnableMemMult = 4;
+		}
+
+		else if (strcmp(path, "wang_tiles/snowcave.png") == 0)
+		{
+			mapCfg = { 440, 560, 512, 153, 30, 20, -100000, 100000, -100000, 100000, false, false, 1, 100 };
+			spawnableMemMult = 4;
+		}
+
+		else if (strcmp(path, "wang_tiles/crypt.png") == 0)
+		{
+			mapCfg = { 282, 342, 717, 204, 26, 35, -100000, 100000, -100000, 100000, false, false, 10, 100 };
+			spawnableMemMult = 4;
+		}
+
+		else if (strcmp(path, "wang_tiles/fungiforest.png") == 0)
+		{
+			mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
+			spawnableMemMult = 4;
+		}
+
+		else if (strcmp(path, "wang_tiles/the_end.png") == 0)
+		{
+			mapCfg = { 156, 364, 921, 256, 25, 43, -100000, 100000, -100000, 100000, false, true, 0, 100 };
+			spawnableMemMult = 4;
+		}
+		else
+		{
+			printf("Invalid biome path: %s\n", path);
+			return { NULL, {} };
+		}
+	}
+
+	maxMapArea = std::max(maxMapArea, (int)(mapCfg.map_w * (mapCfg.map_h + 4)));
+	uint64_t tileDataSize = 3 * mapCfg.tiles_w * mapCfg.tiles_h;
+
+	uint8_t* dTileData;
+	uint8_t* dTileSet;
+
+	uint8_t* hTileData = (uint8_t*)malloc(3 * mapCfg.tiles_w * mapCfg.tiles_h);
+	ReadImage(path, hTileData);
+
+	checkCudaErrors(cudaMalloc(&dTileData, tileDataSize));
+	checkCudaErrors(cudaMalloc(&dTileSet, tileDataSize));
+
+	checkCudaErrors(cudaMemcpy(dTileData, hTileData, 3 * mapCfg.tiles_w * mapCfg.tiles_h, cudaMemcpyHostToDevice));
+	buildTS<<<1, 1>>>(dTileData, dTileSet, mapCfg.tiles_w, mapCfg.tiles_h);
+	checkCudaErrors(cudaDeviceSynchronize());
+	
+	free(hTileData);
+	checkCudaErrors(cudaFree(dTileData));
+
+	return { dTileSet, mapCfg };
+}
+
+DeviceConfig CreateConfigs(int maxMapArea)
+{
 	constexpr auto NUMBLOCKS = 256;
 	constexpr auto BLOCKSIZE = 64;
-	constexpr auto mapMemMult = 1;
-	constexpr auto miscMemMult = 6;
-
-	//EXCAVATION SITE
-	//MapConfig mapCfg = { 344, 440, 409, 102, 31, 17, -100000, 100000, -100000, 100000, false, false, 1, 100 };
-	//const char* fileName = "wang/excavationsiteWang.bin";
-	//constexpr auto NUMBLOCKS = 64;
-	//constexpr auto BLOCKSIZE = 64;
-	//constexpr auto mapMemMult = 4;
-	//constexpr auto miscMemMult = 10;
-
-	//SNOWCAVE
-	//MapConfig mapCfg = { 440, 560, 512, 153, 30, 20, -100000, 100000, -100000, 100000, false, false, 1, 100 };
-	//const char* fileName = "wang/snowcaveWang.bin";
-	//constexpr auto NUMBLOCKS = 64;
-	//constexpr auto BLOCKSIZE = 32;
-	//constexpr auto mapMemMult = 4;
-	//constexpr auto miscMemMult = 10;
-
-	//CRYPT
-	//MapConfig mapCfg = { 282, 342, 717, 204, 26, 35, -100000, 100000, -100000, 100000, false, false, 10, 100 };
-	//const char* fileName = "wang/cryptWang.bin";
-	//constexpr auto NUMBLOCKS = 32;
-	//constexpr auto BLOCKSIZE = 32;
-	//constexpr auto mapMemMult = 4;
-	//constexpr auto miscMemMult = 10;
-
-	//OVERGROWN CAVERNS
-	//MapConfig mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
-	//const char* fileName = "wang/fungiforestWang.bin";
-	//constexpr auto NUMBLOCKS = 16;
-	//constexpr auto BLOCKSIZE = 32;
-	//constexpr auto mapMemMult = 3;
-	//constexpr auto miscMemMult = 8;
-
-	//HELL
-	//MapConfig mapCfg = { 156, 364, 921, 256, 25, 43, -100000, 100000, -100000, 100000, false, true, 0, 100 };
-	//const char* fileName = "wang/hellWang.bin";
-	//constexpr auto NUMBLOCKS = 32;
-	//constexpr auto BLOCKSIZE = 32;
-	//constexpr auto mapMemMult = 4;
-	//constexpr auto miscMemMult = 10;
 
 	MemSizeConfig memSizes = {
-		4096, //4 * mapCfg.map_w * mapCfg.map_h,
-		mapMemMult * 3 * mapCfg.map_w * (mapCfg.map_h + 4),
-		miscMemMult * mapCfg.map_w * mapCfg.map_h,
-		mapCfg.map_w * mapCfg.map_h,
+#ifdef DO_WORLDGEN
+		3 * maxMapArea + 4096,
+#else
+		4096,
+#endif
+		3 * maxMapArea + 128,
+		4 * maxMapArea,
+		maxMapArea,
+#ifdef DO_WORLDGEN
+		8 * maxMapArea + 4096,
+#else
+		4096,
+#endif
 		4096
 	};
 
-	GeneralConfig generalCfg = { 40_GB, 1, INT_MAX, 65536, 1, 1, 1 };
-	SpawnableConfig spawnableCfg = {0, 0, 0, 0, false, false, false, false, true, false, false, true, false, false, false};
+	GeneralConfig generalCfg = { 40_GB, 1, INT_MAX, 1, 1, 1, 1 };
+	SpawnableConfig spawnableCfg = {0, 0, 0, 7, false, true, false, false, true, false, false, true, false, false, false};
 
-	Item iF1[FILTER_OR_COUNT] = { SAMPO, TRUE_ORB };
+	Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 	Item iF2[FILTER_OR_COUNT] = { MIMIC };
 	Material mF1[FILTER_OR_COUNT] = { BRASS };
 	Spell sF1[FILTER_OR_COUNT] = { SPELL_REGENERATION_FIELD };
 	Spell sF2[FILTER_OR_COUNT] = { SPELL_CASTER_CAST };
 	Spell sF3[FILTER_OR_COUNT] = { SPELL_CURSE_WITHER_PROJECTILE };
 
-	ItemFilter iFilters[] = { ItemFilter(iF1, 1), ItemFilter(iF2) };
+	ItemFilter iFilters[] = { ItemFilter(iF1, 4), ItemFilter(iF2) };
 	MaterialFilter mFilters[] = { MaterialFilter(mF1) };
 	SpellFilter sFilters[] = { SpellFilter(sF1, 5), SpellFilter(sF2), SpellFilter(sF3) };
 
-	FilterConfig filterCfg = FilterConfig(false, 1, iFilters, 0, mFilters, 0, sFilters, false, 27);
+	FilterConfig filterCfg = FilterConfig(true, 1, iFilters, 0, mFilters, 0, sFilters, false, 27);
 
 	StaticPrecheckConfig precheckCfg = {
 		{false, URINE},
@@ -295,85 +323,65 @@ DeviceConfig CreateConfigs()
 		{false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
 		{false, {BM_GOLD_VEIN_SUPER, BM_NONE, BM_GOLD_VEIN_SUPER}},
 		{false, {FungalShift(SS_FLASK, SD_CHEESE_STATIC, 0, 4), FungalShift(), FungalShift(), FungalShift()}},
-		{true, //Example: Searches for perk lottery + extra perk in first HM, then any 4 perks in 2nd HM as long as they all are lottery picks
-			{{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EXTRA_PERK, true, 0, 3}, {PERK_NONE, true, 3, 7}, {PERK_NONE, true, 3, 7}, {PERK_NONE, true, 3, 7}, {PERK_NONE, true, 3, 7}},
+		{false, //Example: Searches for perk lottery + extra perk in first HM, then any 4 perks in 2nd HM as long as they all are lottery picks
+			{{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EXTRA_PERK, true, 0, 3}, {PERK_NONE, true, 3, 4}, {PERK_NONE, true, 4, 5}, {PERK_NONE, true, 5, 6}, {PERK_NONE, true, 6, 7}},
 			{3, 4, 4, 4, 4, 4, 4} //Also, XX_NONE is considered to be equal to everything for like 90% of calculations
 		},
 	};
 
-	size_t freeMem;
-	size_t totalMem;
+	uint64_t freeMem;
+	uint64_t totalMem;
 	cudaMemGetInfo(&freeMem, &totalMem);
 	freeMem *= 0.9f; //leave a bit of extra
 	printf("memory free: %lli of %lli bytes\n", freeMem, totalMem);
 
 #ifdef DO_WORLDGEN
-	size_t minMemoryPerThread = memSizes.outputSize * 2 + memSizes.mapDataSize + memSizes.miscMemSize + memSizes.visitedMemSize;
+	uint64_t minMemoryPerThread = memSizes.outputSize * 2 + memSizes.mapDataSize + memSizes.miscMemSize + memSizes.visitedMemSize + memSizes.spawnableMemSize;
+#else
+	uint64_t minMemoryPerThread = memSizes.outputSize * 2 + memSizes.spawnableMemSize;
+#endif
+	printf("each thread requires %lli bytes of block memory\n", minMemoryPerThread);
+	memSizes.threadMemTotal = minMemoryPerThread;
+
 	int numThreads = freeMem / minMemoryPerThread;
 	int numBlocks = numThreads / BLOCKSIZE;
-	int numBlocksRounded = min(NUMBLOCKS, numBlocks - numBlocks % 8);
-	generalCfg.requestedMemory = minMemoryPerThread * numBLocksRounded * BLOCKSIZE;
-	printf("creating %i thread blocks\n", numBlocksRounded);
-#else
-	size_t minMemoryPerThread = memSizes.outputSize * 2;
-	generalCfg.requestedMemory = minMemoryPerThread * NUMBLOCKS * BLOCKSIZE;
-	int numBlocksRounded = NUMBLOCKS;
-#endif
+	int numBlocksRounded = std::min(NUMBLOCKS, numBlocks - numBlocks % 8);
+	generalCfg.requestedMemory = minMemoryPerThread * numBlocksRounded * BLOCKSIZE;
+	printf("creating %ix%i threads\n", numBlocksRounded, BLOCKSIZE);
 
-	return { numBlocksRounded, BLOCKSIZE, memSizes, generalCfg, precheckCfg, mapCfg, spawnableCfg, filterCfg, fileName };
+	return { numBlocksRounded, BLOCKSIZE, memSizes, generalCfg, precheckCfg, spawnableCfg, filterCfg };
 }
 
 AllPointers AllocateMemory(DeviceConfig config)
 {
-
 	cudaSetDeviceFlags(cudaDeviceMapHost);
 
-	size_t outputSize = config.NumBlocks * config.BlockSize * config.memSizes.outputSize;
-	size_t tileDataSize = 3 * config.mapCfg.tiles_w * config.mapCfg.tiles_h;
-#ifdef DO_WORLDGEN
-	size_t mapDataSize = config.NumBlocks * config.BlockSize * config.memSizes.mapDataSize;
-	size_t miscMemSize = config.NumBlocks * config.BlockSize * config.memSizes.miscMemSize;
-	size_t visitedMemSize = config.NumBlocks * config.BlockSize * config.memSizes.visitedMemSize;
-
-	//printf("Memory Usage Statistics:\n");
-	//printf("Output: %ziMB  Map data: %ziMB\n", outputSize / 1000000, mapDataSize / 1000000);
-	//printf("Misc memory: %ziMB  Visited cells: %ziMB\n", miscMemSize / 1000000, visitedMemSize / 1000000);
-	//printf("Total memory: %ziMB\n", (tileDataSize * 2 + outputSize + mapDataSize + miscMemSize + visitedMemSize) / 1000000);
-#endif
-
+	uint64_t outputSize = config.NumBlocks * config.BlockSize * config.memSizes.outputSize;
 
 	//Host
-	byte* hOutput;
-	byte* hTileData;
+	uint8_t* hOutput;
 
-	hOutput = (byte*)malloc(outputSize);
-	hTileData = (byte*)malloc(3 * config.mapCfg.tiles_w * config.mapCfg.tiles_h);
-	std::ifstream source(config.wangPath, std::ios_base::binary);
-	source.read((char*)hTileData, 3 * config.mapCfg.tiles_w * config.mapCfg.tiles_h);
-	source.close();
+	hOutput = (uint8_t*)malloc(outputSize);
 
 	//Device
-	byte* dArena;
-	byte* dTileData;
-	byte* dTileSet;
+	uint8_t* dArena;
+	uint8_t* dOverlayMem;
 
-#ifdef DO_WORLDGEN
-	checkCudaErrors(cudaMalloc(&dTileData, tileDataSize));
-	checkCudaErrors(cudaMalloc(&dTileSet, tileDataSize));
+	checkCudaErrors(cudaMalloc(&dArena, config.generalCfg.requestedMemory));
+	checkCudaErrors(cudaMalloc(&dOverlayMem, 3 * 256 * 103));
 
-	checkCudaErrors(cudaMemcpy(dTileData, hTileData, 3 * config.mapCfg.tiles_w * config.mapCfg.tiles_h, cudaMemcpyHostToDevice));
-	buildTS<<<1, 1>>>(dTileData, dTileSet, config.mapCfg.tiles_w, config.mapCfg.tiles_h);
-	checkCudaErrors(cudaDeviceSynchronize());
-#endif
-
-	checkCudaErrors(cudaMalloc(&dArena, config.generalCfg.requestedMemory - 2 * tileDataSize));
+	uint8_t* hPtr = (uint8_t*)malloc(3 * 256 * 103);
+	ReadImage("wang_tiles/coalmine_overlay.png", hPtr);
+	checkCudaErrors(cudaMemcpy(dOverlayMem, hPtr, 3 * 256 * 103, cudaMemcpyHostToDevice));
+	cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0);
+	free(hPtr);
 
 	//Unified
 	volatile int* hCheckedSeeds, *dCheckedSeeds;
 	volatile int* hPassedSeeds, *dPassedSeeds;
 
 	volatile UnifiedOutputFlags* hFlags, *dFlags;
-	byte* hUnifiedOutput, *dUnifiedOutput;
+	uint8_t* hUnifiedOutput, *dUnifiedOutput;
 
 	checkCudaErrors(cudaHostAlloc((void**)&hCheckedSeeds, 4, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostAlloc((void**)&hPassedSeeds, 4, cudaHostAllocMapped));
@@ -393,18 +401,18 @@ AllPointers AllocateMemory(DeviceConfig config)
 	checkCudaErrors(cudaHostAlloc((void**)&hUnifiedOutput, outputSize, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&dUnifiedOutput, (void*)hUnifiedOutput, 0));
 
-	return { {dCheckedSeeds, dPassedSeeds, dFlags, dUnifiedOutput, dTileData, dTileSet, dArena}, {hCheckedSeeds, hPassedSeeds, hFlags, hUnifiedOutput, hOutput, hTileData} };
+	return { {dCheckedSeeds, dPassedSeeds, dFlags, dUnifiedOutput, dArena}, {hCheckedSeeds, hPassedSeeds, hFlags, hUnifiedOutput, hOutput} };
 }
 
 void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, FILE* outputFile)
 {
-	chrono::steady_clock::time_point time1 = chrono::steady_clock::now();
+	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 	int intervals = 0;
 	int counter = 0;
-	uint lastDiff = 0;
-	uint lastSeed = 0;
+	uint32_t lastDiff = 0;
+	uint32_t lastSeed = 0;
 
-	uint currentSeed = config.generalCfg.startSeed;
+	uint32_t currentSeed = config.generalCfg.startSeed;
 	int index = -1;
 	int stoppedThreads = 0;
 	int foundSeeds = 0;
@@ -416,19 +424,18 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 
 			if (counter == 8)
 			{
-				//printf("time poll\n");
 				counter = 0;
-				chrono::steady_clock::time_point time2 = chrono::steady_clock::now();
+				std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 				std::chrono::nanoseconds duration = time2 - time1;
-				ulong milliseconds = (ulong)(duration.count() / 1000000);
+				uint64_t milliseconds = (uint64_t)(duration.count() / 1000000);
 				if (intervals * config.generalCfg.printInterval * 1000 < milliseconds)
 				{
 					lastDiff = *pointers.hCheckedSeeds - lastSeed;
 					lastSeed = *pointers.hCheckedSeeds;
 					intervals++;
 					float percentComplete = ((float)(*pointers.hCheckedSeeds) / (config.generalCfg.endSeed - config.generalCfg.startSeed));
-					size_t freeMem;
-					size_t totalMem;
+					uint64_t freeMem;
+					uint64_t totalMem;
 					cudaMemGetInfo(&freeMem, &totalMem);
 					printf(">%i: %2.3f%% complete. Searched %i (+%i this interval), found %i valid seeds. (%lli/%lliMB used)\n", intervals, percentComplete * 100, *pointers.hCheckedSeeds, lastDiff, *pointers.hPassedSeeds, (totalMem - freeMem) / 1049576, totalMem / 1049576);
 				}
@@ -464,186 +471,86 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 
 		if (state == SeedFound)
 		{
-			byte* uOutput = pointers.uOutput + index * config.memSizes.outputSize;
-			byte* output = pointers.hOutput + index * config.memSizes.outputSize;
+			uint8_t* uOutput = pointers.uOutput + index * config.memSizes.outputSize;
+			uint8_t* output = pointers.hOutput + index * config.memSizes.outputSize;
 
 			pointers.hFlags[index].state = HostLock;
 			memcpy(output, uOutput, config.memSizes.outputSize);
 			pointers.hFlags[index].state = Running;
 			foundSeeds++;
 
-			/*int _ = 0;
-			int seed = readInt(output, _);
-
+			/*
+			int memOffset = 0;
+			int seed = readInt(output, memOffset);
+			int w = readInt(output, memOffset);
+			int h = readInt(output, memOffset);
 			char buffer[30];
 			int bufOffset = 0;
 			_putstr_offset("outputs/", buffer, bufOffset);
 			_itoa_offset(seed, 10, buffer, bufOffset);
 			_putstr_offset(".png", buffer, bufOffset);
 			buffer[bufOffset++] = '\0';
+			WriteImage(buffer, output + memOffset, w, h);*/
 
-			WriteImage(buffer, output + 4, config.mapCfg.map_w, config.mapCfg.map_h);*/
-
-			char buffer[100];
+			char buffer[300];
 			int bufOffset = 0;
 			int memOffset = 0;
 			int seed = readInt(output, memOffset);
 			int sCount = readInt(output, memOffset);
-			//if (seed == 0 || sCount == 0) continue;
+			if (seed == 0) continue;
 			_itoa_offset(seed, 10, buffer, bufOffset);
-			/*_putstr_offset(": ", buffer, bufOffset);
-
-			for (int i = 0; i < sCount; i++)
+			if (sCount > 0)
 			{
-				int x = readInt(output, memOffset);
-				int y = readInt(output, memOffset);
-				Item item = (Item)readByte(output, memOffset);
+				_putstr_offset(": ", buffer, bufOffset);
 
-				_putstr_offset(item == TRUE_ORB ? "ORB" : "SAMPO", buffer, bufOffset);
-				buffer[bufOffset++] = '(';
-				_itoa_offset(x, 10, buffer, bufOffset);
-				buffer[bufOffset++] = ' ';
-				_itoa_offset(y, 10, buffer, bufOffset);
-				buffer[bufOffset++] = ')';
-				if(i < sCount - 1)
+				for (int i = 0; i < sCount; i++)
+				{
+					int x = readInt(output, memOffset);
+					int y = readInt(output, memOffset);
+					Item item = (Item)readByte(output, memOffset);
+
+					_putstr_offset(ItemNames[item - GOLD_NUGGETS], buffer, bufOffset);
+					buffer[bufOffset++] = '(';
+					_itoa_offset(x, 10, buffer, bufOffset);
 					buffer[bufOffset++] = ' ';
-			}*/
+					_itoa_offset(y, 10, buffer, bufOffset);
+					buffer[bufOffset++] = ')';
+					if (i < sCount - 1)
+						buffer[bufOffset++] = ' ';
+				}
+			}
 			buffer[bufOffset++] = '\n';
 			buffer[bufOffset++] = '\0';
 			fprintf(outputFile, "%s", buffer);
-			//printf("%s", buffer);
+			printf("%s", buffer);
 		}
 	}
 }
 
 void FreeMemory(AllPointers pointers)
 {
-	//free((void*)pointers.hPointers.hCheckedSeeds);
-	//free((void*)pointers.hPointers.hPassedSeeds);
-	//free((void*)pointers.hPointers.hFlags);
-	//free((void*)pointers.hPointers.uOutput);
 	free(pointers.hPointers.hOutput);
-	free(pointers.hPointers.hTileData);
-
 
 	checkCudaErrors(cudaFree((void*)pointers.dPointers.dArena));
-#ifdef DO_WORLDGEN
-	checkCudaErrors(cudaFree((void*)pointers.dPointers.dTileData));
-	checkCudaErrors(cudaFree((void*)pointers.dPointers.dTileSet));
-#endif
 }
 
 int main()
 {
-	/*
-	cudaSetDeviceFlags(cudaDeviceMapHost);
-
-	volatile int* h_buckets;
-	volatile int* d_buckets;
-
-	cudaHostAlloc((void**)&h_buckets, sizeof(volatile int) * 70, cudaHostAllocMapped);
-
-	cudaHostGetDevicePointer((void**)&d_buckets, (void*)h_buckets, 0);
-
-	for (int i = 0; i < 70; i++) h_buckets[i] = 0;
-	wandExperiment<<<256,64>>>((int*)d_buckets, 6, true);
-	cudaDeviceSynchronize();
-	for (int i = 0; i < 70; i++) {
-		printf("multicast %i: %i wands\n", i, h_buckets[i]);
-	}
-	return;*/
-
-	/*
-	printf("__device__ const static bool spellSpawnableInChests[] = {\n");
-	for (int j = 0; j < SpellCount; j++)
-	{
-		bool passed = false;
-		for (int t = 0; t < 11; t++)
-		{
-			if (allSpells[j].spawn_probabilities[t] > 0 || allSpells[j].s == SPELL_SUMMON_PORTAL)
-			{
-				passed = true;
-				break;
-			}
-		}
-		printf(passed ? "true" : "false");
-		printf(",\n");
-	}
-	printf("};\n");
-
-	int counters2[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
-	double sums[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
-	for (int t = 0; t < 11; t++)
-	{
-		printf("__device__ const static SpellProb spellProbs_%i[] = {\n", t);
-		for (int j = 0; j < SpellCount; j++)
-		{
-			if (allSpells[j].spawn_probabilities[t] > 0)
-			{
-				counters2[t]++;
-				sums[t] += allSpells[j].spawn_probabilities[t];
-				printf("{%f,SPELL_%s},\n", sums[t], SpellNames[j + 1]);
-			}
-		}
-		printf("};\n");
-	}
-
-	printf("__device__ const static int spellTierCounts[] = {\n");
-	for (int t = 0; t < 11; t++)
-	{
-		printf("%i,\n", counters2[t]);
-	}
-	printf("};\n");
-
-	printf("__device__ const static float spellTierSums[] = {\n");
-	for (int t = 0; t < 11; t++)
-	{
-		printf("%f,\n", sums[t]);
-	}
-	printf("};\n\n");
-
-
-	for (int tier = 0; tier < 11; tier++)
-	{
-		int counters[8] = { 0,0,0,0,0,0,0,0 };
-		for(int t = 0; t < 8; t++) {
-			double sum = 0;
-			printf("__device__ const static SpellProb spellProbs_%i_T%i[] = {\n", tier, t);
-			for (int j = 0; j < SpellCount; j++)
-			{
-				if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[tier] > 0)
-				{
-					counters[t]++;
-					sum += allSpells[j].spawn_probabilities[tier];
-					printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
-				}
-			}
-			printf("};\n");
-		}
-		printf("__device__ const static SpellProb* spellProbs_%i_Types[] = {\n", tier);
-		for (int t = 0; t < 8; t++)
-		{
-			if(counters[t] > 0)
-				printf("spellProbs_%i_T%i,\n", tier, t);
-			else
-				printf("NULL,\n");
-		}
-		printf("};\n");
-
-		printf("__device__ const static int spellProbs_%i_Counts[] = {\n", tier);
-		for (int t = 0; t < 8; t++)
-		{
-			printf("%i,\n", counters[t]);
-		}
-		printf("};\n\n");
-	}
-	return;*/
-	
 	for (int global_iters = 0; global_iters < 1; global_iters++)
 	{
-		chrono::steady_clock::time_point time1 = chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 
-		DeviceConfig config = CreateConfigs();
+		BiomeWangScope biomes[20];
+		int biomeCount = 0;
+		int maxMapArea = 0;
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/coalmine.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/excavationsite.png", maxMapArea);
+
+		DeviceConfig config = CreateConfigs(maxMapArea);
+
+		config.biomeCount = biomeCount;
+		memcpy(&config.biomeScopes, biomes, sizeof(BiomeWangScope) * 20);
+
 		AllPointers pointers = AllocateMemory(config);
 
 		FILE* f = fopen("output.txt", "wb");
@@ -656,7 +563,7 @@ int main()
 		OutputLoop(config, pointers.hPointers, _event, f);
 		checkCudaErrors(cudaDeviceSynchronize());
 
-		chrono::steady_clock::time_point time2 = chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 		std::chrono::nanoseconds duration = time2 - time1;
 
 		printf("Search finished in %ims. Checked %i seeds, found %i valid seeds.\n", (int)(duration.count() / 1000000), *pointers.hPointers.hCheckedSeeds, *pointers.hPointers.hPassedSeeds);
@@ -665,3 +572,107 @@ int main()
 		fclose(f);
 	}
 }
+
+/*
+cudaSetDeviceFlags(cudaDeviceMapHost);
+
+volatile int* h_buckets;
+volatile int* d_buckets;
+
+cudaHostAlloc((void**)&h_buckets, sizeof(volatile int) * 70, cudaHostAllocMapped);
+
+cudaHostGetDevicePointer((void**)&d_buckets, (void*)h_buckets, 0);
+
+for (int i = 0; i < 70; i++) h_buckets[i] = 0;
+wandExperiment<<<256,64>>>((int*)d_buckets, 6, true);
+cudaDeviceSynchronize();
+for (int i = 0; i < 70; i++) {
+	printf("multicast %i: %i wands\n", i, h_buckets[i]);
+}
+return;*/
+
+/*
+printf("__device__ const static bool spellSpawnableInChests[] = {\n");
+for (int j = 0; j < SpellCount; j++)
+{
+	bool passed = false;
+	for (int t = 0; t < 11; t++)
+	{
+		if (allSpells[j].spawn_probabilities[t] > 0 || allSpells[j].s == SPELL_SUMMON_PORTAL)
+		{
+			passed = true;
+			break;
+		}
+	}
+	printf(passed ? "true" : "false");
+	printf(",\n");
+}
+printf("};\n");
+
+int counters2[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
+double sums[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
+for (int t = 0; t < 11; t++)
+{
+	printf("__device__ const static SpellProb spellProbs_%i[] = {\n", t);
+	for (int j = 0; j < SpellCount; j++)
+	{
+		if (allSpells[j].spawn_probabilities[t] > 0)
+		{
+			counters2[t]++;
+			sums[t] += allSpells[j].spawn_probabilities[t];
+			printf("{%f,SPELL_%s},\n", sums[t], SpellNames[j + 1]);
+		}
+	}
+	printf("};\n");
+}
+
+printf("__device__ const static int spellTierCounts[] = {\n");
+for (int t = 0; t < 11; t++)
+{
+	printf("%i,\n", counters2[t]);
+}
+printf("};\n");
+
+printf("__device__ const static float spellTierSums[] = {\n");
+for (int t = 0; t < 11; t++)
+{
+	printf("%f,\n", sums[t]);
+}
+printf("};\n\n");
+
+
+for (int tier = 0; tier < 11; tier++)
+{
+	int counters[8] = { 0,0,0,0,0,0,0,0 };
+	for(int t = 0; t < 8; t++) {
+		double sum = 0;
+		printf("__device__ const static SpellProb spellProbs_%i_T%i[] = {\n", tier, t);
+		for (int j = 0; j < SpellCount; j++)
+		{
+			if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[tier] > 0)
+			{
+				counters[t]++;
+				sum += allSpells[j].spawn_probabilities[tier];
+				printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
+			}
+		}
+		printf("};\n");
+	}
+	printf("__device__ const static SpellProb* spellProbs_%i_Types[] = {\n", tier);
+	for (int t = 0; t < 8; t++)
+	{
+		if(counters[t] > 0)
+			printf("spellProbs_%i_T%i,\n", tier, t);
+		else
+			printf("NULL,\n");
+	}
+	printf("};\n");
+
+	printf("__device__ const static int spellProbs_%i_Counts[] = {\n", tier);
+	for (int t = 0; t < 8; t++)
+	{
+		printf("%i,\n", counters[t]);
+	}
+	printf("};\n\n");
+}
+return;*/

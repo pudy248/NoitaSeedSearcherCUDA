@@ -79,10 +79,10 @@ struct PerkData
 {
 	bool stackable;
 	bool stackable_rare;
-	byte stackable_max;
-	byte max_in_pool;
+	uint8_t stackable_max;
+	uint8_t max_in_pool;
 	bool not_default;
-	byte stackable_how_often_reappears;
+	uint8_t stackable_how_often_reappears;
 };
 
 struct PerkInfo

@@ -12,48 +12,45 @@
 
 #include "Configuration.h"
 
-__global__ void buildTS(byte* dTileData, byte* dTileSet, int tiles_w, int tiles_h)
+struct BiomeWangScope
+{
+	uint8_t* tileSet;
+	MapConfig cfg;
+};
+
+__global__ void buildTS(uint8_t* dTileData, uint8_t* dTileSet, int tiles_w, int tiles_h)
 {
 	MemoryArena arena = { dTileSet, 0 };
 	stbhw_build_tileset_from_image(dTileData, arena, tiles_w * 3, tiles_w, tiles_h);
 }
 
-__device__ byte* GenerateMap(uint worldSeed, byte* tileSet, byte* output, byte* res, byte* visited, byte* miscMem, MapConfig c, int idx)
+__device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_t* output, uint8_t* res, uint8_t* visited, uint8_t* miscMem)
 {
-	WorldgenPRNG rng = GetRNG(worldSeed, c.map_w);
-	if (c.isNightmare) rng.Next();
+	WorldgenPRNG rng = GetRNG(worldSeed, scope.cfg.map_w);
+	if (scope.cfg.isNightmare) rng.Next();
 	int tries = 0;
 	bool has_path = false;
 
-	byte* map = res + 4 * 3 * c.map_w;
+	uint8_t* map = res + 4 * 3 * scope.cfg.map_w;
 	while (!has_path)
 	{
-		if (tries >= c.maxTries) break;
+		if (tries >= scope.cfg.maxTries) break;
 		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 
-		stbhw_generate_image(res, (stbhw_tileset*)tileSet, c.map_w * 3, c.map_w, c.map_h + 4, StaticRandom, &rng2);
+		stbhw_generate_image(res, (stbhw_tileset*)scope.tileSet, scope.cfg.map_w * 3, scope.cfg.map_w, scope.cfg.map_h + 4, StaticRandom, &rng2);
 
-		blockOutRooms(map, c.map_w, c.map_h, COLOR_WHITE);
-		if (c.isCoalMine)
+		blockOutRooms(map, scope.cfg.map_w, scope.cfg.map_h, COLOR_WHITE);
+		if (scope.cfg.isCoalMine)
 		{
-			doCoalMineHax(map, c.map_w, c.map_h);
+			doCoalMineHax(map, scope.cfg.map_w, scope.cfg.map_h);
 		}
 
-		has_path = isValid(map, miscMem, visited, c.map_w, c.map_h, c.worldX, c.worldY, c.isCoalMine);
+		has_path = isValid(map, miscMem, visited, scope.cfg.map_w, scope.cfg.map_h, scope.cfg.worldX, scope.cfg.worldY, scope.cfg.isCoalMine);
 		tries++;
 	}
-	//if (!has_path) memset(map, 0, 3 * c.map_w * c.map_h);
+	//if (!has_path) memset(map, 0, 3 * scope.cfg.map_w * scope.cfg.map_h);
 
-	/*constexpr auto center_x = 400;
-	constexpr auto center_y = 200;
-
-	if(threadIdx.x == 0 && blockIdx.x == 0) printf("%i %i\n", GetGlobalPos(c.worldX, c.worldY, center_x * 10, center_y * 10).x, GetGlobalPos(c.worldX, c.worldY, center_x * 10, center_y * 10).y);
-
-	setPixelColor(map, c.map_w, center_x, center_y - 1, 0x0000FF);
-	setPixelColor(map, c.map_w, center_x - 1, center_y, 0x0000FF);
-	setPixelColor(map, c.map_w, center_x, center_y, 0x0000FF);
-	setPixelColor(map, c.map_w, center_x + 1, center_y, 0x0000FF);
-	setPixelColor(map, c.map_w, center_x, center_y + 1, 0x0000FF);
-
-	memcpy(output + 4, map, 3 * c.map_w * c.map_h);*/
+	//memcpy(output + 4, &scope.cfg.map_w, 4);
+	//memcpy(output + 8, &scope.cfg.map_h, 8);
+	//memcpy(output + 12, map, 3 * scope.cfg.map_w * scope.cfg.map_h);
 }
