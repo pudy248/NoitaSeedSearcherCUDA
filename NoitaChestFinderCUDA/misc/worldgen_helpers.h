@@ -59,6 +59,7 @@ __device__ uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x,
 {
 	return s * (w * y + x);
 }
+
 __device__ void doCoalMineHax(uint8_t* map, uint32_t map_w, uint32_t map_h)
 {
 	for (int y = 0; y < map_h; y++)

@@ -106,26 +106,6 @@ public:
 		return (uVar3 - uVar2) - uVar1 ^ uVar1 >> 0xf;
 	}
 
-	uint32_t H2(uint32_t a, uint32_t b, uint32_t ws)
-	{
-		uint32_t v3;
-		uint32_t v4;
-		uint32_t v5;
-		int v6;
-		uint32_t v7;
-		uint32_t v8;
-		int v9;
-
-		v3 = (ws >> 13) ^ (b - a - ws);
-		v4 = (v3 << 8) ^ (a - v3 - ws);
-		v5 = (v4 >> 13) ^ (ws - v3 - v4);
-		v6 = (int)((v5 >> 12) ^ (v3 - v4 - v5));
-		v7 = (uint32_t)(v6 << 16) ^ (uint32_t)(v4 - v6 - v5);
-		v8 = (v7 >> 5) ^ (uint32_t)(v5 - v6 - v7);
-		v9 = (int)((v8 >> 3) ^ (uint32_t)(v6 - v7 - v8));
-		return (((uint32_t)(v9 << 10) ^ (uint32_t)(v7 - v9 - v8)) >> 15) ^ (uint32_t)(v8 - v9 - ((uint32_t)(v9 << 10) ^ (uint32_t)(v7 - v9 - v8)));
-	}
-
 	__host__ __device__ __noinline__
 		void SetRandomSeed(double x, double y)
 	{
@@ -169,8 +149,7 @@ public:
 		//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
 		const uint32_t diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
 		constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
-		uint32_t t = g;
-		t = g + (g < 2147483648) + (g == 0);
+		uint32_t t = g + (g < 2147483648) + (g == 0);
 		t -= g / magic_number;
 		t += (g % magic_number < diddle_table[g / magic_number]) && (g < 0xc3c3c3c3 + 4 || g >= 0xc3c3c3c3 + 62);
 		t = (t + (g > 0x80000000)) >> 1;
@@ -253,8 +232,7 @@ public:
 		//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
 		const uint32_t diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
 		constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
-		uint32_t t = g;
-		t = g + (g < 2147483648) + (g == 0);
+		uint32_t t = g + (g < 2147483648) + (g == 0);
 		t -= g / magic_number;
 		t += (g % magic_number < diddle_table[g / magic_number]) && (g < 0xc3c3c3c3 + 4 || g >= 0xc3c3c3c3 + 62);
 		t = (t + (g > 0x80000000)) >> 1;

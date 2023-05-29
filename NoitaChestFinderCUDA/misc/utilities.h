@@ -47,11 +47,23 @@ __device__ uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
 	return (r << 16) | (g << 8) | b;
 }
 
+__device__ __host__ int GetWidthFromPix(int a, int b)
+{
+	return ((b * 512) / 10 - (a * 512) / 10);
+}
+
 __device__ __host__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
 {
 	int gx = ((512 * x) / 10 - (512 * 35) / 10) * 10 + px - 5;
 	int gy = ((512 * y) / 10 - (512 * 14) / 10) * 10 + py - 13;
 	return { gx, gy };
+}
+
+IntPair GetLocalPos(const int gx, int gy)
+{
+	int x = (int)std::roundf((gx + 5) / 512.0f) + 35;
+	int y = (int)std::roundf((gy + 13) / 512.0f) + 14;
+	return { x, y };
 }
 
 __device__ int roundRNGPos(int num)

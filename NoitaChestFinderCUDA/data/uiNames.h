@@ -10,7 +10,8 @@ const char* SpawnableTypeNames[] = {
 	"WAND_PEDESTAL",
 	"NIGHTMARE_WAND",
 	"EOE_DROP",
-	"HM_SHOP"
+	"HM_SHOP",
+	"HELL_SHOP"
 };
 
 const char* ItemNames[] = {

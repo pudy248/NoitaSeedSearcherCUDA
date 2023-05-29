@@ -55,6 +55,32 @@ void WriteImage(const char* file_name, uint8_t* data, int w, int h)
 	free(rows);
 }
 
+IntPair GetImageDimensions(const char* file_name)
+{
+	char header[8];    // 8 is the maximum size that can be checked
+
+	/* open file and test for it being a png */
+	FILE* fp = fopen(file_name, "rb");
+	fread(header, 1, 8, fp);
+
+	/* initialize stuff */
+	png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+
+	png_init_io(png_ptr, fp);
+	png_set_sig_bytes(png_ptr, 8);
+
+	png_read_info(png_ptr, info_ptr);
+
+	int w = png_get_image_width(png_ptr, info_ptr);
+	int h = png_get_image_height(png_ptr, info_ptr);
+
+	fclose(fp);
+
+	return { w, h };
+}
+
 void ReadImage(const char* file_name, uint8_t* data)
 {
 	char header[8];    // 8 is the maximum size that can be checked

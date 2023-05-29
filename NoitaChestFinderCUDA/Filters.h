@@ -184,7 +184,7 @@ __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* bufferMem, bool write)
 {
 	int relevantSpawnableCount = 0;
-	Spawnable* relevantSpawnables[10];
+	Spawnable* relevantSpawnables[50];
 
 	if (fCfg.aggregate)
 	{

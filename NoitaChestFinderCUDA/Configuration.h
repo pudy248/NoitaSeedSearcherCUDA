@@ -87,29 +87,34 @@ struct StaticPrecheckConfig
 
 struct MapConfig
 {
-	uint32_t tiles_w;
-	uint32_t tiles_h;
-	uint32_t map_w;
-	uint32_t map_h;
+	//Initialized manually
 	int worldX;
 	int worldY;
+	int worldW;
+	int worldH;
 
+	int biomeIdx;
+
+	//Auto-initialized
 	int minX;
 	int maxX;
 	int minY;
 	int maxY;
 
-	bool isCoalMine;
-	bool isNightmare;
-	int biomeIdx;
+	uint32_t tiles_w;
+	uint32_t tiles_h;
+	uint32_t map_w;
+	uint32_t map_h;
 
+	//bool isNightmare;
+	bool isCoalMine;
 	int maxTries;
 };
 
 struct SpawnableConfig
 {
-	int pwCenter;
-	int pwWidth;
+	IntPair pwCenter;
+	IntPair pwWidth;
 	int minHMidx;
 	int maxHMidx;
 	bool greedCurse;
@@ -122,6 +127,7 @@ struct SpawnableConfig
 	bool biomePedestals;
 	bool biomeAltars;
 	bool pixelScenes;
+	bool hellShops;
 
 	bool genPotions;
 	bool genSpells;

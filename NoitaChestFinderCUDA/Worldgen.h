@@ -27,7 +27,7 @@ __global__ void buildTS(uint8_t* dTileData, uint8_t* dTileSet, int tiles_w, int 
 __device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_t* output, uint8_t* res, uint8_t* visited, uint8_t* miscMem)
 {
 	WorldgenPRNG rng = GetRNG(worldSeed, scope.cfg.map_w);
-	if (scope.cfg.isNightmare) rng.Next();
+	//if (scope.cfg.isNightmare) rng.Next();
 	int tries = 0;
 	bool has_path = false;
 
@@ -50,7 +50,9 @@ __device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_
 	}
 	//if (!has_path) memset(map, 0, 3 * scope.cfg.map_w * scope.cfg.map_h);
 
-	//memcpy(output + 4, &scope.cfg.map_w, 4);
-	//memcpy(output + 8, &scope.cfg.map_h, 8);
-	//memcpy(output + 12, map, 3 * scope.cfg.map_w * scope.cfg.map_h);
+#ifdef IMAGE_OUTPUT
+	memcpy(output + 4, &scope.cfg.map_w, 4);
+	memcpy(output + 8, &scope.cfg.map_h, 8);
+	memcpy(output + 12, map, 3 * scope.cfg.map_w * scope.cfg.map_h);
+#endif
 }

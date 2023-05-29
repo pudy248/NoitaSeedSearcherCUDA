@@ -1,4 +1,5 @@
 #pragma once
 
-//#define DO_WORLDGEN
+//#define IMAGE_OUTPUT
+#define DO_WORLDGEN
 #define DO_WANDGEN

@@ -149,6 +149,8 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 
 		CheckMountains(currentSeed, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
 
+		printf("%i\n", spawnableCount);
+
 		((int*)spawnables)[1] = spawnableCount;
 		SpawnableBlock result = ParseSpawnableBlock(spawnables, mapMem, dConfig.spawnableCfg, dConfig.memSizes.mapDataSize);
 		seedPassed &= SpawnablesPassed(result, dConfig.filterCfg, output, bufferMem, true);
@@ -214,49 +216,118 @@ __global__ void wandExperiment(const int level, const bool nonShuffle)
 BiomeWangScope InstantiateBiome(const char* path, int& maxMapArea)
 {
 	MapConfig mapCfg;
+	int minX = INT_MIN;
+	int maxX = INT_MAX;
+	int minY = INT_MIN;
+	int maxY = INT_MAX;
 	int spawnableMemMult; //to be used Later
 	{
 		if (strcmp(path, "wang_tiles/coalmine.png") == 0)
 		{
-			mapCfg = { 348, 448, 256, 103, 34, 14, -500, 2000, 10, 1000, true, false, 0, 100 };
+			mapCfg = { 34, 14, 5, 2, 0 };
+			spawnableMemMult = 4;
+			minX = -500;
+			maxX = 2000;
+			minY = 10;
+			maxY = 1000;
+		}
+		else if (strcmp(path, "wang_tiles/coalmine_alt.png") == 0)
+		{
+			mapCfg = { 32, 15, 2, 1, 1 };
 			spawnableMemMult = 4;
 		}
-
 		else if (strcmp(path, "wang_tiles/excavationsite.png") == 0)
 		{
-			mapCfg = { 344, 440, 409, 102, 31, 17, -100000, 100000, -100000, 100000, false, false, 1, 100 };
+			mapCfg = { 31, 17, 8, 2, 2 };
 			spawnableMemMult = 4;
 		}
-
+		else if (strcmp(path, "wang_tiles/fungicave.png") == 0)
+		{
+			mapCfg = { 28, 17, 3, 1, 3 };
+			spawnableMemMult = 4;
+		}
 		else if (strcmp(path, "wang_tiles/snowcave.png") == 0)
 		{
-			mapCfg = { 440, 560, 512, 153, 30, 20, -100000, 100000, -100000, 100000, false, false, 1, 100 };
+			mapCfg = { 30, 20, 10, 3, 4 };
 			spawnableMemMult = 4;
 		}
-
+		else if (strcmp(path, "wang_tiles/snowcastle.png") == 0)
+		{
+			mapCfg = { 31, 24, 7, 2, 5 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/rainforest.png") == 0)
+		{
+			mapCfg = { 30, 27, 9, 2, 6 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/rainforest_open.png") == 0)
+		{
+			mapCfg = { 30, 28, 9, 2, 7 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/rainforest_dark.png") == 0)
+		{
+			mapCfg = { 25, 26, 5, 8, 8 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/vault.png") == 0)
+		{
+			mapCfg = { 29, 31, 11, 3, 9 };
+			spawnableMemMult = 4;
+		}
 		else if (strcmp(path, "wang_tiles/crypt.png") == 0)
 		{
-			mapCfg = { 282, 342, 717, 204, 26, 35, -100000, 100000, -100000, 100000, false, false, 10, 100 };
+			mapCfg = { 26, 35, 14, 4, 10 };
 			spawnableMemMult = 4;
 		}
-
+		else if (strcmp(path, "wang_tiles/wandcave.png") == 0)
+		{
+			mapCfg = { 47, 35, 4, 4, 11 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/vault_frozen.png") == 0)
+		{
+			mapCfg = { 12, 15, 7, 5, 12 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/wizardcave.png") == 0)
+		{
+			mapCfg = { 53, 40, 6, 6, 13 };
+			spawnableMemMult = 4;
+		}
 		else if (strcmp(path, "wang_tiles/fungiforest.png") == 0)
 		{
-			mapCfg = { 144, 235, 359, 461, 59, 16, -100000, 100000, -100000, 100000, false, false, 15, 100 };
+			mapCfg = { 59, 16, 7, 9, 15 };
+			spawnableMemMult = 4;
+		}
+		else if (strcmp(path, "wang_tiles/robobase.png") == 0)
+		{
+			mapCfg = { 59, 29, 7, 9, 25 };
 			spawnableMemMult = 4;
 		}
 
-		else if (strcmp(path, "wang_tiles/the_end.png") == 0)
-		{
-			mapCfg = { 156, 364, 921, 256, 25, 43, -100000, 100000, -100000, 100000, false, true, 0, 100 };
-			spawnableMemMult = 4;
-		}
 		else
 		{
 			printf("Invalid biome path: %s\n", path);
 			return { NULL, {} };
 		}
 	}
+
+	mapCfg.minX = minX;
+	mapCfg.maxX = maxX;
+	mapCfg.minY = minY;
+	mapCfg.maxY = maxY;
+
+	mapCfg.maxTries = 100;
+	mapCfg.isCoalMine = strcmp(path, "wang_tiles/coalmine.png") == 0;
+
+	mapCfg.map_w = GetWidthFromPix(mapCfg.worldX, mapCfg.worldX + mapCfg.worldW);
+	mapCfg.map_h = GetWidthFromPix(mapCfg.worldY, mapCfg.worldY + mapCfg.worldH);
+
+	IntPair tileDims = GetImageDimensions(path);
+	mapCfg.tiles_w = tileDims.x;
+	mapCfg.tiles_h = tileDims.y;
 
 	maxMapArea = std::max(maxMapArea, (int)(mapCfg.map_w * (mapCfg.map_h + 4)));
 	uint64_t tileDataSize = 3 * mapCfg.tiles_w * mapCfg.tiles_h;
@@ -280,7 +351,7 @@ BiomeWangScope InstantiateBiome(const char* path, int& maxMapArea)
 	return { dTileSet, mapCfg };
 }
 
-DeviceConfig CreateConfigs(int maxMapArea)
+DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 {
 	constexpr auto NUMBLOCKS = 256;
 	constexpr auto BLOCKSIZE = 64;
@@ -294,29 +365,25 @@ DeviceConfig CreateConfigs(int maxMapArea)
 		3 * maxMapArea + 128,
 		4 * maxMapArea,
 		maxMapArea,
-#ifdef DO_WORLDGEN
-		2 * maxMapArea + 4096,
-#else
 		4096,
-#endif
 		4096
 	};
 
-	GeneralConfig generalCfg = { 40_GB, 1, 10000000, 65536, 60, 1, 1 };
-	SpawnableConfig spawnableCfg = {0, 0, 0, 7, false, true, false, false, true, false, false, true, false, false, false};
+	GeneralConfig generalCfg = { 40_GB, 1, 2, 1, 60, 1, 1 };
+	SpawnableConfig spawnableCfg = { {0, -3}, {0, 2}, 0, 7, false, false, false, false, false, false, false, false, true, false, false, false };
 
 	Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 	Item iF2[FILTER_OR_COUNT] = { MIMIC };
 	Material mF1[FILTER_OR_COUNT] = { BRASS };
-	Spell sF1[FILTER_OR_COUNT] = { SPELL_REGENERATION_FIELD };
+	Spell sF1[FILTER_OR_COUNT] = { SPELL_SUMMON_WANDGHOST };
 	Spell sF2[FILTER_OR_COUNT] = { SPELL_CASTER_CAST };
 	Spell sF3[FILTER_OR_COUNT] = { SPELL_CURSE_WITHER_PROJECTILE };
 
-	ItemFilter iFilters[] = { ItemFilter(iF1, 5), ItemFilter(iF2) };
+	ItemFilter iFilters[] = { ItemFilter(iF1, 1), ItemFilter(iF2) };
 	MaterialFilter mFilters[] = { MaterialFilter(mF1) };
-	SpellFilter sFilters[] = { SpellFilter(sF1, 5), SpellFilter(sF2), SpellFilter(sF3) };
+	SpellFilter sFilters[] = { SpellFilter(sF1, 1), SpellFilter(sF2), SpellFilter(sF3) };
 
-	FilterConfig filterCfg = FilterConfig(true, 1, iFilters, 0, mFilters, 0, sFilters, false, 27);
+	FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 27);
 
 	StaticPrecheckConfig precheckCfg = {
 		{false, URINE},
@@ -331,7 +398,9 @@ DeviceConfig CreateConfigs(int maxMapArea)
 		},
 	};
 
-	memSizes.spawnableMemSize *= spawnableCfg.pwWidth * 2 + 1;
+	memSizes.spawnableMemSize *= spawnableCfg.pwWidth.x * 2 + 1;
+	memSizes.spawnableMemSize *= spawnableCfg.pwWidth.y * 2 + 1;
+	memSizes.spawnableMemSize *= biomeCount;
 
 	uint64_t freeMem;
 	uint64_t totalMem;
@@ -347,14 +416,15 @@ DeviceConfig CreateConfigs(int maxMapArea)
 	printf("each thread requires %lli bytes of block memory\n", minMemoryPerThread);
 	memSizes.threadMemTotal = minMemoryPerThread;
 
-	int numThreads = freeMem / minMemoryPerThread;
+	int numThreads = std::min((uint64_t)(generalCfg.endSeed - generalCfg.startSeed), freeMem / minMemoryPerThread);
+	int blockSize = std::min(numThreads, BLOCKSIZE);
 	int numBlocks = numThreads / BLOCKSIZE;
-	int numBlocksRounded = std::min(NUMBLOCKS, numBlocks - numBlocks % 8);
+	int numBlocksRounded = std::max(std::min(NUMBLOCKS, numBlocks - numBlocks % 8), 1);
 	generalCfg.requestedMemory = minMemoryPerThread * numBlocksRounded * BLOCKSIZE;
-	generalCfg.seedBlockSize = std::min((uint32_t)generalCfg.seedBlockSize, (generalCfg.endSeed - generalCfg.startSeed) / (numBlocksRounded * BLOCKSIZE) + 1);
-	printf("creating %ix%i threads\n", numBlocksRounded, BLOCKSIZE);
+	generalCfg.seedBlockSize = std::min((uint32_t)generalCfg.seedBlockSize, (generalCfg.endSeed - generalCfg.startSeed) / (numBlocksRounded * blockSize) + 1);
+	printf("creating %ix%i threads\n", numBlocksRounded, blockSize);
 
-	return { numBlocksRounded, BLOCKSIZE, memSizes, generalCfg, precheckCfg, spawnableCfg, filterCfg };
+	return { numBlocksRounded, blockSize, memSizes, generalCfg, precheckCfg, spawnableCfg, filterCfg, biomeCount };
 }
 
 AllPointers AllocateMemory(DeviceConfig config)
@@ -484,7 +554,7 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 			pointers.hFlags[index].state = Running;
 			foundSeeds++;
 
-			/*
+#ifdef IMAGE_OUTPUT
 			int memOffset = 0;
 			int seed = readInt(output, memOffset);
 			int w = readInt(output, memOffset);
@@ -495,9 +565,9 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 			_itoa_offset(seed, 10, buffer, bufOffset);
 			_putstr_offset(".png", buffer, bufOffset);
 			buffer[bufOffset++] = '\0';
-			WriteImage(buffer, output + memOffset, w, h);*/
-
-			char buffer[300];
+			WriteImage(buffer, output + memOffset, w, h);
+#else
+			char buffer[1000];
 			int bufOffset = 0;
 			int memOffset = 0;
 			int seed = readInt(output, memOffset);
@@ -512,13 +582,31 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 				{
 					int x = readInt(output, memOffset);
 					int y = readInt(output, memOffset);
+					IntPair chunkCoords = GetLocalPos(x, y);
 					Item item = (Item)readByte(output, memOffset);
 
-					_putstr_offset(ItemNames[item - GOLD_NUGGETS], buffer, bufOffset);
+					if(item >= GOLD_NUGGETS && item <= TRUE_ORB)
+						_putstr_offset(ItemNames[item - GOLD_NUGGETS], buffer, bufOffset);
 					buffer[bufOffset++] = '(';
 					_itoa_offset(x, 10, buffer, bufOffset);
+					if (abs(chunkCoords.x - 35) > 35)
+					{
+						_putstr_offset("[", buffer, bufOffset);
+						_putstr_offset(x > 0 ? "E" : "W", buffer, bufOffset);
+						int pwPos = abs((int)rintf((chunkCoords.x - 35) / 70.0f));
+						_itoa_offset(pwPos, 10, buffer, bufOffset);
+						_putstr_offset("]", buffer, bufOffset);
+					}
 					buffer[bufOffset++] = ' ';
 					_itoa_offset(y, 10, buffer, bufOffset);
+					if (abs(chunkCoords.y - 24) > 24)
+					{
+						_putstr_offset("[", buffer, bufOffset);
+						_putstr_offset(y > 0 ? "H" : "S", buffer, bufOffset);
+						int pwPos = abs((int)rintf((chunkCoords.y - 24) / 48.0f));
+						_itoa_offset(pwPos, 10, buffer, bufOffset);
+						_putstr_offset("]", buffer, bufOffset);
+					}
 					buffer[bufOffset++] = ')';
 					if (i < sCount - 1)
 						buffer[bufOffset++] = ' ';
@@ -528,6 +616,7 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 			buffer[bufOffset++] = '\0';
 			fprintf(outputFile, "%s", buffer);
 			printf("%s", buffer);
+#endif
 		}
 	}
 }
@@ -549,11 +638,18 @@ int main()
 		int biomeCount = 0;
 		int maxMapArea = 0;
 		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/coalmine.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/coalmine_alt.png", maxMapArea);
 		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/excavationsite.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/fungicave.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/snowcave.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/snowcastle.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/vault.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/vault_frozen.png", maxMapArea);
+		biomes[biomeCount++] = InstantiateBiome("wang_tiles/crypt.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/fungiforest.png", maxMapArea);
 
-		DeviceConfig config = CreateConfigs(maxMapArea);
+		DeviceConfig config = CreateConfigs(maxMapArea, biomeCount);
 
-		config.biomeCount = biomeCount;
 		memcpy(&config.biomeScopes, biomes, sizeof(BiomeWangScope) * 20);
 
 		AllPointers pointers = AllocateMemory(config);

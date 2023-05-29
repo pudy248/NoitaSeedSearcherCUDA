@@ -94,7 +94,7 @@ __device__ Spell MakeRandomCard(NollaPRNG& random)
 	char valid = 0;
 	while (valid == 0)
 	{
-		int itemno = random.Random(0, 392);
+		int itemno = random.Random(0, SpellCount - 1);
 		if (spellSpawnableInChests[itemno])
 		{
 			return (Spell)(itemno + 1);
@@ -550,6 +550,18 @@ __device__ void spawnNightmareEnemy(int _x, int _y, uint32_t seed, MapConfig mCf
 #endif
 }
 
+__device__ void spawnHellShop(int x, int y, uint32_t seed, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
+{
+	sCount++;
+	writeInt(bytes, offset, x);
+	writeInt(bytes, offset, y);
+	writeByte(bytes, offset, TYPE_HELL_SHOP);
+	writeInt(bytes, offset, 3);
+
+	writeByte(bytes, offset, DATA_SPELL);
+	writeShort(bytes, offset, GetRandomAction(seed, x, y, 10, 0));
+}
+
 __device__ Wand GetShopWand(NollaPRNG& random, double x, double y, int level)
 {
 	random.SetRandomSeed(x, y);
@@ -563,7 +575,7 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 
 	if (sCfg.pacifist)
 	{
-		for (int pw = sCfg.pwCenter - sCfg.pwWidth; pw <= sCfg.pwCenter + sCfg.pwWidth; pw++)
+		for (int pw = sCfg.pwCenter.x - sCfg.pwWidth.x; pw <= sCfg.pwCenter.x + sCfg.pwWidth.x; pw++)
 		{
 			for (int hm_level = sCfg.minHMidx; hm_level < min(sCfg.maxHMidx, pw == 0 ? 7 : 6); hm_level++)
 			{
@@ -580,7 +592,7 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 		int width = 132;
 		constexpr int itemCount = 5;
 		float stepSize = width / (float)itemCount;
-		for (int pw = sCfg.pwCenter - sCfg.pwWidth; pw <= sCfg.pwCenter + sCfg.pwWidth; pw++)
+		for (int pw = sCfg.pwCenter.x - sCfg.pwWidth.x; pw <= sCfg.pwCenter.x + sCfg.pwWidth.x; pw++)
 		{
 			for (int hm_level = sCfg.minHMidx; hm_level < min(sCfg.maxHMidx, pw == 0 ? 7 : 6); hm_level++)
 			{
@@ -636,7 +648,7 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 
 __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int& offset, int& sCount, MapConfig mCfg, SpawnableConfig sCfg, int maxMemory)
 {
-	static void (*spawnFuncs[7])(int, int, uint32_t, MapConfig, SpawnableConfig, uint8_t*, int&, int&) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand, spawnNightmareEnemy };
+	static void (*spawnFuncs[])(int, int, uint32_t, MapConfig, SpawnableConfig, uint8_t*, int&, int&) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand, spawnNightmareEnemy, spawnHellShop };
 	uint8_t* map = res + 4 * 3 * mCfg.map_w;
 
 	for (int px = 0; px < mCfg.map_w; px++)
@@ -649,77 +661,87 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 			if (map[pixelPos] == 255 && map[pixelPos + 1] == 255)
 				continue;
 
-			IntPair gp = GetGlobalPos(mCfg.worldX, mCfg.worldY, px * 10, py * 10);
-
-			const int PWSize = mCfg.isNightmare ? 64 * 512 : 70 * 512;
-
 			//avoids having to switch every loop
 			auto func = spawnFuncs[0];
-			long pix = createRGB(map[pixelPos], map[pixelPos + 1], map[pixelPos + 2]);
-			
-			bool check = false;
-			switch (pix)
+			uint32_t pix = createRGB(map[pixelPos], map[pixelPos + 1], map[pixelPos + 2]);
+			for (int pwY = sCfg.pwCenter.y - sCfg.pwWidth.y; pwY <= sCfg.pwCenter.y + sCfg.pwWidth.y; pwY++)
 			{
-			case 0x78ffff:
-				if (sCfg.biomeChests)
+				bool check = false;
+				switch (pix)
 				{
-					func = spawnFuncs[0];
+				case 0x78ffff:
+					if (sCfg.biomeChests && pwY == 0)
+					{
+						func = spawnFuncs[0];
+						check = true;
+					}
+					else continue;
+					break;
+				case 0x55ff8c:
+					if (sCfg.biomeChests && pwY == 0)
+					{
+						func = spawnFuncs[1];
+						check = true;
+					}
+					else continue;
+					break;
+				case 0xff0aff:
+					if (sCfg.pixelScenes && pwY == 0)
+					{
+						func = spawnFuncs[2];
+						check = true;
+					}
+					else continue;
+					break;
+				case 0xc35700:
+					if (sCfg.pixelScenes && pwY == 0)
+					{
+						func = spawnFuncs[3];
+						check = true;
+					}
+					else continue;
+					break;
+				case 0x50a000:
+					if (sCfg.biomePedestals && pwY == 0)
+					{
+						func = spawnFuncs[4];
+						check = true;
+					}
+					else continue;
+					break;
+				case 0x00ff00:
+					if (sCfg.biomeAltars && pwY == 0)
+					{
+						func = spawnFuncs[5];
+						check = true;
+					}
+					else continue;
+					break;
+				case 0xff0000:
+					func = spawnFuncs[6];
 					check = true;
+					break;
+				case 0x808000:
+					if (sCfg.hellShops && pwY != 0)
+					{
+						func = spawnFuncs[7];
+						check = true;
+					}
+					else continue;
+					break;
+				default:
+					continue;
 				}
-				else continue;
-				break;
-			case 0x55ff8c:
-				if (sCfg.biomeChests)
+
+				if (check)
 				{
-					func = spawnFuncs[1];
-					check = true;
+					for (int pwX = sCfg.pwCenter.x - sCfg.pwWidth.x; pwX <= sCfg.pwCenter.x + sCfg.pwWidth.x; pwX++)
+					{
+						IntPair gp = GetGlobalPos(mCfg.worldX + 70 * pwX, mCfg.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
+						func(gp.x, gp.y, seed, mCfg, sCfg, bytes, offset, sCount);
+					}
 				}
-				else continue;
-				break;
-			case 0xff0aff:
-				if (sCfg.pixelScenes)
-				{
-					func = spawnFuncs[2];
-					check = true;
-				}
-				else continue;
-				break;
-			case 0xc35700:
-				if (sCfg.pixelScenes)
-				{
-					func = spawnFuncs[3];
-					check = true;
-				}
-				else continue;
-				break;
-			case 0x50a000:
-				if (sCfg.biomePedestals)
-				{
-					func = spawnFuncs[4];
-					check = true;
-				}
-				else continue;
-				break;
-			case 0x00ff00:
-				if (sCfg.biomeAltars)
-				{
-					func = spawnFuncs[5];
-					check = true;
-				}
-				else continue;
-				break;
-			case 0xff0000:
-				func = spawnFuncs[6];
-				check = true;
-				break;
-			default:
-				continue;
 			}
-
-			if (check)
-				for (int i = sCfg.pwCenter - sCfg.pwWidth; i <= sCfg.pwCenter + sCfg.pwWidth; i++)
-					func(gp.x + PWSize * i, gp.y, seed, mCfg, sCfg, bytes, offset, sCount);
-
 
 			if (offset > maxMemory) printf("ran out of misc memory: %i of %i bytes used\n", offset, maxMemory);
 		}
