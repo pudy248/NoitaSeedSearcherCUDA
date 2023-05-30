@@ -37,7 +37,10 @@ __device__ void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnabl
 		Spawnable s = readMisalignedSpawnable(sPtr);
 		writeInt(output, offset, s.x);
 		writeInt(output, offset, s.y);
-		writeByte(output, offset, sPtr->contents);
+		writeByte(output, offset, s.sType);
+		writeInt(output, offset, s.count);
+		memcpy(output + offset, &sPtr->contents, s.count);
+		offset += s.count;
 	}
 }
 

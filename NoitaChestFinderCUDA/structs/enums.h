@@ -541,12 +541,19 @@ enum SpawnableMetadata : uint8_t
 	TYPE_EOE_DROP,
 	TYPE_HM_SHOP,
 	TYPE_HELL_SHOP,
+	TYPE_EYE_ROOM,
 
 	DATA_MATERIAL,
 	DATA_SPELL,
 	DATA_WAND,
 };
 
+enum CartType : uint8_t
+{
+	MINECART,
+	WOODCART,
+	SKATEBOARD
+};
 enum AlchemyOrdering
 {
 	UNORDERED,

@@ -24,11 +24,15 @@ struct MemSizeConfig
 	uint64_t miscMemSize;
 	uint64_t visitedMemSize;
 	uint64_t spawnableMemSize;
-	uint64_t bufferSize;
 
 	uint64_t threadMemTotal;
 };
 
+struct StartingCartConfig
+{
+	bool check;
+	CartType cart;
+};
 struct StartingFlaskConfig
 {
 	bool check;
@@ -75,6 +79,7 @@ struct PerkConfig
 
 struct StaticPrecheckConfig
 {
+	StartingCartConfig cart;
 	StartingFlaskConfig flask;
 	StartingWandConfig wands;
 	RainConfig rain;
@@ -122,6 +127,8 @@ struct SpawnableConfig
 	bool pacifist;
 	bool shopSpells;
 	bool shopWands;
+
+	bool eyeRooms;
 
 	bool biomeChests;
 	bool biomePedestals;

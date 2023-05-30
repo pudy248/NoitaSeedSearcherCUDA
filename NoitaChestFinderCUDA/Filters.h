@@ -181,7 +181,7 @@ __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 	return false;
 }
 
-__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* bufferMem, bool write)
+__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, bool write)
 {
 	int relevantSpawnableCount = 0;
 	Spawnable* relevantSpawnables[50];
@@ -314,6 +314,5 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* o
 	}
 
 	if(write) WriteOutputBlock(output, b.seed, relevantSpawnables, relevantSpawnableCount);
-	//PrintSpawnableBlock(b.seed, relevantSpawnables, relevantSpawnableCount, bufferMem);
 	return true;
 }

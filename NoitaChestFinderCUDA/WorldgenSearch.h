@@ -607,6 +607,7 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 				{
 					if (!sCfg.shopWands) continue;
 #ifdef DO_WANDGEN
+					sCount++;
 					writeInt(bytes, offset, x);
 					writeInt(bytes, offset, y);
 					writeByte(bytes, offset, TYPE_HM_SHOP);
@@ -628,6 +629,7 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 				else
 				{
 					if (!sCfg.shopSpells) continue;
+					sCount++;
 					writeInt(bytes, offset, x);
 					writeInt(bytes, offset, y);
 					writeByte(bytes, offset, TYPE_HM_SHOP);
@@ -641,6 +643,33 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 						writeShort(bytes, offset, GetRandomAction(random.world_seed, x + i * stepSize, y, tier, 0));
 					}
 				}
+			}
+		}
+	}
+}
+
+__device__ void CheckEyeRooms(uint32_t seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
+{
+	IntPair positions[8] = { {-3992, 5380}, {-3971, 5397}, {-3949, 5414}, {-3926, 5428}, {-3758, 5424}, {-3735, 5410}, {-3713, 5393}, {-3692, 5376} };
+	if (sCfg.eyeRooms)
+	{
+		NollaPRNG random(seed);
+		for (int pw = sCfg.pwCenter.x - sCfg.pwWidth.x; pw <= sCfg.pwCenter.x + sCfg.pwWidth.x; pw++)
+		{
+			int x = -3850 + pw * 70 * 512;
+			int y = 5400;
+			sCount++;
+			writeInt(bytes, offset, x);
+			writeInt(bytes, offset, y);
+			writeByte(bytes, offset, TYPE_EYE_ROOM);
+			writeInt(bytes, offset, 24);
+
+			for (int i = 0; i < 8; i++)
+			{
+				IntPair pos = positions[i] + IntPair(pw * 70 * 512, 0);
+				random.SetRandomSeedInt(pos.x, pos.y);
+				writeByte(bytes, offset, DATA_SPELL);
+				writeShort(bytes, offset, MakeRandomCard(random));
 			}
 		}
 	}

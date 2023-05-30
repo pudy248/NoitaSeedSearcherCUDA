@@ -150,6 +150,15 @@ __device__ void shuffle_table(uint8_t* perk_deck, NollaPRNG& rng, int iters)
 	}
 }
 
+__device__ bool CheckCart(NollaPRNG& random, StartingCartConfig c)
+{
+	float r = random.ProceduralRandomf(673, -100, 0, 1) * 0.505f;
+	CartType cart = SKATEBOARD;
+	if (r < 0.25f) cart = MINECART;
+	else if (r < 0.5f) cart = WOODCART;
+	return c.cart == cart;
+}
+
 __device__ bool CheckRain(NollaPRNG& random, RainConfig c)
 {
 	float rainfall_chance = 1.0f / 15;
@@ -465,6 +474,8 @@ __device__ bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c)
 	return false;*/
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
+	if (c.cart.check)
+		if (!CheckCart(sharedRandom, c.cart)) return false;
 	if (c.flask.check)
 		if (!CheckStartingFlask(sharedRandom, c.flask)) return false;
 	if (c.wands.check)

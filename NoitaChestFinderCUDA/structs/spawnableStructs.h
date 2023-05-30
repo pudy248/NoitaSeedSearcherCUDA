@@ -181,7 +181,7 @@ __device__ int readMisaligned(int* ptr2)
 	return readInt(ptr, offset);
 }
 
-__device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
+__host__ __device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 {
 	uint8_t* bPtr = (uint8_t*)sPtr;
 	Spawnable s;
@@ -193,7 +193,7 @@ __device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 	return s;
 }
 
-__device__ WandData readMisalignedWand(WandData* wPtr)
+__host__ __device__ WandData readMisalignedWand(WandData* wPtr)
 {
 	WandData w = {};
 	memcpy(&w, wPtr, 37);

@@ -132,15 +132,14 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 			continue;
 		}
 
+		int spawnableCount = 0;
+		int spawnableOffset = 8;
+#ifdef DO_WORLDGEN
 		uint8_t* mapMem = ArenaAlloc(arena, dConfig.memSizes.mapDataSize, 8); //Pointers are 8 bytes
 		uint8_t* miscMem = ArenaAlloc(arena, dConfig.memSizes.miscMemSize, 4);
 		uint8_t* visited = ArenaAlloc(arena, dConfig.memSizes.visitedMemSize);
-		uint8_t* bufferMem = ArenaAlloc(arena, dConfig.memSizes.bufferSize);
 		uint8_t* spawnables = ArenaAlloc(arena, dConfig.memSizes.spawnableMemSize, 4);
-		int spawnableCount = 0;
-		int spawnableOffset = 8;
 		*(int*)spawnables = currentSeed;
-
 		for (int biomeNum = 0; biomeNum < dConfig.biomeCount; biomeNum++)
 		{
 			GenerateMap(currentSeed, dConfig.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
@@ -148,12 +147,13 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 		}
 
 		CheckMountains(currentSeed, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
+		CheckEyeRooms(currentSeed, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
 
-		printf("%i\n", spawnableCount);
+		//printf("%i spawnables\n", spawnableCount);
 
 		((int*)spawnables)[1] = spawnableCount;
 		SpawnableBlock result = ParseSpawnableBlock(spawnables, mapMem, dConfig.spawnableCfg, dConfig.memSizes.mapDataSize);
-		seedPassed &= SpawnablesPassed(result, dConfig.filterCfg, output, bufferMem, true);
+		seedPassed &= SpawnablesPassed(result, dConfig.filterCfg, output, true);
 
 		if (!seedPassed)
 		{
@@ -164,9 +164,10 @@ __global__ void Kernel(DeviceConfig dConfig, DevicePointers dPointers)
 			}
 			continue;
 		}
-
+#endif
 		flags->state = DeviceLock;
 		memcpy(output, &currentSeed, 4);
+		memcpy(output + 4, &spawnableCount, 4);
 		memcpy(uOutput, output, dConfig.memSizes.outputSize);
 		flags->state = SeedFound;
 		pollState = true;
@@ -360,17 +361,30 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 #ifdef DO_WORLDGEN
 		3 * maxMapArea + 4096,
 #else
-		4096,
+		64,
 #endif
 		3 * maxMapArea + 128,
 		4 * maxMapArea,
 		maxMapArea,
-		4096,
-		4096
+		64,
 	};
 
-	GeneralConfig generalCfg = { 40_GB, 1, 2, 1, 60, 1, 1 };
-	SpawnableConfig spawnableCfg = { {0, -3}, {0, 2}, 0, 7, false, false, false, false, false, false, false, false, true, false, false, false };
+	GeneralConfig generalCfg = { 40_GB, 1, INT_MAX, 1024*128, 5, 1, 1 };
+	SpawnableConfig spawnableCfg = { {0, 0}, {0, 0}, 0, 7, 
+		false, //greed
+		false, //pacifist
+		false, //shop spells
+		false, //shop wands
+		false, //eye rooms
+		false, //biome chests
+		false, //biome pedestals
+		false, //biome altars
+		false, //biome pixelscenes
+		false, //hell shops
+		false, //potion contents
+		false, //chest spells
+		false, //wand contents
+	};
 
 	Item iF1[FILTER_OR_COUNT] = { PAHA_SILMA };
 	Item iF2[FILTER_OR_COUNT] = { MIMIC };
@@ -383,9 +397,10 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 	MaterialFilter mFilters[] = { MaterialFilter(mF1) };
 	SpellFilter sFilters[] = { SpellFilter(sF1, 1), SpellFilter(sF2), SpellFilter(sF3) };
 
-	FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 1, sFilters, false, 27);
+	FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, false, 27);
 
 	StaticPrecheckConfig precheckCfg = {
+		{true, SKATEBOARD},
 		{false, URINE},
 		{false, SPELL_LIGHT_BULLET, SPELL_DYNAMITE},
 		{false, BLOOD},
@@ -566,56 +581,133 @@ void OutputLoop(DeviceConfig config, HostPointers pointers, cudaEvent_t _event, 
 			_putstr_offset(".png", buffer, bufOffset);
 			buffer[bufOffset++] = '\0';
 			WriteImage(buffer, output + memOffset, w, h);
-#else
-			char buffer[1000];
+#endif
+#ifdef SPAWNABLE_OUTPUT
+			char buffer[4096];
 			int bufOffset = 0;
 			int memOffset = 0;
 			int seed = readInt(output, memOffset);
 			int sCount = readInt(output, memOffset);
 			if (seed == 0) continue;
+			
 			_itoa_offset(seed, 10, buffer, bufOffset);
 			if (sCount > 0)
 			{
 				_putstr_offset(": ", buffer, bufOffset);
-
+				Spawnable* sPtr;
 				for (int i = 0; i < sCount; i++)
 				{
-					int x = readInt(output, memOffset);
-					int y = readInt(output, memOffset);
-					IntPair chunkCoords = GetLocalPos(x, y);
-					Item item = (Item)readByte(output, memOffset);
+					sPtr = (Spawnable*)(output + memOffset);
+					Spawnable s = readMisalignedSpawnable(sPtr);
+					IntPair chunkCoords = GetLocalPos(s.x, s.y);
 
-					if(item >= GOLD_NUGGETS && item <= TRUE_ORB)
-						_putstr_offset(ItemNames[item - GOLD_NUGGETS], buffer, bufOffset);
-					buffer[bufOffset++] = '(';
-					_itoa_offset(x, 10, buffer, bufOffset);
+					_putstr_offset(" ", buffer, bufOffset);
+					_putstr_offset(SpawnableTypeNames[s.sType - TYPE_CHEST], buffer, bufOffset);
+					_putstr_offset("(", buffer, bufOffset);
+					_itoa_offset(s.x, 10, buffer, bufOffset);
 					if (abs(chunkCoords.x - 35) > 35)
 					{
 						_putstr_offset("[", buffer, bufOffset);
-						_putstr_offset(x > 0 ? "E" : "W", buffer, bufOffset);
+						_putstr_offset(s.x > 0 ? "E" : "W", buffer, bufOffset);
 						int pwPos = abs((int)rintf((chunkCoords.x - 35) / 70.0f));
 						_itoa_offset(pwPos, 10, buffer, bufOffset);
 						_putstr_offset("]", buffer, bufOffset);
 					}
-					buffer[bufOffset++] = ' ';
-					_itoa_offset(y, 10, buffer, bufOffset);
+					_putstr_offset(", ", buffer, bufOffset);
+					_itoa_offset(s.y, 10, buffer, bufOffset);
 					if (abs(chunkCoords.y - 24) > 24)
 					{
 						_putstr_offset("[", buffer, bufOffset);
-						_putstr_offset(y > 0 ? "H" : "S", buffer, bufOffset);
+						_putstr_offset(s.y > 0 ? "H" : "S", buffer, bufOffset);
 						int pwPos = abs((int)rintf((chunkCoords.y - 24) / 48.0f));
 						_itoa_offset(pwPos, 10, buffer, bufOffset);
 						_putstr_offset("]", buffer, bufOffset);
 					}
-					buffer[bufOffset++] = ')';
-					if (i < sCount - 1)
-						buffer[bufOffset++] = ' ';
+					_putstr_offset(")", buffer, bufOffset);
+					_putstr_offset(" [", buffer, bufOffset);
+
+					for (int n = 0; n < s.count; n++)
+					{
+						Item item = *(&sPtr->contents + n);
+						if (item == DATA_MATERIAL)
+						{
+							int offset2 = n + 1;
+							short m = readShort((uint8_t*)(&sPtr->contents), offset2);
+							_putstr_offset("POTION_", buffer, bufOffset);
+							_putstr_offset(MaterialNames[m], buffer, bufOffset);
+							n += 2;
+						}
+						else if (item == DATA_SPELL)
+						{
+							int offset2 = n + 1;
+							short m = readShort((uint8_t*)(&sPtr->contents), offset2);
+							_putstr_offset("SPELL_", buffer, bufOffset);
+							_putstr_offset(SpellNames[m], buffer, bufOffset);
+							n += 2;
+						}
+						else if (item == DATA_WAND)
+						{
+							n++;
+							WandData dat = readMisalignedWand((WandData*)(&sPtr->contents + n));
+							_putstr_offset("[", buffer, bufOffset);
+
+							_itoa_offset_decimal((int)(dat.capacity * 100), 10, 2, buffer, bufOffset);
+							_putstr_offset(" CAPACITY, ", buffer, bufOffset);
+
+							_itoa_offset(dat.multicast, 10, buffer, bufOffset);
+							_putstr_offset(" MULTI, ", buffer, bufOffset);
+
+							_itoa_offset(dat.delay, 10, buffer, bufOffset);
+							_putstr_offset(" DELAY, ", buffer, bufOffset);
+
+							_itoa_offset(dat.reload, 10, buffer, bufOffset);
+							_putstr_offset(" RELOAD, ", buffer, bufOffset);
+
+							_itoa_offset(dat.mana, 10, buffer, bufOffset);
+							_putstr_offset(" MANA, ", buffer, bufOffset);
+
+							_itoa_offset(dat.regen, 10, buffer, bufOffset);
+							_putstr_offset(" REGEN, ", buffer, bufOffset);
+
+							//speed... float?
+
+							_itoa_offset(dat.spread, 10, buffer, bufOffset);
+							_putstr_offset(" SPREAD, ", buffer, bufOffset);
+
+							_putstr_offset(dat.shuffle ? "SHUFFLE] AC_" : "NON-SHUFFLE] AC_", buffer, bufOffset);
+							n += 33;
+							continue;
+						}
+						else if (GOLD_NUGGETS > item || item > TRUE_ORB)
+						{
+							_putstr_offset("0x", buffer, bufOffset);
+							_itoa_offset_zeroes(item, 16, 2, buffer, bufOffset);
+						}
+						else
+						{
+							int idx = item - GOLD_NUGGETS;
+							_putstr_offset(ItemNames[idx], buffer, bufOffset);
+						}
+
+						if (n < s.count - 1)
+							_putstr_offset(" ", buffer, bufOffset);
+					}
+					_putstr_offset("]", buffer, bufOffset);
+					memOffset += s.count + 13;
 				}
 			}
 			buffer[bufOffset++] = '\n';
 			buffer[bufOffset++] = '\0';
 			fprintf(outputFile, "%s", buffer);
 			printf("%s", buffer);
+#else
+			char buffer[12];
+			int bufOffset = 0;
+			_itoa_offset(*(int*)output, 10, buffer, bufOffset);
+			buffer[bufOffset++] = '\n';
+			buffer[bufOffset++] = '\0';
+			fprintf(outputFile, "%s", buffer);
+			//printf("%s", buffer);
 #endif
 		}
 	}
@@ -645,7 +737,7 @@ int main()
 		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/snowcastle.png", maxMapArea);
 		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/vault.png", maxMapArea);
 		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/vault_frozen.png", maxMapArea);
-		biomes[biomeCount++] = InstantiateBiome("wang_tiles/crypt.png", maxMapArea);
+		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/crypt.png", maxMapArea);
 		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/fungiforest.png", maxMapArea);
 
 		DeviceConfig config = CreateConfigs(maxMapArea, biomeCount);
