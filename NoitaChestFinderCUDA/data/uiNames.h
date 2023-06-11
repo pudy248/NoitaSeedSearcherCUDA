@@ -12,7 +12,9 @@ const char* SpawnableTypeNames[] = {
 	"EOE_DROP",
 	"HM_SHOP",
 	"HELL_SHOP",
-	"EYE_ROOM"
+	"EYE_ROOM",
+	"PIXEL_SCENE",
+	"ENEMY",
 };
 
 const char* ItemNames[] = {
@@ -745,6 +747,7 @@ const char* SpellNames[] = {
 "MINE_DEATH_TRIGGER",
 "PIPE_BOMB",
 "PIPE_BOMB_DEATH_TRIGGER",
+"FISH",
 "EXPLODING_DEER",
 "EXPLODING_DUCKS",
 "WORM_SHOT",
@@ -895,6 +898,8 @@ const char* SpellNames[] = {
 "BOUNCE",
 "REMOVE_BOUNCE",
 "HOMING",
+"ANTI_HOMING",
+"HOMING_WAND",
 "HOMING_SHORT",
 "HOMING_ROTATE",
 "HOMING_SHOOTER",
@@ -957,6 +962,7 @@ const char* SpellNames[] = {
 "SEA_ALCOHOL",
 "SEA_OIL",
 "SEA_WATER",
+"SEA_SWAMP",
 "SEA_ACID",
 "SEA_ACID_GAS",
 "CLOUD_WATER",
@@ -1094,4 +1100,40 @@ const char* SpellNames[] = {
 "COLOUR_RAINBOW",
 "COLOUR_INVIS",
 "RAINBOW_TRAIL",
+};
+
+const char* PixelSceneNames[] = {
+	"NONE",
+	"COALPIT01",
+	"COALPIT02",
+	"CARTHILL",
+	"COALPIT03",
+	"COALPIT04",
+	"COALPIT05",
+
+	"SHRINE01",
+	"SHRINE02",
+	"SLIMEPIT",
+	"LABORATORY",
+	"SWARM",
+	"SYMBOLROOM",
+	"PHYSICS_01",
+	"PHYSICS_02",
+	"PHYSICS_03",
+	"SHOP",
+	"RADIOACTIVECAVE",
+	"WANDTRAP_H_02",
+	"WANDTRAP_H_04",
+	"WANDTRAP_H_06",
+	"WANDTRAP_H_07",
+	"PHYSICS_SWING_PUZZLE",
+	"RECEPTACLE_OIL",
+
+	"OILTANK_1",
+	"OILTANK_2",
+	"OILTANK_3",
+	"OILTANK_4",
+	"OILTANK_5",
+	"OILTANK_PUZZLE",
+	"OILTANK_ALT",
 };

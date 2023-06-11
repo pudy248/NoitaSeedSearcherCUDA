@@ -364,3 +364,4 @@ FodyWeavers.xsd
 /NoitaChestFinderCUDA/out.ncu-rep
 NoitaChestFinderCUDA/output.txt
 NoitaChestFinderCUDA/outputs/*
+NoitaChestFinderCUDA/coalmine/*

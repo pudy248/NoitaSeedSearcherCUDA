@@ -7,14 +7,14 @@
 
 #include "noita_random.h"
 
-__device__ float random_next(float min, float max, NollaPRNG& random, IntPair& rnd)
+__device__ float random_next(float min, float max, NollaPRNG& random, Vec2i& rnd)
 {
 	random.SetRandomSeedInt(rnd.x, rnd.y);
 	float result = min + ((max - min) * random.Next());
 	rnd.y += 1;
 	return result;
 }
-__device__ int random_nexti(float min, float max, NollaPRNG& random, IntPair& rnd)
+__device__ int random_nexti(float min, float max, NollaPRNG& random, Vec2i& rnd)
 {
 	random.SetRandomSeedInt(rnd.x, rnd.y);
 	int result = random.Random(min, max);
@@ -22,7 +22,7 @@ __device__ int random_nexti(float min, float max, NollaPRNG& random, IntPair& rn
 	return result;
 }
 
-__device__ int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, IntPair& rnd)
+__device__ int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, Vec2i& rnd)
 {
 	for (int i = length - 1; i > 0; i--)
 	{
@@ -31,7 +31,7 @@ __device__ int pick_random_from_table_backwards(const float* probs, int length, 
 	return 0;
 }
 
-__device__ int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, IntPair& rnd)
+__device__ int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, Vec2i& rnd)
 {
 	float val = random_next(0, sum, random, rnd);
 	for (int i = 0; i < length; i++)
@@ -42,24 +42,23 @@ __device__ int pick_random_from_table_weighted(const float* probs, float sum, in
 	return 0;
 }
 
-__device__ uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
+__host__ __device__ uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
 {
 	return (r << 16) | (g << 8) | b;
 }
-
-__device__ __host__ int GetWidthFromPix(int a, int b)
+__host__ __device__ int GetWidthFromPix(int a, int b)
 {
 	return ((b * 512) / 10 - (a * 512) / 10);
 }
 
-__device__ __host__ IntPair GetGlobalPos(const int x, const int y, const int px, int py)
+__host__ __device__ Vec2i GetGlobalPos(const int x, const int y, const int px, int py)
 {
 	int gx = ((512 * x) / 10 - (512 * 35) / 10) * 10 + px - 5;
 	int gy = ((512 * y) / 10 - (512 * 14) / 10) * 10 + py - 13;
 	return { gx, gy };
 }
 
-IntPair GetLocalPos(const int gx, int gy)
+Vec2i GetLocalPos(const int gx, int gy)
 {
 	int x = (int)std::roundf((gx + 5) / 512.0f) + 35;
 	int y = (int)std::roundf((gy + 13) / 512.0f) + 14;
@@ -74,7 +73,7 @@ __device__ int roundRNGPos(int num)
 	return num;
 }
 
-__device__ __host__ void _itoa_offset(int num, int base, char* buffer, int& offset)
+__host__ __device__ void _itoa_offset(int num, int base, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -108,7 +107,7 @@ __device__ __host__ void _itoa_offset(int num, int base, char* buffer, int& offs
 		buffer[offset++] = internal_buffer[j];
 }
 
-__device__ __host__ void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset)
+__host__ __device__ void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -144,7 +143,7 @@ __device__ __host__ void _itoa_offset_decimal(int num, int base, int fixedPoint,
 		buffer[offset++] = internal_buffer[j];
 }
 
-__device__ __host__ void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset)
+__host__ __device__ void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -172,7 +171,7 @@ __device__ __host__ void _itoa_offset_zeroes(int num, int base, int leadingZeroe
 		buffer[offset++] = internal_buffer[j];
 }
 
-__device__ __host__ void _putstr_offset(const char* str, char* buffer, int& offset)
+__host__ __device__ void _putstr_offset(const char* str, char* buffer, int& offset)
 {
 	int i = 0;
 	while (str[i] != '\0')

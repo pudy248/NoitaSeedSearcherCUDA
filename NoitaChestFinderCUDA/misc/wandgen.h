@@ -12,8 +12,6 @@
 
 #include "noita_random.h"
 
-#include <cmath>
-
 __device__ void GetBestSprite(NollaPRNG* rnd, Wand w)
 {
 	WandSpaceDat gunInWandSpace = {};
@@ -173,8 +171,8 @@ __device__ Spell GetRandomAction(uint32_t seed, double x, double y, int level, i
 
 	const SpellProb* tierProbs = allSpellProbs[level];
 
-	float sum = tierProbs[high - 1].p;
-	float cutoff = random.Next() * sum;
+	double sum = tierProbs[high - 1].p;
+	double cutoff = random.NextD() * sum + 0.00001;
 
 	while (low < high)
 	{
@@ -199,9 +197,8 @@ __device__ Spell GetRandomActionWithType(uint32_t seed, double x, double y, int 
 
 	const SpellProb* tierProbs = spellProbs_Types[level][type];
 
-	float sum = tierProbs[high - 1].p;
-	float rnd = random.Next();
-	float cutoff = sum * rnd;
+	double sum = tierProbs[high - 1].p;
+	double cutoff = random.NextD() * sum;
 
 	while (low < high)
 	{

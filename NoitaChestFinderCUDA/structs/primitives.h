@@ -1,24 +1,27 @@
 #pragma once
 
-struct IntPair {
+#include <cstdint>
+#include <crt/math_functions.h>
+
+struct Vec2i {
 	int x;
 	int y;
 
-	__host__ __device__ IntPair() {
+	__host__ __device__ Vec2i() {
 		x = -1;
 		y = -1;
 	}
 
-	__host__ __device__ IntPair(int _x, int _y) {
+	__host__ __device__ Vec2i(int _x, int _y) {
 		x = _x;
 		y = _y;
 	}
 	
-	__host__ __device__ IntPair operator+(IntPair other) {
+	__host__ __device__ Vec2i operator+(Vec2i other) {
 		return { x + other.x, y + other.y };
 	}
 	
-	__host__ __device__ IntPair operator*(int scalar) {
+	__host__ __device__ Vec2i operator*(int scalar) {
 		return { x * scalar, y * scalar };
 	}
 };

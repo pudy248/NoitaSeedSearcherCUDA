@@ -150,29 +150,31 @@ __device__ void shuffle_table(uint8_t* perk_deck, NollaPRNG& rng, int iters)
 	}
 }
 
-__device__ bool CheckCart(NollaPRNG& random, StartingCartConfig c)
+__device__ bool CheckCart(SQLRow& row, NollaPRNG& random, StartingCartConfig c)
 {
 	float r = random.ProceduralRandomf(673, -100, 0, 1) * 0.505f;
 	CartType cart = SKATEBOARD;
 	if (r < 0.25f) cart = MINECART;
 	else if (r < 0.5f) cart = WOODCART;
+	row.CART = cart;
 	return c.cart == cart;
 }
 
-__device__ bool CheckRain(NollaPRNG& random, RainConfig c)
+__device__ bool CheckRain(SQLRow& row, NollaPRNG& random, RainConfig c)
 {
 	float rainfall_chance = 1.0f / 15;
-	IntPair rnd = { 7893434, 3458934 };
+	Vec2i rnd = { 7893434, 3458934 };
+	Material rain = MATERIAL_NONE;
 	if (random_next(0, 1, random, rnd) <= rainfall_chance)
 	{
 		int seedRainIndex = pick_random_from_table_backwards(rainProbs, rainCount, random, rnd);
-		Material seedRain = rainMaterials[seedRainIndex];
-		return (Material)seedRain == c.rain;
+		rain = rainMaterials[seedRainIndex];
 	}
-	return c.rain == MATERIAL_NONE;
+	row.RAIN = rain;
+	return c.rain == rain;
 }
 
-__device__ bool CheckStartingFlask(NollaPRNG& random, StartingFlaskConfig c)
+__device__ bool CheckStartingFlask(SQLRow& row, NollaPRNG& random, StartingFlaskConfig c)
 {
 	random.SetRandomSeed(-4.5, -4);
 	Material material = Material::MATERIAL_NONE;
@@ -216,10 +218,11 @@ __device__ bool CheckStartingFlask(NollaPRNG& random, StartingFlaskConfig c)
 		else if (random.Random(0, 1) == 0) material = Material::SLIME;
 		else material = Material::GUNPOWDER_UNSTABLE;
 	}
+	row.FLASK = material;
 	return material == c.flask;
 }
 
-__device__ bool CheckStartingWands(NollaPRNG& random, StartingWandConfig c)
+__device__ bool CheckStartingWands(SQLRow& row, NollaPRNG& random, StartingWandConfig c)
 {
 	if (c.projectile != SPELL_NONE)
 	{
@@ -265,22 +268,28 @@ __device__ bool CheckStartingWands(NollaPRNG& random, StartingWandConfig c)
 	return true;
 }
 
-__device__ bool CheckAlchemy(NollaPRNG& random, AlchemyConfig c)
+__device__ bool CheckAlchemy(SQLRow& row, NollaPRNG& random, AlchemyConfig c)
 {
 	NollaPRNG prng((int)(random.world_seed * 0.17127 + 1323.5903));
 	for (int i = 0; i < 6; i++) prng.Next();
 	AlchemyRecipe lc = MaterialPicker(prng, random.world_seed);
 	AlchemyRecipe ap = MaterialPicker(prng, random.world_seed);
+	row.LC1 = lc.mats[0];
+	row.LC2 = lc.mats[1];
+	row.LC3 = lc.mats[2];
+	row.AP1 = ap.mats[0];
+	row.AP2 = ap.mats[1];
+	row.AP3 = ap.mats[2];
 	return AlchemyRecipe::Equals(c.LC, lc, c.ordering) && AlchemyRecipe::Equals(c.AP, ap, c.ordering);
 }
 
-__device__ bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c)
+__device__ bool CheckFungalShifts(SQLRow& row, NollaPRNG& random, FungalShiftConfig c)
 {
 	FungalShift generatedShifts[maxFungalShifts];
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
 		random.SetRandomSeedInt(89346, 42345 + i);
-		IntPair rnd = { 9123,58925 + i };
+		Vec2i rnd = { 9123,58925 + i };
 		generatedShifts[i].from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, rnd)];
 		generatedShifts[i].to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, rnd)];
 		if (random_nexti(1, 100, random, rnd) <= 75)
@@ -326,11 +335,11 @@ __device__ bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c)
 	return true;
 }
 
-__device__ bool CheckBiomeModifiers(NollaPRNG& random, BiomeModifierConfig c)
+__device__ bool CheckBiomeModifiers(SQLRow& row, NollaPRNG& random, BiomeModifierConfig c)
 {
 	BiomeModifier modifiers[9];
 	memset(modifiers, 0, 9);
-	IntPair rnd = { 347893,90734 };
+	Vec2i rnd = { 347893,90734 };
 	for (int i = 0; i < 9; i++)
 	{
 		float chance = 0.1f;
@@ -343,7 +352,7 @@ __device__ bool CheckBiomeModifiers(NollaPRNG& random, BiomeModifierConfig c)
 	return true;
 }
 
-__device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
+__device__ bool CheckPerks(SQLRow& row, NollaPRNG& random, PerkConfig c)
 {
 	random.SetRandomSeedInt(1, 2);
 
@@ -449,21 +458,8 @@ __device__ bool CheckPerks(NollaPRNG& random, PerkConfig c)
 	return true;
 }
 
-/*__device__ bool CheckUpwarps(NollaPRNG& random, FilterConfig fCfg, LootConfig lCfg)
-{
-	uint8_t bytes[2000];
-	int offset = 0;
-	int _ = 0;
-	spawnChest(315, 17, random.world_seed, lCfg, bytes, offset, _);
-	byte* ptr1 = bytes + offset;
-	spawnChest(75, 117, random.world_seed, lCfg, bytes, offset, _);
-	Spawnable* spawnables[] = { (Spawnable*)bytes, (Spawnable*)ptr1 };
-	SpawnableBlock b = { random.world_seed, 2, spawnables };
 
-	return SpawnablesPassed(b, fCfg, NULL, false);
-}*/
-
-__device__ bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c)
+__device__ bool PrecheckSeed(SQLRow& outputRow, uint32_t seed, StaticPrecheckConfig c)
 {
 	NollaPRNG sharedRandom = NollaPRNG(seed);
 	/*for (int max_safe_polymorphs = 0; max_safe_polymorphs < 100; max_safe_polymorphs++)
@@ -474,22 +470,40 @@ __device__ bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c)
 	return false;*/
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
+
+	constexpr bool generateForDB = true;
+
+	if (generateForDB)
+	{
+		CheckCart(outputRow, sharedRandom, c.cart);
+		CheckStartingFlask(outputRow, sharedRandom, c.flask);
+		CheckRain(outputRow, sharedRandom, c.rain);
+		CheckAlchemy(outputRow, sharedRandom, c.alchemy);
+	}
+
 	if (c.cart.check)
-		if (!CheckCart(sharedRandom, c.cart)) return false;
+		if (!CheckCart(outputRow, sharedRandom, c.cart)) return false;
+
 	if (c.flask.check)
-		if (!CheckStartingFlask(sharedRandom, c.flask)) return false;
+		if (!CheckStartingFlask(outputRow, sharedRandom, c.flask)) return false;
+
 	if (c.wands.check)
-		if (!CheckStartingWands(sharedRandom, c.wands)) return false;
+		if (!CheckStartingWands(outputRow, sharedRandom, c.wands)) return false;
+
 	if (c.alchemy.check)
-		if (!CheckAlchemy(sharedRandom, c.alchemy)) return false;
+		if (!CheckAlchemy(outputRow, sharedRandom, c.alchemy)) return false;
+
 	if (c.rain.check)
-		if (!CheckRain(sharedRandom, c.rain)) return false;
+		if (!CheckRain(outputRow, sharedRandom, c.rain)) return false;
+
 	if (c.biomes.check)
-		if (!CheckBiomeModifiers(sharedRandom, c.biomes)) return false;
+		if (!CheckBiomeModifiers(outputRow, sharedRandom, c.biomes)) return false;
+
 	if (c.fungal.check)
-		if (!CheckFungalShifts(sharedRandom, c.fungal)) return false;
+		if (!CheckFungalShifts(outputRow, sharedRandom, c.fungal)) return false;
+
 	if (c.perks.check)
-		if (!CheckPerks(sharedRandom, c.perks)) return false;
+		if (!CheckPerks(outputRow, sharedRandom, c.perks)) return false;
 
 	return true;
 }

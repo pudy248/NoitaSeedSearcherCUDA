@@ -6,6 +6,8 @@
 #include "primitives.h"
 #include "enums.h"
 
+#include <initializer_list>
+
 //DON'T REARRANGE CONTENTS! THE ORDER IS HARDCODED
 #pragma pack(push, 1)
 struct Spawnable
@@ -40,7 +42,7 @@ struct SpellData
 };
 struct SpellProb
 {
-	float p;
+	double p;
 	Spell s;
 };
 
@@ -123,6 +125,77 @@ struct WandSpaceDat
 	float reload_time;
 };
 
+struct PixelSceneData
+{
+	PixelScene scene;
+	float prob;
+	int materialCount;
+	Material extraMaterials[11];
+	bool hasExtraFunction;
+	void (*extraFunction)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount);
+
+	__device__ constexpr PixelSceneData() : scene(PS_NONE), prob(0), materialCount(0), hasExtraFunction(false), extraMaterials(), extraFunction(NULL)
+	{
+
+	}
+
+	__device__ PixelSceneData(PixelScene _scene, float _prob)
+	{
+		scene = _scene;
+		prob = _prob;
+		materialCount = 0;
+		hasExtraFunction = false;
+	}
+
+	__device__ PixelSceneData(PixelScene _scene, float _prob, static void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
+	{
+		scene = _scene;
+		prob = _prob;
+		materialCount = 0;
+		hasExtraFunction = true;
+		extraFunction = _func;
+	}
+
+	__device__ PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats)
+	{
+		scene = _scene;
+		prob = _prob;
+		materialCount = _mats.size();
+		memcpy(extraMaterials, _mats.begin(), sizeof(Material) * materialCount);
+		hasExtraFunction = false;
+	}
+
+	__device__ PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, static void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
+	{
+		scene = _scene;
+		prob = _prob;
+		materialCount = _mats.size();
+		memcpy(extraMaterials, _mats.begin(), sizeof(Material) * materialCount);
+		hasExtraFunction = true;
+		extraFunction = _func;
+	}
+};
+struct PixelSceneList
+{
+	int count;
+	float probSum;
+	int extraHeightNeeded;
+	PixelSceneData scenes[20];
+};
+
+struct EnemyData
+{
+	float prob;
+	int minCount;
+	int maxCount;
+	Enemy enemy;
+};
+struct EnemyList
+{
+	int count;
+	float probSum;
+	EnemyData enemies[20];
+};
 
 __host__ __device__
 uint8_t readByte(uint8_t* ptr, int& offset)

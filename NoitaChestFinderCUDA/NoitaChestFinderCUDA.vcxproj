@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{8CEEC6F5-6028-4711-A9C2-33DDC39D0C0C}</ProjectGuid>
     <RootNamespace>NoitaChestFinderCUDA</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -66,6 +67,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -79,7 +81,7 @@
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
       <GPUDebugInfo>false</GPUDebugInfo>
       <HostDebugInfo>false</HostDebugInfo>
-      <DebugInformationFormat>None</DebugInformationFormat>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <GenerateLineInfo>true</GenerateLineInfo>
       <AdditionalCompilerOptions>
       </AdditionalCompilerOptions>
@@ -91,12 +93,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Configuration.h" />
+    <ClInclude Include="data\enemies.h" />
+    <ClInclude Include="data\pixelscenes.h" />
     <ClInclude Include="data\temples.h" />
     <ClInclude Include="data\uiNames.h" />
     <ClInclude Include="data\wand_sprites.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="Filters.h" />
+    <ClInclude Include="misc\databaseutils.h" />
+    <ClInclude Include="misc\enemy_gen.h" />
     <ClInclude Include="misc\memory.h" />
+    <ClInclude Include="misc\pixelscene_gen.h" />
     <ClInclude Include="misc\pngutils.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
@@ -122,6 +129,7 @@
     <ClInclude Include="misc\worldgen_helpers.h" />
     <ClInclude Include="misc\pathfinding.h" />
     <ClInclude Include="WorldgenSearch.h" />
+    <ClInclude Include="worldSeedGeneration.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -7,6 +7,8 @@
 #include "structs/enums.h"
 #include "structs/staticPrecheckStructs.h"
 
+#include <initializer_list>
+
 struct GeneralConfig
 {
 	uint64_t requestedMemory;
@@ -118,8 +120,8 @@ struct MapConfig
 
 struct SpawnableConfig
 {
-	IntPair pwCenter;
-	IntPair pwWidth;
+	Vec2i pwCenter;
+	Vec2i pwWidth;
 	int minHMidx;
 	int maxHMidx;
 	bool greedCurse;
@@ -129,11 +131,13 @@ struct SpawnableConfig
 	bool shopWands;
 
 	bool eyeRooms;
+	bool staticUpwarps;
 
 	bool biomeChests;
 	bool biomePedestals;
 	bool biomeAltars;
 	bool pixelScenes;
+	bool enemies;
 	bool hellShops;
 
 	bool genPotions;
@@ -141,7 +145,7 @@ struct SpawnableConfig
 	bool genWands;
 };
 
-#define FILTER_OR_COUNT 10
+#define FILTER_OR_COUNT 5
 #define TOTAL_FILTER_COUNT 10
 struct ItemFilter
 {
@@ -150,19 +154,21 @@ struct ItemFilter
 
 	ItemFilter()
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = ITEM_NONE;
+		memset(items, 0, sizeof(Item) * FILTER_OR_COUNT);
 		duplicates = 0;
 	}
 
-	ItemFilter(Item _items[FILTER_OR_COUNT])
+	ItemFilter(std::initializer_list<Item> _items)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = _items[i];
+		memset(items, 0, sizeof(Item) * FILTER_OR_COUNT);
+		memcpy(items, _items.begin(), sizeof(Item) * _items.size());
 		duplicates = 1;
 	}
 
-	ItemFilter(Item _items[FILTER_OR_COUNT], int _dupes)
+	ItemFilter(std::initializer_list<Item> _items, int _dupes)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) items[i] = _items[i];
+		memset(items, 0, sizeof(Item) * FILTER_OR_COUNT);
+		memcpy(items, _items.begin(), sizeof(Item) * _items.size());
 		duplicates = _dupes;
 	}
 };
@@ -173,19 +179,21 @@ struct MaterialFilter
 
 	MaterialFilter()
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = MATERIAL_NONE;
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
 		duplicates = 0;
 	}
 
-	MaterialFilter(Material _materials[FILTER_OR_COUNT])
+	MaterialFilter(std::initializer_list<Material> _materials)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = _materials[i];
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		memcpy(materials, _materials.begin(), sizeof(Material) * _materials.size());
 		duplicates = 1;
 	}
 
-	MaterialFilter(Material _materials[FILTER_OR_COUNT], int _dupes)
+	MaterialFilter(std::initializer_list<Material> _materials, int _dupes)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) materials[i] = _materials[i];
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		memcpy(materials, _materials.begin(), sizeof(Material) * _materials.size());
 		duplicates = _dupes;
 	}
 };
@@ -197,30 +205,86 @@ struct SpellFilter
 
 	SpellFilter()
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = SPELL_NONE;
+		memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
 		duplicates = 0;
 		asAlwaysCast = false;
 	}
 
-	SpellFilter(Spell _spells[FILTER_OR_COUNT])
+	SpellFilter(std::initializer_list<Spell> _spells)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
+		memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
+		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 		duplicates = 1;
 		asAlwaysCast = false;
 	}
 
-	SpellFilter(Spell _spells[FILTER_OR_COUNT], int _dupes)
+	SpellFilter(std::initializer_list<Spell> _spells, int _dupes)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
+		memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
+		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 		duplicates = _dupes;
 		asAlwaysCast = false;
 	}
 
-	SpellFilter(Spell _spells[FILTER_OR_COUNT], int _dupes, bool _asAlwaysCast)
+	SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast)
 	{
-		for (int i = 0; i < FILTER_OR_COUNT; i++) spells[i] = _spells[i];
+		memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
+		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 		duplicates = _dupes;
 		asAlwaysCast = _asAlwaysCast;
+	}
+};
+struct PixelSceneFilter
+{
+	PixelScene pixelScenes[FILTER_OR_COUNT];
+	Material materials[FILTER_OR_COUNT];
+	int duplicates;
+	bool checkMats;
+
+	PixelSceneFilter()
+	{
+		memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		duplicates = 0;
+		checkMats = false;
+	}
+
+	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes)
+	{
+		memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
+		duplicates = 1;
+		checkMats = false;
+	}
+
+	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, int _dupes)
+	{
+		memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
+		duplicates = _dupes;
+		checkMats = false;
+	}
+
+	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials)
+	{
+		memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
+		memcpy(materials, _materials.begin(), sizeof(Material) * _materials.size());
+		duplicates = 1;
+		checkMats = true;
+	}
+
+	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes)
+	{
+		memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
+		memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
+		memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
+		memcpy(materials, _materials.begin(), sizeof(Material) * _materials.size());
+		duplicates = _dupes;
+		checkMats = true;
 	}
 };
 
@@ -233,18 +297,22 @@ struct FilterConfig
 	MaterialFilter materialFilters[TOTAL_FILTER_COUNT];
 	int spellFilterCount;
 	SpellFilter spellFilters[TOTAL_FILTER_COUNT];
+	int pixelSceneFilterCount;
+	PixelSceneFilter pixelSceneFilters[TOTAL_FILTER_COUNT];
 	bool checkBigWands;
 	int howBig;
-	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, MaterialFilter* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, bool _checkBigWands, int _howBig)
+	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, MaterialFilter* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, int _pixelSceneFilterCount, PixelSceneFilter* _pixelSceneFilters, bool _checkBigWands, int _howBig)
 	{
 		aggregate = _aggregate;
 		itemFilterCount = _itemFilterCount;
 		materialFilterCount = _materialFilterCount;
 		spellFilterCount = _spellFilterCount;
+		pixelSceneFilterCount = _pixelSceneFilterCount;
 		checkBigWands = _checkBigWands;
 		howBig = _howBig;
 		memcpy(itemFilters, _itemFilters, sizeof(ItemFilter) * itemFilterCount);
 		memcpy(materialFilters, _materialFilters, sizeof(MaterialFilter) * materialFilterCount);
 		memcpy(spellFilters, _spellFilters, sizeof(SpellFilter) * spellFilterCount);
+		memcpy(pixelSceneFilters, _pixelSceneFilters, sizeof(PixelSceneFilter) * pixelSceneFilterCount);
 	}
 };

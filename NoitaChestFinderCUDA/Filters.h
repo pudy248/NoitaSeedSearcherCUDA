@@ -40,6 +40,11 @@ __device__ void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
 			n += 2;
 			continue;
 		}
+		if (c == DATA_PIXEL_SCENE)
+		{
+			n += 4;
+			continue;
+		}
 
 		else if (c == DATA_WAND)
 		{
@@ -92,6 +97,11 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 			n += 2;
 			continue;
 		}
+		if (c == DATA_PIXEL_SCENE)
+		{
+			n += 4;
+			continue;
+		}
 
 		else if (c == DATA_WAND)
 		{
@@ -133,6 +143,11 @@ __device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, i
 			n += 2;
 			continue;
 		}
+		if (c == DATA_PIXEL_SCENE)
+		{
+			n += 4;
+			continue;
+		}
 
 		if (c == DATA_WAND)
 		{
@@ -168,6 +183,11 @@ __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 			n += 2;
 			continue;
 		}
+		if (c == DATA_PIXEL_SCENE)
+		{
+			n += 4;
+			continue;
+		}
 
 		if (c == DATA_WAND)
 		{
@@ -181,6 +201,50 @@ __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 	return false;
 }
 
+__device__ void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& foundCount)
+{
+	int count = readMisaligned(&(s->count));
+	for (int n = 0; n < count; n++)
+	{
+		Item c = (&s->contents)[n];
+		if (c == DATA_PIXEL_SCENE)
+		{
+			int offset = n + 1;
+			PixelScene ps = (PixelScene)readShort((uint8_t*)(&s->contents), offset);
+			Material m = (Material)readShort((uint8_t*)(&s->contents), offset);
+
+			bool psMatch = false;
+			bool mMatch = !psf.checkMats;
+
+			for (int i = 0; i < FILTER_OR_COUNT; i++)
+			{
+				if (psf.pixelScenes[i] != PS_NONE && ps == psf.pixelScenes[i])
+					psMatch = true;
+				if (psf.materials[i] != MATERIAL_NONE && m == psf.materials[i])
+					mMatch = true;
+			}
+			if (psMatch && mMatch) foundCount++;
+
+			n += 4;
+			continue;
+		}
+
+		else if (c == DATA_SPELL || c == DATA_MATERIAL)
+		{
+			n += 2;
+			continue;
+		}
+
+		else if (c == DATA_WAND)
+		{
+			n++;
+			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
+			n += 37 + dat.spellCount * 3;
+		}
+
+	}
+}
+
 __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, bool write)
 {
 	int relevantSpawnableCount = 0;
@@ -191,10 +255,12 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* o
 		int itemsPassed[TOTAL_FILTER_COUNT];
 		int materialsPassed[TOTAL_FILTER_COUNT];
 		int spellsPassed[TOTAL_FILTER_COUNT];
+		int pixelScenesPassed[TOTAL_FILTER_COUNT];
 
 		for (int i = 0; i < fCfg.itemFilterCount; i++) itemsPassed[i] = 0;
 		for (int i = 0; i < fCfg.materialFilterCount; i++) materialsPassed[i] = 0;
 		for (int i = 0; i < fCfg.spellFilterCount; i++) spellsPassed[i] = 0;
+		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++) pixelScenesPassed[i] = 0;
 
 		for (int j = 0; j < b.count; j++)
 		{
@@ -234,6 +300,17 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* o
 					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
+
+			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
+			{
+				int prevPassCount = pixelScenesPassed[i];
+				PixelSceneFilterPassed(s, fCfg.pixelSceneFilters[i], pixelScenesPassed[i]);
+				if (pixelScenesPassed[i] > prevPassCount && !added)
+				{
+					added = true;
+					relevantSpawnables[relevantSpawnableCount++] = s;
+				}
+			}
 		}
 
 		bool failed = false;
@@ -247,6 +324,10 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* o
 
 		for (int i = 0; i < fCfg.spellFilterCount; i++)
 			if (spellsPassed[i] < fCfg.spellFilters[i].duplicates)
+				failed = true;
+
+		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
+			if (pixelScenesPassed[i] < fCfg.pixelSceneFilters[i].duplicates)
 				failed = true;
 
 		if (failed)
@@ -293,6 +374,18 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* o
 				int passCount = 0;
 				SpellFilterPassed(b.seed, s, fCfg.spellFilters[i], passCount);
 				if (passCount < fCfg.spellFilters[i].duplicates)
+				{
+					failed = true;
+					break;
+				}
+			}
+			if (failed) continue;
+
+			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
+			{
+				int passCount = 0;
+				PixelSceneFilterPassed(s, fCfg.pixelSceneFilters[i], passCount);
+				if (passCount < fCfg.pixelSceneFilters[i].duplicates)
 				{
 					failed = true;
 					break;

@@ -5,11 +5,8 @@
 
 #include "../structs/primitives.h"
 
-#include <cmath>
-
 // Thanks to kaliuresis!
 // Check out his orb atlas repository: https://github.com/kaliuresis/noa
-// #include <stdint.h>
 
 class WorldgenPRNG
 {
@@ -259,6 +256,18 @@ public:
 		}
 		Seed = v4;
 		return (float)Seed / 0x7fffffff;
+	}
+
+	__host__ __device__
+		double NextD()
+	{
+		int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
+		if (v4 < 0)
+		{
+			v4 += 0x7fffffff;
+		}
+		Seed = v4;
+		return (double)Seed / 0x7fffffff;
 	}
 
 	__host__ __device__

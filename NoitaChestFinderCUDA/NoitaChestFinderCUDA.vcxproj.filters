@@ -8,9 +8,6 @@
     <ClInclude Include="data\alchemy.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="data\coalhax.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="data\fungal.h">
       <Filter>data</Filter>
     </ClInclude>
@@ -87,6 +84,22 @@
       <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="misc\pngutils.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="data\pixelscenes.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="misc\pixelscene_gen.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="misc\enemy_gen.h">
+      <Filter>misc</Filter>
+    </ClInclude>
+    <ClInclude Include="data\enemies.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="worldSeedGeneration.h" />
+    <ClInclude Include="misc\databaseutils.h">
       <Filter>misc</Filter>
     </ClInclude>
   </ItemGroup>

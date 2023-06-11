@@ -77,7 +77,7 @@ __device__ bool traversable(uint8_t* map, int x, int y, int rmw)
 }
 
 __device__
-void tryNext(int x, int y, uint8_t* map, IntPair* stackCache, int& stackSize, uint8_t* visited, int rmw, int rmh)
+void tryNext(int x, int y, uint8_t* map, Vec2i* stackCache, int& stackSize, uint8_t* visited, int rmw, int rmh)
 {
 	if (x >= 0 && y >= 0 && x < rmw && y < rmh) {
 		if (visited[y * rmw + x] == 0 && traversable(map, x, y, rmw))
@@ -96,14 +96,14 @@ __device__ bool findPath(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, 
 	bool pathFound = false;
 
 	int stackSize = 1;
-	IntPair* stackMem = (IntPair*)stackMemArea;
+	Vec2i* stackMem = (Vec2i*)stackMemArea;
 	memset(visited, 0, map_w * map_h);
 
 	stackMem[0] = { x , y };
 
 	while (stackSize > 0 && pathFound != 1)
 	{
-		IntPair n = stackMem[--stackSize];
+		Vec2i n = stackMem[--stackSize];
 		//if((n.x + n.y) % 2 == 0) 
 			setPixelColor(map, rmw, n.x, n.y, COLOR_PURPLE);
 		if (n.x != -1) {

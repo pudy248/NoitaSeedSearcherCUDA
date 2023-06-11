@@ -61,12 +61,12 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, uint32
 	writeByte(bytes, offset, type);
 
 	int wandNum = (int)type - (int)WAND_T1;
-	int tier = wandNum / 3;
+	int tier = wandNum / 3 + 1;
 	bool nonshuffle = wandNum % 3 == 1;
 	bool better = wandNum % 3 == 2;
 
 #ifdef DO_WANDGEN
-	if (!sCfg.genWands || better) return;
+	if (type < WAND_T1 || type > WAND_T10NS || !sCfg.genWands || better) return;
 	else
 	{
 		int rand_x = (int)x;
@@ -446,31 +446,6 @@ __device__ void spawnPotion(int x, int y, uint32_t seed, MapConfig mCfg, Spawnab
 		CheckItemPedestalLoot(x + 5, y - 4, seed, mCfg, sCfg, bytes, offset, sCount);
 }
 
-__device__ void spawnPixelScene(int x, int y, uint32_t seed, uint8_t oiltank, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
-{
-	NollaPRNG random = NollaPRNG(seed);
-	random.SetRandomSeed(x, y);
-	int rnd = random.Random(1, 100);
-	if (rnd <= 50 && oiltank == 0 || rnd > 50 && oiltank > 0)
-	{
-		float rnd2 = random.ProceduralRandomf(x, y, 0, 1) * 3;
-		if (0.5f < rnd2 && rnd2 < 1)
-		{
-			spawnChest(x + 94, y + 224, seed, mCfg, sCfg, bytes, offset, sCount);
-		}
-	}
-}
-
-__device__ void spawnPixelScene1(int x, int y, uint32_t seed, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
-{
-	spawnPixelScene(x, y, seed, 0, mCfg, sCfg, bytes, offset, sCount);
-}
-
-__device__ void spawnOilTank(int x, int y, uint32_t seed, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
-{
-	spawnPixelScene(x, y, seed, 1, mCfg, sCfg, bytes, offset, sCount);
-}
-
 __device__ void spawnWand(int x, int y, uint32_t seed, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
 	NollaPRNG random = NollaPRNG(seed);
@@ -502,53 +477,50 @@ __device__ void spawnWand(int x, int y, uint32_t seed, MapConfig mCfg, Spawnable
 	}
 }
 
-__device__ void spawnNightmareEnemy(int _x, int _y, uint32_t seed, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
+/*
+//t10 wands only
+if (floorf(_y / (512 * 4.0f)) <= 7) return;
+if (x < mCfg.minX || x > mCfg.maxX || y < mCfg.minY || y > mCfg.maxY) return;
+
+NollaPRNG random = NollaPRNG(seed);
+
+//enemy spawns
+//if (random.ProceduralRandomf(_x, _y, 0, 1.115f) <= 0.4f) return;
+
+int x = _x + 11;
+int y = _y + 5;
+random.SetRandomSeed(x, y);
+random.Next();
+int rnd = random.Random(1, 20);
+//wand spawns
+if (rnd != 1) return;
+
+float fOffset = random.ProceduralRandomf(x + 1, y, -4, 4);
+int intOffset = (int)rintf(fOffset);
+int pos_x = x + intOffset;
+int pos_y = y + intOffset;
+
+random.SetRandomSeed(pos_x, pos_y);
+if (random.Random(1, 100) >= 50) return;
+
+sCount++;
+writeInt(bytes, offset, pos_x);
+writeInt(bytes, offset, pos_y);
+writeByte(bytes, offset, TYPE_NIGHTMARE_WAND);
+writeInt(bytes, offset, 1);
+writeByte(bytes, offset, WAND_T10);
+
+Wand w = GetWandWithLevel(seed, pos_x, pos_y, 11, false, false);
+if (w.capacity > 30)
 {
-#ifdef DO_WANDGEN_
-	//t10 wands only
-	if (floorf(_y / (512 * 4.0f)) <= 7) return;
-	if (x < mCfg.minX || x > mCfg.maxX || y < mCfg.minY || y > mCfg.maxY) return;
-
-	NollaPRNG random = NollaPRNG(seed);
-
-	//enemy spawns
-	//if (random.ProceduralRandomf(_x, _y, 0, 1.115f) <= 0.4f) return;
-
-	int x = _x + 11;
-	int y = _y + 5;
-	random.SetRandomSeed(x, y);
-	random.Next();
-	int rnd = random.Random(1, 20);
-	//wand spawns
-	if (rnd != 1) return;
-
-	float fOffset = random.ProceduralRandomf(x + 1, y, -4, 4);
-	int intOffset = (int)rintf(fOffset);
-	int pos_x = x + intOffset;
-	int pos_y = y + intOffset;
-
-	random.SetRandomSeed(pos_x, pos_y);
-	if (random.Random(1, 100) >= 50) return;
-
-	sCount++;
-	writeInt(bytes, offset, pos_x);
-	writeInt(bytes, offset, pos_y);
-	writeByte(bytes, offset, TYPE_NIGHTMARE_WAND);
-	writeInt(bytes, offset, 1);
-	writeByte(bytes, offset, WAND_T10);
-
-	Wand w = GetWandWithLevel(seed, pos_x, pos_y, 11, false, false);
-	if (w.capacity > 30)
+	for (int i = 0; i < w.spellIdx; i++)
 	{
-		for (int i = 0; i < w.spellIdx; i++)
-		{
-			printf("%s ", SpellNames[w.spells[i]]);
-		}
-		printf("\n");
-		printf("WAND - %i @ (%i %i) --- %.1f %i %i %i %i %i %i %.4f\n", seed, pos_x, pos_y, w.capacity, w.multicast, w.delay, w.reload, w.mana, w.regen, w.spread, w.speed);
+		printf("%s ", SpellNames[w.spells[i]]);
 	}
-#endif
+	printf("\n");
+	printf("WAND - %i @ (%i %i) --- %.1f %i %i %i %i %i %i %.4f\n", seed, pos_x, pos_y, w.capacity, w.multicast, w.delay, w.reload, w.mana, w.regen, w.spread, w.speed);
 }
+*/
 
 __device__ void spawnHellShop(int x, int y, uint32_t seed, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
@@ -562,6 +534,9 @@ __device__ void spawnHellShop(int x, int y, uint32_t seed, MapConfig mCfg, Spawn
 	writeShort(bytes, offset, GetRandomAction(seed, x, y, 10, 0));
 }
 
+#include "misc/enemy_gen.h"
+#include "misc/pixelscene_gen.h"
+
 __device__ Wand GetShopWand(NollaPRNG& random, double x, double y, int level)
 {
 	random.SetRandomSeed(x, y);
@@ -571,7 +546,7 @@ __device__ Wand GetShopWand(NollaPRNG& random, double x, double y, int level)
 
 __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
-	MapConfig dummyMapCfg = { 0,0,0,0,0,0,INT_MIN,INT_MAX,INT_MIN,INT_MAX };
+	MapConfig dummyMapCfg = { 0,0,0,0,0,INT_MIN,INT_MAX,INT_MIN,INT_MAX };
 
 	if (sCfg.pacifist)
 	{
@@ -650,7 +625,7 @@ __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* byt
 
 __device__ void CheckEyeRooms(uint32_t seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
-	IntPair positions[8] = { {-3992, 5380}, {-3971, 5397}, {-3949, 5414}, {-3926, 5428}, {-3758, 5424}, {-3735, 5410}, {-3713, 5393}, {-3692, 5376} };
+	Vec2i positions[8] = { {-3992, 5380}, {-3971, 5397}, {-3949, 5414}, {-3926, 5428}, {-3758, 5424}, {-3735, 5410}, {-3713, 5393}, {-3692, 5376} };
 	if (sCfg.eyeRooms)
 	{
 		NollaPRNG random(seed);
@@ -666,7 +641,7 @@ __device__ void CheckEyeRooms(uint32_t seed, SpawnableConfig sCfg, uint8_t* byte
 
 			for (int i = 0; i < 8; i++)
 			{
-				IntPair pos = positions[i] + IntPair(pw * 70 * 512, 0);
+				Vec2i pos = positions[i] + Vec2i(pw * 70 * 512, 0);
 				random.SetRandomSeedInt(pos.x, pos.y);
 				writeByte(bytes, offset, DATA_SPELL);
 				writeShort(bytes, offset, MakeRandomCard(random));
@@ -677,7 +652,6 @@ __device__ void CheckEyeRooms(uint32_t seed, SpawnableConfig sCfg, uint8_t* byte
 
 __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int& offset, int& sCount, MapConfig mCfg, SpawnableConfig sCfg, int maxMemory)
 {
-	static void (*spawnFuncs[])(int, int, uint32_t, MapConfig, SpawnableConfig, uint8_t*, int&, int&) = { spawnHeart, spawnChest, spawnPixelScene1, spawnOilTank, spawnPotion, spawnWand, spawnNightmareEnemy, spawnHellShop };
 	uint8_t* map = res + 4 * 3 * mCfg.map_w;
 
 	for (int px = 0; px < mCfg.map_w; px++)
@@ -691,7 +665,7 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				continue;
 
 			//avoids having to switch every loop
-			auto func = spawnFuncs[0];
+			auto func = spawnChest;
 			uint32_t pix = createRGB(map[pixelPos], map[pixelPos + 1], map[pixelPos + 2]);
 			for (int pwY = sCfg.pwCenter.y - sCfg.pwWidth.y; pwY <= sCfg.pwCenter.y + sCfg.pwWidth.y; pwY++)
 			{
@@ -701,7 +675,7 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				case 0x78ffff:
 					if (sCfg.biomeChests && pwY == 0)
 					{
-						func = spawnFuncs[0];
+						func = spawnHeart;
 						check = true;
 					}
 					else continue;
@@ -709,7 +683,7 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				case 0x55ff8c:
 					if (sCfg.biomeChests && pwY == 0)
 					{
-						func = spawnFuncs[1];
+						func = spawnChest;
 						check = true;
 					}
 					else continue;
@@ -717,7 +691,15 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				case 0xff0aff:
 					if (sCfg.pixelScenes && pwY == 0)
 					{
-						func = spawnFuncs[2];
+						func = spawnPixelScene01;
+						check = true;
+					}
+					else continue;
+					break;
+				case 0xff0080:
+					if (sCfg.pixelScenes && pwY == 0)
+					{
+						func = spawnPixelScene02;
 						check = true;
 					}
 					else continue;
@@ -725,7 +707,7 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				case 0xc35700:
 					if (sCfg.pixelScenes && pwY == 0)
 					{
-						func = spawnFuncs[3];
+						func = spawnOilTank;
 						check = true;
 					}
 					else continue;
@@ -733,7 +715,7 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				case 0x50a000:
 					if (sCfg.biomePedestals && pwY == 0)
 					{
-						func = spawnFuncs[4];
+						func = spawnPotion;
 						check = true;
 					}
 					else continue;
@@ -741,19 +723,31 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				case 0x00ff00:
 					if (sCfg.biomeAltars && pwY == 0)
 					{
-						func = spawnFuncs[5];
+						func = spawnWand;
 						check = true;
 					}
 					else continue;
 					break;
 				case 0xff0000:
-					func = spawnFuncs[6];
-					check = true;
+					if (sCfg.enemies && pwY == 0)
+					{
+						func = spawnSmallEnemies;
+						check = true;
+					}
+					else continue;
+					break;
+				case 0x800000:
+					if (sCfg.enemies && pwY == 0)
+					{
+						func = spawnBigEnemies;
+						check = true;
+					}
+					else continue;
 					break;
 				case 0x808000:
 					if (sCfg.hellShops && pwY != 0)
 					{
-						func = spawnFuncs[7];
+						func = spawnHellShop;
 						check = true;
 					}
 					else continue;
@@ -766,7 +760,7 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 				{
 					for (int pwX = sCfg.pwCenter.x - sCfg.pwWidth.x; pwX <= sCfg.pwCenter.x + sCfg.pwWidth.x; pwX++)
 					{
-						IntPair gp = GetGlobalPos(mCfg.worldX + 70 * pwX, mCfg.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
+						Vec2i gp = GetGlobalPos(mCfg.worldX + 70 * pwX, mCfg.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
 						func(gp.x, gp.y, seed, mCfg, sCfg, bytes, offset, sCount);
 					}
 				}
