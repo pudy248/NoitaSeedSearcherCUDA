@@ -116,6 +116,7 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 __device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, int& foundCount)
 {
 	int count = readMisaligned(&(s->count));
+	int largestChain = 0;
 	for (int n = 0; n < count; n++)
 	{
 		Item c = (&s->contents)[n];
@@ -124,14 +125,20 @@ __device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, i
 			int offset = n + 1;
 			Spell sp2 = (Spell)readShort((uint8_t*)(&s->contents), offset);
 
-
+			bool foundOnThisSpell = false;
 			for (int i = 0; i < FILTER_OR_COUNT; i++)
 			{
 				if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i])
 				{
-					foundCount++;
+					foundOnThisSpell = true;
 					break;
 				}
+			}
+			if (foundOnThisSpell) foundCount++;
+			else if (sf.consecutive)
+			{
+				largestChain = max(largestChain, foundCount);
+				foundCount = 0;
 			}
 
 			n += 2;
@@ -156,19 +163,28 @@ __device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, i
 			{
 				int offset = n + 1;
 				Spell AC = (Spell)readShort((uint8_t*)(&s->contents), offset);
+				bool foundOnThisSpell = false;
 				for (int i = 0; i < FILTER_OR_COUNT; i++)
 				{
 					if (sf.spells[i] != SPELL_NONE && AC == sf.spells[i])
 					{
-						foundCount++;
+						foundOnThisSpell = true;
 						break;
 					}
 				}
+				if (foundOnThisSpell) foundCount++;
+				else if (sf.consecutive)
+				{
+					largestChain = max(largestChain, foundCount);
+					foundCount = 0;
+				}
+
 			}
 			n += 2;
 			continue;
 		}
 	}
+	if (sf.consecutive) foundCount = largestChain;
 }
 
 __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
@@ -193,6 +209,7 @@ __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 		{
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
+			//if (!dat.shuffle) return true;
 			if (dat.capacity >= howBig) return true;
 			n += 36 + dat.spellCount * 3;
 			continue;
@@ -405,7 +422,8 @@ __device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* o
 			return false;
 		}
 	}
-
+#ifndef IMAGE_OUTPUT
 	if(write) WriteOutputBlock(output, b.seed, relevantSpawnables, relevantSpawnableCount);
+#endif
 	return true;
 }

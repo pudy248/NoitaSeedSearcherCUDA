@@ -39,7 +39,6 @@ __device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_
 
 		stbhw_generate_image(res, (stbhw_tileset*)scope.tileSet, scope.cfg.map_w * 3, scope.cfg.map_w, scope.cfg.map_h + 4, StaticRandom, &rng2);
 
-		blockOutRooms(map, scope.cfg.map_w, scope.cfg.map_h, COLOR_WHITE);
 		if (scope.cfg.isCoalMine)
 		{
 			doCoalMineHax(map, scope.cfg.map_w, scope.cfg.map_h);

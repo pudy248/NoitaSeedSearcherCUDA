@@ -316,22 +316,18 @@ __device__
 static void stbhw__draw_h_tile(uint8_t* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
 {
 	int i, j;
-	for (j = 0; j < sz; ++j)
-		if (y + j >= 0 && y + j < ymax)
-			for (i = 0; i < sz * 2; ++i)
-				if (x + i >= 0 && x + i < xmax)
-					stbhw__draw_pixel(output, stride, x + i, y + j, &h->pixels[(j * sz * 2 + i) * 3]);
+	for (j = 0; j < min(sz, ymax - y); ++j)
+		for (i = 0; i < min(sz * 2, xmax - x); ++i)
+			stbhw__draw_pixel(output, stride, x + i, y + j, &h->pixels[(j * sz * 2 + i) * 3]);
 }
 
 __device__
 static void stbhw__draw_v_tile(uint8_t* output, int stride, int xmax, int ymax, int x, int y, stbhw_tile* h, int sz)
 {
 	int i, j;
-	for (j = 0; j < sz * 2; ++j)
-		if (y + j >= 0 && y + j < ymax)
-			for (i = 0; i < sz; ++i)
-				if (x + i >= 0 && x + i < xmax)
-					stbhw__draw_pixel(output, stride, x + i, y + j, &h->pixels[(j * sz + i) * 3]);
+	for (j = 0; j < min(sz * 2, ymax - y); ++j)
+		for (i = 0; i < min(sz, xmax - x); ++i)
+			stbhw__draw_pixel(output, stride, x + i, y + j, &h->pixels[(j * sz + i) * 3]);
 }
 
 // randomly choose a tile that fits constraints for a given spot, and update the constraints

@@ -13,21 +13,21 @@ class WorldgenPRNG
 public:
 	double Seed;
 
-	__host__ __device__
+	__universal__
 		WorldgenPRNG(double seed)
 	{
 		Seed = seed;
 		Next();
 	}
 
-	__host__ __device__
+	__universal__
 		uint32_t NextU()
 	{
 		Next();
 		return (uint32_t)((Seed * 4.656612875e-10) * 2147483645.0);
 	}
 
-	__host__ __device__
+	__universal__
 		double Next()
 	{
 		int v4 = (int)Seed * 0x41a7 + ((int)Seed / 0x1f31d) * -0x7fffffff;
@@ -48,7 +48,7 @@ __device__ uint32_t StaticRandom(WorldgenPRNG* prng)
 class NollaPRNG
 {
 public:
-	__host__ __device__
+	__universal__
 		NollaPRNG(uint32_t worldSeed)
 	{
 		world_seed = worldSeed;
@@ -58,7 +58,7 @@ public:
 	uint32_t world_seed = 0;
 	int Seed;
 
-	__host__ __device__
+	__universal__
 		uint64_t SetRandomSeedHelper(double r)
 	{
 		uint64_t e = *(uint64_t*)&r;
@@ -85,7 +85,7 @@ public:
 		return 0;
 	}
 
-	__host__ __device__
+	__universal__
 		uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
 	{
 		uint32_t uVar1;
@@ -103,7 +103,7 @@ public:
 		return (uVar3 - uVar2) - uVar1 ^ uVar1 >> 0xf;
 	}
 
-	__host__ __device__ __noinline__
+	__universal__ __noinline__
 		void SetRandomSeed(double x, double y)
 	{
 		uint32_t ws = world_seed;
@@ -163,7 +163,7 @@ public:
 		}
 	}
 
-	__host__ __device__
+	__universal__
 		uint64_t SetRandomSeedHelperInt(long long r)
 	{
 		double dr = r;
@@ -187,7 +187,7 @@ public:
 		return i & 0xffffffff;
 	}
 
-	__host__ __device__ __noinline__
+	__universal__ __noinline__
 		void SetRandomSeedInt(int x, int y)
 	{
 		uint32_t ws = world_seed;
@@ -246,7 +246,7 @@ public:
 		}
 	}
 
-	__host__ __device__
+	__universal__
 		float Next()
 	{
 		int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
@@ -258,7 +258,7 @@ public:
 		return (float)Seed / 0x7fffffff;
 	}
 
-	__host__ __device__
+	__universal__
 		double NextD()
 	{
 		int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
@@ -270,7 +270,7 @@ public:
 		return (double)Seed / 0x7fffffff;
 	}
 
-	__host__ __device__
+	__universal__
 		int Random(int a, int b)
 	{
 		int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
@@ -282,21 +282,21 @@ public:
 		return a + (int)(((uint64_t)(b + 1 - a) * (uint64_t)Seed) >> 31);
 	}
 
-	__host__ __device__
+	__universal__
 		float ProceduralRandomf(double x, double y, float a, float b)
 	{
 		SetRandomSeed(x, y);
-		return (a + ((b - a) * Next()));
+		return a + ((b - a) * Next());
 	}
 
-	__host__ __device__
+	__universal__
 		int ProceduralRandomi(double x, double y, int a, int b)
 	{
 		SetRandomSeed(x, y);
 		return Random(a, b);
 	}
 
-	__host__ __device__ __noinline__
+	__universal__ __noinline__
 		float GetDistribution(float mean, float sharpness, float baseline)
 	{
 		int i = 0;
@@ -324,7 +324,7 @@ public:
 		return Next();
 	}
 
-	__host__ __device__
+	__universal__
 		int RandomDistribution(int min, int max, int mean, float sharpness)
 	{
 		if (sharpness == 0)
@@ -338,13 +338,13 @@ public:
 		return min + d;
 	}
 
-	__host__ __device__
+	__universal__
 		int RandomDistribution(float min, float max, float mean, float sharpness)
 	{
 		return (int)RandomDistribution((int)min, (int)max, (int)mean, sharpness);
 	}
 
-	__host__ __device__
+	__universal__
 		float RandomDistributionf(float min, float max, float mean, float sharpness)
 	{
 		if (sharpness == 0.0)

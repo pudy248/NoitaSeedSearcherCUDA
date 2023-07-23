@@ -102,6 +102,21 @@
     <ClInclude Include="misc\databaseutils.h">
       <Filter>misc</Filter>
     </ClInclude>
+    <ClInclude Include="gui\guiMain.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\guiPrimitives.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\guiLayout.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="gui\guiIntermediates.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="data\biomeMap.h">
+      <Filter>data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">
@@ -112,6 +127,9 @@
     </Filter>
     <Filter Include="structs">
       <UniqueIdentifier>{2eec412a-a9ca-4218-8bb0-35b276204df8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gui">
+      <UniqueIdentifier>{02beb5c2-a54b-48a2-aea5-f8c91548837f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

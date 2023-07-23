@@ -14,10 +14,9 @@ struct GeneralConfig
 	uint64_t requestedMemory;
 	uint32_t startSeed;
 	uint32_t endSeed;
-	int seedBlockSize;
+	uint32_t seedBlockSize;
+	bool seedBlockOverride;
 	int printInterval;
-	int atomicGranularity;
-	int passedGranularity;
 };
 struct MemSizeConfig
 {
@@ -64,7 +63,7 @@ struct BiomeModifierConfig
 	BiomeModifier modifiers[9];
 };
 
-constexpr int maxFungalShifts = 4;
+constexpr int maxFungalShifts = 20;
 struct FungalShiftConfig
 {
 	bool check;
@@ -95,6 +94,8 @@ struct StaticPrecheckConfig
 struct MapConfig
 {
 	//Initialized manually
+	Biome biome;
+
 	int worldX;
 	int worldY;
 	int worldW;
@@ -202,12 +203,14 @@ struct SpellFilter
 	Spell spells[FILTER_OR_COUNT];
 	int duplicates;
 	bool asAlwaysCast;
+	bool consecutive;
 
 	SpellFilter()
 	{
 		memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
 		duplicates = 0;
 		asAlwaysCast = false;
+		consecutive = false;
 	}
 
 	SpellFilter(std::initializer_list<Spell> _spells)
@@ -216,6 +219,7 @@ struct SpellFilter
 		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 		duplicates = 1;
 		asAlwaysCast = false;
+		consecutive = false;
 	}
 
 	SpellFilter(std::initializer_list<Spell> _spells, int _dupes)
@@ -224,6 +228,7 @@ struct SpellFilter
 		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 		duplicates = _dupes;
 		asAlwaysCast = false;
+		consecutive = false;
 	}
 
 	SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast)
@@ -232,6 +237,16 @@ struct SpellFilter
 		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 		duplicates = _dupes;
 		asAlwaysCast = _asAlwaysCast;
+		consecutive = false;
+	}
+
+	SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast, bool _consecutive)
+	{
+		memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
+		memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
+		duplicates = _dupes;
+		asAlwaysCast = _asAlwaysCast;
+		consecutive = _consecutive;
 	}
 };
 struct PixelSceneFilter

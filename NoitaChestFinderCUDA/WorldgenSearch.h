@@ -11,6 +11,7 @@
 #include "data/potions.h"
 #include "data/spells.h"
 #include "data/wand_levels.h"
+#include "data/biomeMap.h"
 
 #include "defines.h"
 #include "misc/noita_random.h"
@@ -36,6 +37,8 @@ __device__ void createPotion(double x, double y, Item type, uint32_t seed, MapCo
 					writeShort(bytes, offset, MAGIC_LIQUID_HP_REGENERATION);
 				else if (rnd.Random(200, 100000) <= 250)
 					writeShort(bytes, offset, PURIFYING_POWDER);
+				else if (rnd.Random(250, 100000) <= 500)
+					writeShort(bytes, offset, MAGIC_LIQUID_WEAKNESS);
 				else
 					writeShort(bytes, offset, potionMaterialsMagic[rnd.Random(0, magicMaterialCount - 1)]);
 			}
@@ -138,9 +141,11 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint32_t worldSe
 					random.Random(-10, 10);
 					random.Random(-10, 5);
 				}
-
+				bool var = false;
+				bool var2 = false;
 				if (random.Random(0, 100) > 50)
 				{
+					var = true;
 					tamount = random.Random(1, 3);
 					for (int i = 0; i < tamount; i++)
 					{
@@ -150,6 +155,7 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, uint32_t worldSe
 				}
 				if (random.Random(0, 100) > 80)
 				{
+					var2 = true;
 					tamount = random.Random(1, 3);
 					for (int i = 0; i < tamount; i++)
 					{
@@ -384,7 +390,17 @@ __device__ void spawnHeart(int x, int y, uint32_t seed, MapConfig mCfg, Spawnabl
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	float heart_spawn_percent = 0.7f;
 
-	if (r <= heart_spawn_percent && r > 0.3)
+	if (r > heart_spawn_percent)
+	{
+		if (x < mCfg.minX || x > mCfg.maxX || y < mCfg.minY || y > mCfg.maxY) return;
+		sCount++;
+		writeInt(bytes, offset, x);
+		writeInt(bytes, offset, y);
+		writeByte(bytes, offset, TYPE_ITEM_PEDESTAL);
+		writeInt(bytes, offset, 1);
+		writeByte(bytes, offset, HEART_NORMAL);
+	}
+	else if (r > 0.3)
 	{
 		random.SetRandomSeed(x + 45, y - 2123);
 		int rnd = random.Random(1, 100);
@@ -413,7 +429,7 @@ __device__ void spawnHeart(int x, int y, uint32_t seed, MapConfig mCfg, Spawnabl
 			int totalBytes = 1;
 
 			rnd = random.Random(1, 100);
-			if (random.Random(1, 30 == 1)) {
+			if (random.Random(1, 30) == 1) {
 				writeByte(bytes, offset, MIMIC_SIGN);
 				totalBytes++;
 			}
@@ -546,7 +562,7 @@ __device__ Wand GetShopWand(NollaPRNG& random, double x, double y, int level)
 
 __device__ void CheckMountains(uint32_t seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
-	MapConfig dummyMapCfg = { 0,0,0,0,0,INT_MIN,INT_MAX,INT_MIN,INT_MAX };
+	MapConfig dummyMapCfg = { B_NONE,0,0,0,0,0,INT_MIN,INT_MAX,INT_MIN,INT_MAX };
 
 	if (sCfg.pacifist)
 	{
@@ -758,6 +774,12 @@ __device__ void CheckSpawnables(uint8_t* res, uint32_t seed, uint8_t* bytes, int
 
 				if (check)
 				{
+					Vec2i gp2 = GetGlobalPos(mCfg.worldX, mCfg.worldY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
+					Vec2i chunk = GetLocalPos(gp2.x, gp2.y);
+					Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
+					if (cBiome != mCfg.biome)
+						continue;
+
 					for (int pwX = sCfg.pwCenter.x - sCfg.pwWidth.x; pwX <= sCfg.pwCenter.x + sCfg.pwWidth.x; pwX++)
 					{
 						Vec2i gp = GetGlobalPos(mCfg.worldX + 70 * pwX, mCfg.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);

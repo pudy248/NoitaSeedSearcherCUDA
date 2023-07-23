@@ -54,3 +54,14 @@ int GenerateSeed(uint64_t ECX)
 	int out = SetWorldSeedHelper(XMM0_D);
 	return out;
 }
+
+time_t NextOccurenceOf(uint32_t seed)
+{
+	for (time_t i = _time64(NULL) - 100000; i < UINT_MAX; i++)
+	{
+		//if (i % 100000000 == 0) printf("incr %lli\n", i);
+		uint32_t cs = GenerateSeed(i);
+		if (cs == seed) return i;
+	}
+	return 0;
+}

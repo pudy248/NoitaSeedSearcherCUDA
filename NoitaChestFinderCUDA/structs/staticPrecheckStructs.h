@@ -10,15 +10,15 @@ struct AlchemyRecipe
 {
 	Material mats[4];
 
-	__host__ __device__ AlchemyRecipe() {}
-	__host__ __device__ AlchemyRecipe(Material mat1, Material mat2, Material mat3)
+	__universal__ AlchemyRecipe() {}
+	__universal__ AlchemyRecipe(Material mat1, Material mat2, Material mat3)
 	{
 		mats[0] = mat1;
 		mats[1] = mat2;
 		mats[2] = mat3;
 	}
 
-	__host__ __device__ static bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered)
+	__universal__ static bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered)
 	{
 		if (ordered == STRICT_ORDERED)
 		{
@@ -55,11 +55,11 @@ struct FungalShift
 	bool toFlask;
 	int minIdx;
 	int maxIdx;
-	__host__ __device__ constexpr FungalShift()
+	__universal__ constexpr FungalShift()
 		: from(SS_NONE), to(SD_NONE), fromFlask(false), toFlask(false), minIdx(0), maxIdx(0)
 	{
 	}
-	__host__ __device__ FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx)
+	__universal__ FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx)
 	{
 		if (_from == SS_FLASK) { from = SS_NONE; fromFlask = true; }
 		else { from = _from; fromFlask = false; }

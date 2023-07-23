@@ -20,7 +20,7 @@ constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80;
 #define WORLD_OFFSET_X 35
 
 #define BCSize 9
-__device__ const uint32_t blockedColors[BCSize] = {
+const uint32_t blockedColors[BCSize] = {
 	0x00ac6eU, //load_pixel_scene4_alt
 	0x70d79eU, //load_gunpowderpool_01
 	0x70d79fU, //???
@@ -32,7 +32,7 @@ __device__ const uint32_t blockedColors[BCSize] = {
 	0xff0affU, //load_pixel_scene
 };
 
-__device__ bool contains(const uint32_t arr[BCSize], uint32_t val)
+__universal__ bool contains(const uint32_t arr[BCSize], uint32_t val)
 {
 	for (int i = 0; i < BCSize; i++)
 		if (arr[i] == val) return true;
@@ -55,7 +55,7 @@ __device__ WorldgenPRNG GetRNG(uint32_t world_seed, int map_w)
 	return rng;
 }
 
-__device__ uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x, const uint32_t y)
+__universal__ uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x, const uint32_t y)
 {
 	return s * (w * y + x);
 }
@@ -91,19 +91,16 @@ __device__ void doCoalMineHax(uint8_t* map, uint32_t map_w, uint32_t map_h)
 	}
 }
 
-__device__ uint32_t getPixelColor(const uint8_t* map, uint32_t pos)
+__universal__ uint32_t getPixelColor(const uint8_t* map, uint32_t pos)
 {
-	uint8_t r = map[pos];
-	uint8_t g = map[pos + 1];
-	uint8_t b = map[pos + 2];
-	return createRGB(r, g, b);
+	return createRGB(map[pos], map[pos + 1], map[pos + 2]);
 }
-__device__ uint32_t getPixelColor(const uint8_t* map, const uint32_t w, const uint32_t x, const uint32_t y)
+__universal__ uint32_t getPixelColor(const uint8_t* map, const uint32_t w, const uint32_t x, const uint32_t y)
 {
 	uint32_t pos = getPos(w, 3, x, y);
 	return getPixelColor(map, pos);
 }
-__device__ void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
+__universal__ void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
 {
 	uint8_t r = ((color >> 16) & 0xff);
 	uint8_t g = ((color >> 8) & 0xff);
@@ -112,13 +109,13 @@ __device__ void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
 	map[pos + 1] = g;
 	map[pos + 2] = b;
 }
-__device__ void setPixelColor(uint8_t* map, uint32_t w, uint32_t x, uint32_t y, uint32_t color)
+__universal__ void setPixelColor(uint8_t* map, uint32_t w, uint32_t x, uint32_t y, uint32_t color)
 {
 	uint32_t pos = getPos(w, 3, x, y);
 	setPixelColor(map, pos, color);
 }
 
-__device__ void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32_t color)
+__universal__ void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32_t color)
 {
 	for (int x = x1; x <= x2; x++)
 	{
@@ -129,7 +126,7 @@ __device__ void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32
 	}
 }
 
-__device__ void blockOutRooms(uint8_t* map, uint32_t map_w, uint32_t map_h, uint32_t targetColor)
+void blockOutRooms(uint8_t* map, uint32_t map_w, uint32_t map_h, uint32_t targetColor)
 {
 	uint32_t posMax = map_w * map_h;
 

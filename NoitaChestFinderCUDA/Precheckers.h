@@ -471,7 +471,7 @@ __device__ bool PrecheckSeed(SQLRow& outputRow, uint32_t seed, StaticPrecheckCon
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
 
-	constexpr bool generateForDB = true;
+	constexpr bool generateForDB = false;
 
 	if (generateForDB)
 	{

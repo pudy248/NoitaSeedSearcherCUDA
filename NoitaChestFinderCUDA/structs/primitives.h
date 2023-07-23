@@ -1,27 +1,27 @@
 #pragma once
 
-#include <cstdint>
-#include <crt/math_functions.h>
+#define __universal__ __host__ __device__
 
+#include <cstdint>
 struct Vec2i {
 	int x;
 	int y;
 
-	__host__ __device__ Vec2i() {
+	__universal__ Vec2i() {
 		x = -1;
 		y = -1;
 	}
 
-	__host__ __device__ Vec2i(int _x, int _y) {
+	__universal__ Vec2i(int _x, int _y) {
 		x = _x;
 		y = _y;
 	}
 	
-	__host__ __device__ Vec2i operator+(Vec2i other) {
+	__universal__ Vec2i operator+(Vec2i other) {
 		return { x + other.x, y + other.y };
 	}
 	
-	__host__ __device__ Vec2i operator*(int scalar) {
+	__universal__ Vec2i operator*(int scalar) {
 		return { x * scalar, y * scalar };
 	}
 };

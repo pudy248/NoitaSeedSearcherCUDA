@@ -42,26 +42,26 @@ __device__ int pick_random_from_table_weighted(const float* probs, float sum, in
 	return 0;
 }
 
-__host__ __device__ uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
+__universal__ __inline__ uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
 {
 	return (r << 16) | (g << 8) | b;
 }
-__host__ __device__ int GetWidthFromPix(int a, int b)
+__universal__ int GetWidthFromPix(int a, int b)
 {
 	return ((b * 512) / 10 - (a * 512) / 10);
 }
 
-__host__ __device__ Vec2i GetGlobalPos(const int x, const int y, const int px, int py)
+__universal__ Vec2i GetGlobalPos(const int x, const int y, const int px, int py)
 {
 	int gx = ((512 * x) / 10 - (512 * 35) / 10) * 10 + px - 5;
 	int gy = ((512 * y) / 10 - (512 * 14) / 10) * 10 + py - 13;
 	return { gx, gy };
 }
 
-Vec2i GetLocalPos(const int gx, int gy)
+__universal__ Vec2i GetLocalPos(const int gx, int gy)
 {
-	int x = (int)std::roundf((gx + 5) / 512.0f) + 35;
-	int y = (int)std::roundf((gy + 13) / 512.0f) + 14;
+	int x = (((gx + 5) / 10) * 10 + (512 * 35)) / 512;
+	int y = (((gy + 13) / 10) * 10 + (512 * 14)) / 512;
 	return { x, y };
 }
 
@@ -73,7 +73,7 @@ __device__ int roundRNGPos(int num)
 	return num;
 }
 
-__host__ __device__ void _itoa_offset(int num, int base, char* buffer, int& offset)
+__universal__ void _itoa_offset(int num, int base, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -107,7 +107,7 @@ __host__ __device__ void _itoa_offset(int num, int base, char* buffer, int& offs
 		buffer[offset++] = internal_buffer[j];
 }
 
-__host__ __device__ void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset)
+__universal__ void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -143,7 +143,7 @@ __host__ __device__ void _itoa_offset_decimal(int num, int base, int fixedPoint,
 		buffer[offset++] = internal_buffer[j];
 }
 
-__host__ __device__ void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset)
+__universal__ void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset)
 {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
@@ -171,7 +171,7 @@ __host__ __device__ void _itoa_offset_zeroes(int num, int base, int leadingZeroe
 		buffer[offset++] = internal_buffer[j];
 }
 
-__host__ __device__ void _putstr_offset(const char* str, char* buffer, int& offset)
+__universal__ void _putstr_offset(const char* str, char* buffer, int& offset)
 {
 	int i = 0;
 	while (str[i] != '\0')

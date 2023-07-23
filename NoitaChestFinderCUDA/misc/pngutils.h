@@ -128,7 +128,7 @@ void ReadImage(const char* file_name, uint8_t* data)
 	int h = png_get_image_height(png_ptr, info_ptr);
 	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
 	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-	if (bit_depth != PNG_COLOR_TYPE_RGB)
+	if (color_type != PNG_COLOR_TYPE_RGB)
 	{
 		printf("Attempted to read RGBA image as RGB: %s\n", file_name);
 	}
@@ -176,7 +176,7 @@ void ReadImageRGBA(const char* file_name, uint8_t* data)
 	int h = png_get_image_height(png_ptr, info_ptr);
 	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
 	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
-	if (bit_depth == PNG_COLOR_TYPE_RGB)
+	if (color_type == PNG_COLOR_TYPE_RGB)
 	{
 		printf("Attempted to read RGB image as RGBA: %s\n", file_name);
 	}

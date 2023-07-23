@@ -147,7 +147,7 @@ struct PixelSceneData
 		hasExtraFunction = false;
 	}
 
-	__device__ PixelSceneData(PixelScene _scene, float _prob, static void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
+	__device__ PixelSceneData(PixelScene _scene, float _prob, void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
 	{
 		scene = _scene;
 		prob = _prob;
@@ -165,7 +165,7 @@ struct PixelSceneData
 		hasExtraFunction = false;
 	}
 
-	__device__ PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, static void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
+	__device__ PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
 	{
 		scene = _scene;
 		prob = _prob;
@@ -197,19 +197,19 @@ struct EnemyList
 	EnemyData enemies[20];
 };
 
-__host__ __device__
+__universal__
 uint8_t readByte(uint8_t* ptr, int& offset)
 {
 	return ptr[offset++];
 }
 
-__host__ __device__
+__universal__
 void writeByte(uint8_t* ptr, int& offset, uint8_t b)
 {
 	ptr[offset++] = b;
 }
 
-__host__ __device__
+__universal__
 int readInt(uint8_t* ptr, int& offset)
 {
 	int tmp;
@@ -218,14 +218,14 @@ int readInt(uint8_t* ptr, int& offset)
 	return tmp;
 }
 
-__host__ __device__
+__universal__
 void writeInt(uint8_t* ptr, int& offset, int val)
 {
 	memcpy(ptr + offset, &val, 4);
 	offset += 4;
 }
 
-__host__ __device__
+__universal__
 void incrInt(uint8_t* ptr)
 {
 	int offsetTmp = 0;
@@ -234,13 +234,13 @@ void incrInt(uint8_t* ptr)
 	writeInt(ptr, offsetTmp, tmp + 1);
 }
 
-__host__ __device__
+__universal__
 short readShort(uint8_t* ptr, int& offset)
 {
 	return (readByte(ptr, offset) | (readByte(ptr, offset) << 8));
 }
 
-__host__ __device__
+__universal__
 void writeShort(uint8_t* ptr, int& offset, short s)
 {
 	writeByte(ptr, offset, ((short)s) & 0xff);
@@ -254,7 +254,7 @@ __device__ int readMisaligned(int* ptr2)
 	return readInt(ptr, offset);
 }
 
-__host__ __device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
+__universal__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 {
 	uint8_t* bPtr = (uint8_t*)sPtr;
 	Spawnable s;
@@ -266,7 +266,7 @@ __host__ __device__ Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 	return s;
 }
 
-__host__ __device__ WandData readMisalignedWand(WandData* wPtr)
+__universal__ WandData readMisalignedWand(WandData* wPtr)
 {
 	WandData w = {};
 	memcpy(&w, wPtr, 37);

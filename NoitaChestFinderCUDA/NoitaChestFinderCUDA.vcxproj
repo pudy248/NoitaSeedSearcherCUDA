@@ -93,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Configuration.h" />
+    <ClInclude Include="data\biomeMap.h" />
     <ClInclude Include="data\enemies.h" />
     <ClInclude Include="data\pixelscenes.h" />
     <ClInclude Include="data\temples.h" />
@@ -100,6 +101,10 @@
     <ClInclude Include="data\wand_sprites.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="Filters.h" />
+    <ClInclude Include="gui\guiIntermediates.h" />
+    <ClInclude Include="gui\guiLayout.h" />
+    <ClInclude Include="gui\guiMain.h" />
+    <ClInclude Include="gui\guiPrimitives.h" />
     <ClInclude Include="misc\databaseutils.h" />
     <ClInclude Include="misc\enemy_gen.h" />
     <ClInclude Include="misc\memory.h" />

@@ -9,20 +9,36 @@
 
 #include <iostream>
 
-enum ThreadState : uint8_t
+constexpr int BLOCKDIV = 16;
+constexpr int BLOCKSIZE = 64 * BLOCKDIV;
+
+struct ThreadInput
 {
-	Running, //Computation ongoing
-	SeedFound, //Waiting for host output read
-	QueueEmpty, //Waiting for host seed dispatch
-	HostLock, //Host accessing shared data
-	DeviceLock, //Device accessing shared data
-	ThreadStop, //Thread execution ended
+	uint32_t startSeed;
+	uint32_t seedCount;
+};
+struct BlockInputs
+{
+	ThreadInput inputs[BLOCKSIZE];
 };
 
-struct UnifiedOutputFlags
+struct ThreadRet
 {
-	uint32_t seed;
-	ThreadState state;
+	ThreadInput input;
+	bool seedFound;
+	uint32_t leftoverSeeds;
+};
+
+struct BlockRet
+{
+	int returned;
+	ThreadRet threads[BLOCKSIZE];
+};
+
+struct BlockIO
+{
+	BlockInputs inputs;
+	BlockRet ret;
 };
 
 __device__ void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount)
