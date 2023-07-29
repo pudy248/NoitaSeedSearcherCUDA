@@ -6,3 +6,4 @@
 #define DO_WORLDGEN
 //#define DO_WANDGEN
 //#define REALTIME_SEEDS
+//#define SFML

@@ -75,7 +75,7 @@ __device__ ThreadRet DispatchThread(DeviceConfig dConfig, DevicePointers dPointe
 	uint8_t* threadMemPtr = dPointers.dArena + memIdx * dConfig.memSizes.threadMemTotal;
 	MemoryArena arena = { threadMemPtr, 0 };
 
-	for(int currentSeed = input.startSeed; currentSeed < input.startSeed + input.seedCount; currentSeed++)
+	for (int currentSeed = input.startSeed; currentSeed < input.startSeed + input.seedCount; currentSeed++)
 	{
 		arena.offset = 0;
 		bool seedPassed = true;
@@ -119,7 +119,7 @@ __device__ ThreadRet DispatchThread(DeviceConfig dConfig, DevicePointers dPointe
 		{
 			GenerateMap(currentSeed, dConfig.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			__syncthreads();
-			SetFunctionPointerSetterFunctionPointerArrayPointers ();
+			SetFunctionPointerSetterFunctionPointerArrayPointers();
 			CheckSpawnables(mapMem, { currentSeed, dConfig.biomeScopes[biomeNum].bSec, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount }, dConfig.memSizes.spawnableMemSize);
 			__syncthreads();
 		}
@@ -150,7 +150,7 @@ __device__ ThreadRet DispatchThread(DeviceConfig dConfig, DevicePointers dPointe
 		uint32_t extraSeeds = input.startSeed + input.seedCount - currentSeed - 1;
 		return { input, true, extraSeeds };
 	}
-	return { input, false, 0};
+	return { input, false, 0 };
 }
 
 __global__ void DispatchBlock(DeviceConfig dConfig, DevicePointers dPointers, int memIdx)
@@ -167,7 +167,7 @@ __global__ void DispatchBlock(DeviceConfig dConfig, DevicePointers dPointers, in
 void hDispatchBlock(DeviceConfig dConfig, DevicePointers dPointers, int memIdx, cudaStream_t stream)
 {
 	//printf("Dispatching block %i\n", memIdx);
-	DispatchBlock<<<BLOCKDIV, BLOCKSIZE / BLOCKDIV, 0, stream>>>(dConfig, dPointers, memIdx);
+	DispatchBlock << <BLOCKDIV, BLOCKSIZE / BLOCKDIV, 0, stream >> > (dConfig, dPointers, memIdx);
 }
 
 void InstantiateSector(BiomeWangScope* scopes, int& biomeCount, int& maxMapArea, uint8_t* tileData, Vec2i tileDims, BiomeSector partialSector)
@@ -325,13 +325,13 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 		false, //wand contents
 	};
 
-	ItemFilter iFilters[] = { ItemFilter({REFRESH_MIMIC}, 1), ItemFilter({MIMIC_SIGN})};
+	ItemFilter iFilters[] = { ItemFilter({REFRESH_MIMIC}, 1), ItemFilter({MIMIC_SIGN}) };
 	MaterialFilter mFilters[] = { MaterialFilter({CREEPY_LIQUID}) };
-	SpellFilter sFilters[] = { 
-		SpellFilter({SPELL_LUMINOUS_DRILL, SPELL_LASER_LUMINOUS_DRILL, SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER}, 1), 
-		SpellFilter({SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER, SPELL_SPITTER}), 
+	SpellFilter sFilters[] = {
+		SpellFilter({SPELL_LUMINOUS_DRILL, SPELL_LASER_LUMINOUS_DRILL, SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER}, 1),
+		SpellFilter({SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER, SPELL_SPITTER}),
 		SpellFilter({SPELL_CURSE_WITHER_PROJECTILE}) };
-	PixelSceneFilter psFilters[] = { PixelSceneFilter({PS_NONE}, {MAGIC_LIQUID_WEAKNESS}) };
+	PixelSceneFilter psFilters[] = { PixelSceneFilter({PS_NONE}, {MAGIC_GAS_HP_REGENERATION}) };
 
 	FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, 1, psFilters, false, 10);
 
@@ -409,16 +409,16 @@ AllPointers AllocateMemory(DeviceConfig config)
 	free(hPtr);
 
 	//Unified
-	volatile int* hActiveThreads, *dActiveThreads;
-	BlockIO* hThreads, *dThreads;
-	uint8_t* hUnifiedOutput, *dUnifiedOutput;
+	volatile int* hActiveThreads, * dActiveThreads;
+	BlockIO* hThreads, * dThreads;
+	uint8_t* hUnifiedOutput, * dUnifiedOutput;
 	checkCudaErrors(cudaHostAlloc((void**)&hActiveThreads, 4, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&dActiveThreads, (void*)hActiveThreads, 0));
 	*hActiveThreads = 0;
 
 	checkCudaErrors(cudaHostAlloc((void**)&hThreads, sizeof(BlockIO) * config.NumBlocks, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&dThreads, (void*)hThreads, 0));
-	
+
 	for (int i = 0; i < config.NumBlocks; i++)
 	{
 		memset((void*)&hThreads[i], 0, sizeof(BlockIO));
@@ -455,8 +455,8 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 
 	cudaStream_t* kernelStreams = (cudaStream_t*)malloc(sizeof(cudaStream_t) * config.NumBlocks);
 
-#ifdef DATABASE_OUTPUT
-	constexpr int rowBufferSize = 1024*1024;
+#ifdef SQL_OUTPUT
+	constexpr int rowBufferSize = 1024 * 1024;
 	SQLRow* rowBuffer = (SQLRow*)malloc(sizeof(SQLRow) * rowBufferSize);
 	int rowCounter;
 #endif
@@ -466,7 +466,8 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 	{
 		checkCudaErrors(cudaStreamCreateWithFlags(kernelStreams + block, cudaStreamNonBlocking));
 
-		if (currentSeed < config.generalCfg.endSeed) {
+		if (currentSeed < config.generalCfg.endSeed)
+		{
 			BlockIO* blockIO = pointers.hPointers.uThreads + block;
 			for (int inputIdx = 0; inputIdx < BLOCKSIZE; inputIdx++)
 			{
@@ -476,18 +477,19 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 					continue;
 				}
 				uint32_t nextSeed = currentSeed;
-	#ifdef REALTIME_SEEDS
+#ifdef REALTIME_SEEDS
 				uint8_t* output = pointers.hPointers.hOutput + (index * BLOCKSIZE + inputIdx) * config.memSizes.outputSize;
 				int _ = 0;
 				writeInt(output, _, currentSeed);
 				nextSeed = GenerateSeed(startTime + currentSeed);
-	#endif
+#endif
 				uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
 				blockIO->inputs.inputs[inputIdx] = { nextSeed, length };
 				currentSeed += length;
 			}
 			hDispatchBlock(config, pointers.dPointers, block, kernelStreams[block]);
-		} else
+		}
+		else
 			stoppedBlocks++;
 	}
 
@@ -523,7 +525,7 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 					lastSeed = checkedSeeds;
 					displayIntervals++;
 					float percentComplete = ((float)(checkedSeeds) / (config.generalCfg.endSeed - config.generalCfg.startSeed));
-					printf(">%i: %2.3f%% complete. Searched %i (+%i this interval), found %i valid seeds. (%i/%i active threads, size %i) (counter %i)\n", 
+					printf(">%i: %2.3f%% complete. Searched %i (+%i this interval), found %i valid seeds. (%i/%i active threads, size %i) (counter %i)\n",
 						displayIntervals, percentComplete * 100, checkedSeeds, lastDiff, passedSeeds, *pointers.hPointers.numActiveThreads, BLOCKSIZE * config.NumBlocks, config.generalCfg.seedBlockSize, miscCounter);
 				}
 			}
@@ -557,7 +559,7 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 
 				if (blockIO->ret.threads[i].leftoverSeeds > 0)
 				{
-					blockIO->inputs.inputs[inputIdx++] = { blockIO->ret.threads[i].input.startSeed + blockIO->ret.threads[i].input.seedCount - blockIO->ret.threads[i].leftoverSeeds, blockIO->ret.threads[i].leftoverSeeds};
+					blockIO->inputs.inputs[inputIdx++] = { blockIO->ret.threads[i].input.startSeed + blockIO->ret.threads[i].input.seedCount - blockIO->ret.threads[i].leftoverSeeds, blockIO->ret.threads[i].leftoverSeeds };
 				};
 			}
 			if (inputIdx > 0 || currentSeed < config.generalCfg.endSeed)
@@ -731,11 +733,11 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 
 								if (n < s.count - 1)
 									_putstr_offset(" ", buffer, bufOffset);
-								}
+							}
 							_putstr_offset("}", buffer, bufOffset);
 							memOffset += s.count + 13;
-							}
 						}
+					}
 					buffer[bufOffset++] = '\n';
 					buffer[bufOffset++] = '\0';
 					fprintf(outputFile, "%s", buffer);
@@ -765,14 +767,14 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 #endif
 #endif
 #endif
-					}
+				}
 			}
 
 		}
 		index = (index + 1) % config.NumBlocks;
 	}
-#ifdef DATABASE_OUTPUT
-	if(rowCounter > 0)
+#ifdef SQL_OUTPUT
+	if (rowCounter > 0)
 		InsertRowBlock(db, rowBuffer, rowCounter);
 	free(rowBuffer);
 #endif
@@ -789,9 +791,6 @@ void FreeMemory(AllPointers pointers)
 
 void FindInterestingColors(const char* path, int initialPathLen)
 {
-	const uint32_t interestingColors[] = { 0x78ffff, 0x55ff8c, 0x50a000, 0x00ff00, 0xff0000, 0x800000 };
-	const char* typeEnum[] = { "PSST_SpawnHeart", "PSST_SpawnChest", "PSST_SpawnFlask", "PSST_SpawnItem", "PSST_SmallEnemy", "PSST_LargeEnemy"};
-
 	char path2[100];
 	int i = 0;
 	while (path[i] != '/')
@@ -810,6 +809,9 @@ void FindInterestingColors(const char* path, int initialPathLen)
 #if 1
 	printf("PS_%s,\n", path2);
 #else
+	const uint32_t interestingColors[] = { 0x78ffff, 0x55ff8c, 0x50a000, 0x00ff00, 0xff0000, 0x800000 };
+	const char* typeEnum[] = { "PSST_SpawnHeart", "PSST_SpawnChest", "PSST_SpawnFlask", "PSST_SpawnItem", "PSST_SmallEnemy", "PSST_LargeEnemy" };
+
 	png_byte color_type = GetColorType(path);
 	if (color_type != PNG_COLOR_TYPE_RGB) ConvertRGBAToRGB(path);
 	Vec2i dims = GetImageDimensions(path);
@@ -867,140 +869,9 @@ void GetAllInterestingPixelsInFolder(const char* path)
 	}
 }
 
-int main()
+void GenerateSpellData()
 {
-	//ConvertRGBAToRGB("wang_tiles/liquidcave.png");
-	//ConvertRGBAToRGB("wang_tiles/meat.png");
-//#define SFML
-#ifdef SFML
-	SfmlMain();
-	return;
-#else
-
-	//sqlite3* db = OpenDatabase("D:/testDatabase.db");
-	//SelectFromDB(db);
-	//CloseDatabase(db);
-	//return;
-	
-	//GetAllInterestingPixelsInFolder("excavationsite/");
-	//return;
-
-	for (global_iters = 0; global_iters < 1; global_iters++)
-	{
-		time_t startTime = _time64(NULL);
-		std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
-
-		BiomeWangScope biomes[20];
-		int biomeCount = 0;
-		int maxMapArea = 0;
-		//InstantiateBiome("wang_tiles/coalmine.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/coalmine_alt.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/excavationsite.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/fungicave.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/snowcave.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/snowcastle.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/rainforest.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/rainforest_open.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/vault.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/crypt.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/fungiforest.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/vault_frozen.png", biomes, biomeCount, maxMapArea);
-		InstantiateBiome("wang_tiles/liquidcave.png", biomes, biomeCount, maxMapArea);
-		//InstantiateBiome("wang_tiles/meat.png", biomes, biomeCount, maxMapArea);
-
-		DeviceConfig config = CreateConfigs(maxMapArea, biomeCount);
-
-		memcpy(&config.biomeScopes, biomes, sizeof(BiomeWangScope) * 20);
-
-		AllPointers pointers = AllocateMemory(config);
-		sqlite3* db = NULL;
-#ifdef DATABASE_OUTPUT
-		sqlite3* db = OpenDatabase("D:/testDatabase.db");
-		CreateTable(db);
-#endif
-		FILE* f = fopen("output.txt", "wb");
-
-		Vec2i seedCounts = OutputLoop(config, pointers, f, startTime, db);
-		checkCudaErrors(cudaDeviceSynchronize());
-#ifdef DATABASE_OUTPUT
-		SelectFromDB(db);
-#endif
-
-		std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
-		std::chrono::nanoseconds duration = time2 - time1;
-
-		printf("Search finished in %ims. Checked %i seeds, found %i valid seeds.\n", (int)(duration.count() / 1000000), seedCounts.x, seedCounts.y);
-
-		FreeMemory(pointers);
-#ifdef DATABASE_OUTPUT
-		CloseDatabase(db);
-#endif
-		fclose(f);
-	}
-#endif
-}
-
-/*
-#ifdef REALTIME_SEEDS
-		int ctr = 0;
-		while (true)
-		{
-			time_t curTime = _time64(NULL);
-			if (curTime > startTime + ctr)
-			{
-				ctr++;
-				printf("%i secs elapsed. current seed: %i\n", ctr, GenerateSeed(startTime + ctr));
-			}
-		}
-#endif
-*/
-
-/*
-cudaSetDeviceFlags(cudaDeviceMapHost);
-
-volatile int* h_buckets;
-volatile int* d_buckets;
-
-cudaHostAlloc((void**)&h_buckets, sizeof(volatile int) * 70, cudaHostAllocMapped);
-
-cudaHostGetDevicePointer((void**)&d_buckets, (void*)h_buckets, 0);
-
-for (int i = 0; i < 70; i++) h_buckets[i] = 0;
-wandExperiment<<<256,64>>>((int*)d_buckets, 6, true);
-cudaDeviceSynchronize();
-for (int i = 0; i < 70; i++) {
-	printf("multicast %i: %i wands\n", i, h_buckets[i]);
-}
-return;*/
-
-/*
-__global__ void wandExperiment(const int level, const bool nonShuffle)
-{
-	uint index = blockIdx.x * blockDim.x + threadIdx.x;
-	uint stride = blockDim.x * gridDim.x;
-
-	constexpr int radius = 100;
-	constexpr int seed = 913380622;
-	constexpr int center_x = 5061;
-	constexpr int center_y = 11119;
-	for (int x = -radius + index + center_x; x < radius + center_x; x += stride) {
-		for (int y = -radius + center_y; y < radius + center_y; y++) {
-			Wand w = GetWandWithLevel(seed, x, y, level, nonShuffle, false);
-			bool found = false;
-			for (int i = 0; i < w.spellIdx; i++)
-			{
-				if (w.spells[i] == SPELL_SWAPPER_PROJECTILE)
-					found = true;
-			}
-
-			if (found) printf("%i %i\n", x, y);
-		}
-	}
-}
-*/
-
-/*
-printf("__device__ const static bool spellSpawnableInChests[] = {\n");
+	printf("__device__ const static bool spellSpawnableInChests[] = {\n");
 	for (int j = 0; j < SpellCount; j++)
 	{
 		bool passed = false;
@@ -1010,6 +881,26 @@ printf("__device__ const static bool spellSpawnableInChests[] = {\n");
 			{
 				passed = true;
 				break;
+			}
+		}
+		printf(passed ? "true" : "false");
+		printf(",\n");
+	}
+	printf("};\n");
+
+	printf("__device__ const static bool spellSpawnableInBoxes[] = {\n");
+	for (int j = 0; j < SpellCount; j++)
+	{
+		bool passed = false;
+		if (allSpells[j].type == MODIFIER || allSpells[j].type == UTILITY)
+		{
+			for (int t = 0; t < 11; t++)
+			{
+				if (allSpells[j].spawn_probabilities[t] > 0 || allSpells[j].s == SPELL_SUMMON_PORTAL || allSpells[j].s == SPELL_SEA_SWAMP)
+				{
+					passed = true;
+					break;
+				}
 			}
 		}
 		printf(passed ? "true" : "false");
@@ -1096,5 +987,120 @@ printf("__device__ const static bool spellSpawnableInChests[] = {\n");
 		}
 		printf("};\n\n");
 	}
+}
+
+int main()
+{
+#ifdef SFML
+	SfmlMain();
 	return;
+#else
+
+	//sqlite3* db = OpenDatabase("D:/testDatabase.db");
+	//SelectFromDB(db);
+	//CloseDatabase(db);
+	//return;
+
+	//GenerateSpellData();
+	//return;
+	//GetAllInterestingPixelsInFolder("excavationsite/");
+	//return;
+
+	for (global_iters = 0; global_iters < 1; global_iters++)
+	{
+		time_t startTime = _time64(NULL);
+		std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
+
+		BiomeWangScope biomes[20];
+		int biomeCount = 0;
+		int maxMapArea = 0;
+		InstantiateBiome("wang_tiles/coalmine.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/coalmine_alt.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/excavationsite.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/fungicave.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/snowcave.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/snowcastle.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/rainforest.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/rainforest_open.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/vault.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/crypt.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/fungiforest.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/vault_frozen.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/liquidcave.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/meat.png", biomes, biomeCount, maxMapArea);
+
+		DeviceConfig config = CreateConfigs(maxMapArea, biomeCount);
+
+		memcpy(&config.biomeScopes, biomes, sizeof(BiomeWangScope) * 20);
+
+		AllPointers pointers = AllocateMemory(config);
+		sqlite3* db = NULL;
+#ifdef DATABASE_OUTPUT
+		sqlite3* db = OpenDatabase("D:/testDatabase.db");
+		CreateTable(db);
+#endif
+		FILE* f = fopen("output.txt", "wb");
+
+		Vec2i seedCounts = OutputLoop(config, pointers, f, startTime, db);
+		checkCudaErrors(cudaDeviceSynchronize());
+#ifdef DATABASE_OUTPUT
+		SelectFromDB(db);
+#endif
+
+		std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+		std::chrono::nanoseconds duration = time2 - time1;
+
+		printf("Search finished in %ims. Checked %i seeds, found %i valid seeds.\n", (int)(duration.count() / 1000000), seedCounts.x, seedCounts.y);
+
+		FreeMemory(pointers);
+#ifdef DATABASE_OUTPUT
+		CloseDatabase(db);
+#endif
+		fclose(f);
+	}
+#endif
+}
+
+/*
+cudaSetDeviceFlags(cudaDeviceMapHost);
+
+volatile int* h_buckets;
+volatile int* d_buckets;
+
+cudaHostAlloc((void**)&h_buckets, sizeof(volatile int) * 70, cudaHostAllocMapped);
+
+cudaHostGetDevicePointer((void**)&d_buckets, (void*)h_buckets, 0);
+
+for (int i = 0; i < 70; i++) h_buckets[i] = 0;
+wandExperiment<<<256,64>>>((int*)d_buckets, 6, true);
+cudaDeviceSynchronize();
+for (int i = 0; i < 70; i++) {
+	printf("multicast %i: %i wands\n", i, h_buckets[i]);
+}
+return;*/
+
+/*
+__global__ void wandExperiment(const int level, const bool nonShuffle)
+{
+	uint index = blockIdx.x * blockDim.x + threadIdx.x;
+	uint stride = blockDim.x * gridDim.x;
+
+	constexpr int radius = 100;
+	constexpr int seed = 913380622;
+	constexpr int center_x = 5061;
+	constexpr int center_y = 11119;
+	for (int x = -radius + index + center_x; x < radius + center_x; x += stride) {
+		for (int y = -radius + center_y; y < radius + center_y; y++) {
+			Wand w = GetWandWithLevel(seed, x, y, level, nonShuffle, false);
+			bool found = false;
+			for (int i = 0; i < w.spellIdx; i++)
+			{
+				if (w.spells[i] == SPELL_SWAPPER_PROJECTILE)
+					found = true;
+			}
+
+			if (found) printf("%i %i\n", x, y);
+		}
+	}
+}
 */
