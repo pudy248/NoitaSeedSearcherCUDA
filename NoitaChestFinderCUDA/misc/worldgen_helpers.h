@@ -126,11 +126,11 @@ __universal__ void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uin
 	}
 }
 
-void blockOutRooms(uint8_t* map, uint32_t map_w, uint32_t map_h, uint32_t targetColor)
+void blockOutRooms(uint8_t* map, int map_w, int map_h, uint32_t targetColor)
 {
-	uint32_t posMax = map_w * map_h;
+	int posMax = map_w * map_h;
 
-	for (uint32_t pos = 0; pos < posMax; pos++)
+	for (int pos = 0; pos < posMax; pos++)
 	{
 		uint32_t color = getPixelColor(map, pos * 3);
 		// ~70% of pixels are black or white, so skip them

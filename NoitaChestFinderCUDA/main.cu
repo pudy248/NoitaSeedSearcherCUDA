@@ -1,8 +1,10 @@
 ﻿#include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-#include "misc/error.h"
 #include "misc/pngutils.h"
+#include "misc/utilities.h"
+
+#include "misc/error.h"
 #include "misc/databaseutils.h"
 #include "worldSeedGeneration.h"
 
@@ -12,18 +14,20 @@
 #include "WorldgenSearch.h"
 #include "Filters.h"
 
+#include "biomes/allBiomes.h"
+
+#include "Windows.h"
 #include "gui/guiMain.h"
 
 #include <iostream>
 #include <fstream>
 #include <chrono>
 #include <stdlib.h>
+#include <cstring>
 
-#include "Windows.h"
+int global_iters = 1;
 
-int global_iters = 0;
-
-//tired of seeing an error for it being undefined
+//tired of seeing an error for these being undefined
 __device__ int atomicAdd(int* address, int val);
 
 struct DeviceConfig
@@ -71,7 +75,7 @@ __device__ ThreadRet DispatchThread(DeviceConfig dConfig, DevicePointers dPointe
 	uint8_t* threadMemPtr = dPointers.dArena + memIdx * dConfig.memSizes.threadMemTotal;
 	MemoryArena arena = { threadMemPtr, 0 };
 
-	for(uint32_t currentSeed = input.startSeed; currentSeed < input.startSeed + input.seedCount; currentSeed++)
+	for(int currentSeed = input.startSeed; currentSeed < input.startSeed + input.seedCount; currentSeed++)
 	{
 		arena.offset = 0;
 		bool seedPassed = true;
@@ -90,9 +94,9 @@ __device__ ThreadRet DispatchThread(DeviceConfig dConfig, DevicePointers dPointe
 			uint8_t* upwarps = ArenaAlloc(arena, dConfig.memSizes.spawnableMemSize, 4);
 			int offset = 0;
 			int _ = 0;
-			spawnChest(315, 17, currentSeed, { B_NONE,0,0,0,0,0,INT_MIN,INT_MAX,INT_MIN,INT_MAX }, dConfig.spawnableCfg, upwarps, offset, _);
+			spawnChest(315, 17, { currentSeed, {}, dConfig.spawnableCfg, upwarps, offset, _ });
 			byte* ptr1 = upwarps + offset;
-			spawnChest(75, 117, currentSeed, { B_NONE,0,0,0,0,0,INT_MIN,INT_MAX,INT_MIN,INT_MAX }, dConfig.spawnableCfg, upwarps, offset, _);
+			spawnChest(75, 117, { currentSeed, {}, dConfig.spawnableCfg, upwarps, offset, _ });
 			Spawnable* spawnables[] = { (Spawnable*)upwarps, (Spawnable*)ptr1 };
 			SpawnableBlock b = { currentSeed, 2, spawnables };
 
@@ -115,15 +119,13 @@ __device__ ThreadRet DispatchThread(DeviceConfig dConfig, DevicePointers dPointe
 		{
 			GenerateMap(currentSeed, dConfig.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			__syncthreads();
-			CheckSpawnables(mapMem, currentSeed, spawnables, spawnableOffset, spawnableCount, dConfig.biomeScopes[biomeNum].cfg, dConfig.spawnableCfg, dConfig.memSizes.spawnableMemSize);
+			SetFunctionPointerSetterFunctionPointerArrayPointers ();
+			CheckSpawnables(mapMem, { currentSeed, dConfig.biomeScopes[biomeNum].bSec, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount }, dConfig.memSizes.spawnableMemSize);
 			__syncthreads();
 		}
 
 		CheckMountains(currentSeed, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
 		CheckEyeRooms(currentSeed, dConfig.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
-
-		//printf("%i spawnables\n", spawnableCount);
-
 		__syncthreads();
 
 		((int*)spawnables)[1] = spawnableCount;
@@ -168,143 +170,119 @@ void hDispatchBlock(DeviceConfig dConfig, DevicePointers dPointers, int memIdx, 
 	DispatchBlock<<<BLOCKDIV, BLOCKSIZE / BLOCKDIV, 0, stream>>>(dConfig, dPointers, memIdx);
 }
 
-BiomeWangScope InstantiateBiome(const char* path, int& maxMapArea)
+void InstantiateSector(BiomeWangScope* scopes, int& biomeCount, int& maxMapArea, uint8_t* tileData, Vec2i tileDims, BiomeSector partialSector)
 {
-	MapConfig mapCfg;
-	int minX = INT_MIN;
-	int maxX = INT_MAX;
-	int minY = INT_MIN;
-	int maxY = INT_MAX;
-	int spawnableMemMult; //to be used Later
-	{
-		if (strcmp(path, "wang_tiles/coalmine.png") == 0)
-		{
-			mapCfg = { B_COALMINE, 34, 14, 5, 2, 0 };
-			spawnableMemMult = 4;
-			minX = -500;
-			maxX = 2000;
-			minY = 10;
-			maxY = 1000;
-		}
-		else if (strcmp(path, "wang_tiles/coalmine_alt.png") == 0)
-		{
-			mapCfg = { B_COALMINE_ALT, 32, 15, 2, 1, 1 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/excavationsite.png") == 0)
-		{
-			mapCfg = { B_EXCAVATIONSITE, 31, 17, 8, 2, 2 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/fungicave.png") == 0)
-		{
-			mapCfg = { B_FUNGICAVE, 28, 17, 3, 1, 3 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/snowcave.png") == 0)
-		{
-			mapCfg = { B_SNOWCAVE, 30, 20, 10, 3, 4 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/snowcastle.png") == 0)
-		{
-			mapCfg = { B_SNOWCASTLE, 31, 24, 7, 2, 5 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/rainforest.png") == 0)
-		{
-			mapCfg = { B_RAINFOREST, 30, 27, 9, 2, 6 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/rainforest_open.png") == 0)
-		{
-			mapCfg = { B_RAINFOREST_OPEN, 30, 28, 9, 2, 7 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/rainforest_dark.png") == 0)
-		{
-			mapCfg = { B_RAINFOREST_DARK, 25, 26, 5, 8, 8 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/vault.png") == 0)
-		{
-			mapCfg = { B_VAULT, 29, 31, 11, 3, 9 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/crypt.png") == 0)
-		{
-			mapCfg = { B_CRYPT, 26, 35, 14, 4, 10 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/wandcave.png") == 0)
-		{
-			mapCfg = { B_WANDCAVE, 47, 35, 4, 4, 11 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/vault_frozen.png") == 0)
-		{
-			mapCfg = { B_VAULT_FROZEN, 12, 15, 7, 5, 12 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/wizardcave.png") == 0)
-		{
-			mapCfg = { B_WIZARDCAVE, 53, 40, 6, 6, 13 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/fungiforest.png") == 0)
-		{
-			mapCfg = { B_FUNGIFOREST, 59, 16, 7, 9, 15 };
-			spawnableMemMult = 4;
-		}
-		else if (strcmp(path, "wang_tiles/robobase.png") == 0)
-		{
-			mapCfg = { B_ROBOBASE, 59, 29, 7, 9, 25 };
-			spawnableMemMult = 4;
-		}
+	partialSector.tiles_w = tileDims.x;
+	partialSector.tiles_h = tileDims.y;
+	partialSector.map_w = GetWidthFromPix(partialSector.worldX, partialSector.worldX + partialSector.worldW);
+	partialSector.map_h = GetWidthFromPix(partialSector.worldY, partialSector.worldY + partialSector.worldH);
 
-		else
-		{
-			printf("Invalid biome path: %s\n", path);
-			return { NULL, {} };
-		}
-	}
+	maxMapArea = max(maxMapArea, (int)(partialSector.map_w * (partialSector.map_h + 4)));
 
-	mapCfg.minX = minX;
-	mapCfg.maxX = maxX;
-	mapCfg.minY = minY;
-	mapCfg.maxY = maxY;
+	scopes[biomeCount++] = { tileData, partialSector };
+}
 
-	mapCfg.maxTries = 100;
-	mapCfg.isCoalMine = strcmp(path, "wang_tiles/coalmine.png") == 0;
-
-	mapCfg.map_w = GetWidthFromPix(mapCfg.worldX, mapCfg.worldX + mapCfg.worldW);
-	mapCfg.map_h = GetWidthFromPix(mapCfg.worldY, mapCfg.worldY + mapCfg.worldH);
-
+void InstantiateBiome(const char* path, BiomeWangScope* ss, int& bC, int& mA)
+{
 	Vec2i tileDims = GetImageDimensions(path);
-	mapCfg.tiles_w = tileDims.x;
-	mapCfg.tiles_h = tileDims.y;
-
-	maxMapArea = std::max(maxMapArea, (int)(mapCfg.map_w * (mapCfg.map_h + 4)));
-	uint64_t tileDataSize = 3 * mapCfg.tiles_w * mapCfg.tiles_h;
+	uint64_t tileDataSize = 3 * tileDims.x * tileDims.y;
 
 	uint8_t* dTileData;
 	uint8_t* dTileSet;
 
-	uint8_t* hTileData = (uint8_t*)malloc(3 * mapCfg.tiles_w * mapCfg.tiles_h);
+	uint8_t* hTileData = (uint8_t*)malloc(tileDataSize);
 	ReadImage(path, hTileData);
 	blockOutRooms(hTileData, tileDims.x, tileDims.y, COLOR_WHITE);
 
 	checkCudaErrors(cudaMalloc(&dTileData, tileDataSize));
 	checkCudaErrors(cudaMalloc(&dTileSet, tileDataSize));
 
-	checkCudaErrors(cudaMemcpy(dTileData, hTileData, 3 * mapCfg.tiles_w * mapCfg.tiles_h, cudaMemcpyHostToDevice));
-	buildTS<<<1, 1>>>(dTileData, dTileSet, mapCfg.tiles_w, mapCfg.tiles_h);
+	checkCudaErrors(cudaMemcpy(dTileData, hTileData, tileDataSize, cudaMemcpyHostToDevice));
+	buildTS << <1, 1 >> > (dTileData, dTileSet, tileDims.x, tileDims.y);
 	checkCudaErrors(cudaDeviceSynchronize());
-	
+
 	free(hTileData);
 	checkCudaErrors(cudaFree(dTileData));
 
-	return { dTileSet, mapCfg };
+	{
+		if (strcmp(path, "wang_tiles/coalmine.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_COALMINE, 34, 14, 5, 2 });
+		}
+		else if (strcmp(path, "wang_tiles/coalmine_alt.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_COALMINE_ALT, 32, 15, 2, 1 });
+		}
+		else if (strcmp(path, "wang_tiles/excavationsite.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_EXCAVATIONSITE, 31, 17, 8, 2 });
+		}
+		else if (strcmp(path, "wang_tiles/fungicave.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_FUNGICAVE, 28, 17, 3, 1 });
+		}
+		else if (strcmp(path, "wang_tiles/snowcave.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_SNOWCAVE, 30, 20, 10, 3 });
+		}
+		else if (strcmp(path, "wang_tiles/snowcastle.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_SNOWCASTLE, 31, 24, 7, 2 });
+		}
+		else if (strcmp(path, "wang_tiles/rainforest.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_RAINFOREST, 30, 27, 9, 2 });
+		}
+		else if (strcmp(path, "wang_tiles/rainforest_open.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_RAINFOREST_OPEN, 30, 28, 9, 2 });
+		}
+		else if (strcmp(path, "wang_tiles/rainforest_dark.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_RAINFOREST_DARK, 25, 26, 5, 8 });
+		}
+		else if (strcmp(path, "wang_tiles/vault.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_VAULT, 29, 31, 11, 3 });
+		}
+		else if (strcmp(path, "wang_tiles/crypt.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_CRYPT, 26, 35, 14, 4 });
+		}
+		else if (strcmp(path, "wang_tiles/wandcave.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_WANDCAVE, 47, 35, 4, 4 });
+		}
+		else if (strcmp(path, "wang_tiles/vault_frozen.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_VAULT_FROZEN, 12, 15, 7, 5 });
+		}
+		else if (strcmp(path, "wang_tiles/wizardcave.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_WIZARDCAVE, 53, 40, 6, 6 });
+		}
+		else if (strcmp(path, "wang_tiles/fungiforest.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_FUNGIFOREST, 59, 16, 7, 9 });
+		}
+		else if (strcmp(path, "wang_tiles/robobase.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_ROBOBASE, 59, 29, 7, 9 });
+		}
+		else if (strcmp(path, "wang_tiles/liquidcave.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_LIQUIDCAVE, 26, 14, 5, 2 });
+		}
+		else if (strcmp(path, "wang_tiles/meat.png") == 0)
+		{
+			InstantiateSector(ss, bC, mA, dTileSet, tileDims, { B_MEAT, 62, 38, 4, 8 });
+		}
+
+		else
+		{
+			printf("Invalid biome path: %s\n", path);
+		}
+	}
 }
 
 DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
@@ -325,7 +303,7 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 		4096,
 	};
 
-	GeneralConfig generalCfg = { 40_GB, 1, INT_MAX, 1, true, 1 };
+	GeneralConfig generalCfg = { 40_GB, 1, INT_MAX, 1, false, 5 };
 #ifdef REALTIME_SEEDS
 	generalCfg.seedBlockSize = 1;
 #endif
@@ -336,35 +314,35 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 		false, //shop wands
 		false, //eye rooms
 		false, //upwarp check
-		true, //biome chests
+		false, //biome chests
 		false, //biome pedestals
 		false, //biome altars
-		false, //biome pixelscenes
+		true, //biome pixelscenes
 		false, //enemies
 		false, //hell shops
-		true, //potion contents
+		false, //potion contents
 		false, //chest spells
 		false, //wand contents
 	};
 
-	ItemFilter iFilters[] = { ItemFilter({HEART_NORMAL}, 3), ItemFilter({MIMIC_SIGN})};
-	MaterialFilter mFilters[] = { MaterialFilter({MAGIC_LIQUID}) };
+	ItemFilter iFilters[] = { ItemFilter({REFRESH_MIMIC}, 1), ItemFilter({MIMIC_SIGN})};
+	MaterialFilter mFilters[] = { MaterialFilter({CREEPY_LIQUID}) };
 	SpellFilter sFilters[] = { 
 		SpellFilter({SPELL_LUMINOUS_DRILL, SPELL_LASER_LUMINOUS_DRILL, SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER}, 1), 
 		SpellFilter({SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER, SPELL_SPITTER}), 
 		SpellFilter({SPELL_CURSE_WITHER_PROJECTILE}) };
-	PixelSceneFilter psFilters[] = { PixelSceneFilter({PS_RECEPTACLE_OIL}),  PixelSceneFilter({PS_OILTANK_PUZZLE}), PixelSceneFilter({PS_PHYSICS_SWING_PUZZLE}) };
+	PixelSceneFilter psFilters[] = { PixelSceneFilter({PS_NONE}, {MAGIC_LIQUID_WEAKNESS}) };
 
-	FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 1, mFilters, 0, sFilters, 0, psFilters, false, 10);
+	FilterConfig filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, 1, psFilters, false, 10);
 
 	StaticPrecheckConfig precheckCfg = {
 		{false, SKATEBOARD},
 		{false, GOLD},
 		{false, SPELL_LIGHT_BULLET, SPELL_DYNAMITE},
 		{false, WATER},
-		{false, AlchemyOrdering::ONLY_CONSUMED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
+		{false, AlchemyOrdering::ONLY_CONSUMED, {MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE}, {MUD, WATER, SOIL}},
 		{false, {BM_GOLD_VEIN_SUPER, BM_NONE}},
-		{true, {FungalShift(SS_OIL, SD_FLASK, 0, 1), FungalShift(SS_FLASK, SD_LAVA, 1, 2), FungalShift(), FungalShift()}},
+		{false, {FungalShift(SS_GOLD, SD_FLASK, 0, 1)}},
 		{false, //Example: Searches for perk lottery + extra perk in first HM, then any 4 perks in 2nd HM as long as they all are lottery picks
 			{{PERK_PERKS_LOTTERY, true, 0, 3}, {PERK_EXTRA_PERK, true, 0, 3}, {PERK_NONE, true, 3, 4}, {PERK_NONE, true, 4, 5}, {PERK_NONE, true, 5, 6}, {PERK_NONE, true, 6, 7}},
 			{3, 4, 4, 4, 4, 4, 4} //Also, XX_NONE is considered to be equal to everything for like 90% of calculations
@@ -380,7 +358,7 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 	cudaMemGetInfo(&freeMem, &totalMem);
 	printf("memory free: %lli of %lli bytes\n", freeMem, totalMem);
 	freeMem *= 0.9f; //leave a bit of extra
-	freeMem = std::min(freeMem, generalCfg.requestedMemory);
+	freeMem = min(freeMem, generalCfg.requestedMemory);
 
 #ifdef DO_WORLDGEN
 	uint64_t minMemoryPerThread = memSizes.outputSize * 2 + memSizes.mapDataSize + memSizes.miscMemSize + memSizes.visitedMemSize + memSizes.spawnableMemSize;
@@ -390,11 +368,11 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 	printf("each thread requires %lli bytes of block memory\n", minMemoryPerThread);
 	memSizes.threadMemTotal = minMemoryPerThread;
 
-	int numThreads = std::min((uint64_t)(generalCfg.endSeed - generalCfg.startSeed), freeMem / minMemoryPerThread);
+	int numThreads = min((uint64_t)(generalCfg.endSeed - generalCfg.startSeed), freeMem / minMemoryPerThread);
 	int numBlocks = numThreads / BLOCKSIZE;
-	int numBlocksRounded = std::max(std::min(NUMBLOCKS, numBlocks - numBlocks % 1), 1);
+	int numBlocksRounded = max(min(NUMBLOCKS, numBlocks - numBlocks % 1), 1);
 	generalCfg.requestedMemory = minMemoryPerThread * numBlocksRounded * BLOCKSIZE;
-	generalCfg.seedBlockSize = std::min((uint32_t)generalCfg.seedBlockSize, (generalCfg.endSeed - generalCfg.startSeed) / (numBlocksRounded * BLOCKSIZE) + 1);
+	generalCfg.seedBlockSize = min((uint32_t)generalCfg.seedBlockSize, (generalCfg.endSeed - generalCfg.startSeed) / (numBlocksRounded * BLOCKSIZE) + 1);
 	printf("creating %ix%i threads\n", numBlocksRounded, BLOCKSIZE);
 
 	return { numBlocksRounded, memSizes, generalCfg, precheckCfg, spawnableCfg, filterCfg, biomeCount };
@@ -402,13 +380,20 @@ DeviceConfig CreateConfigs(int maxMapArea, int biomeCount)
 
 AllPointers AllocateMemory(DeviceConfig config)
 {
+	BiomeData hBiomeData[30];
+	SetBiomeData(hBiomeData);
+	BiomeData* dBiomeData;
+	checkCudaErrors(cudaMalloc(&dBiomeData, sizeof(hBiomeData)));
+	checkCudaErrors(cudaMemcpy(dBiomeData, hBiomeData, sizeof(hBiomeData), cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMemcpyToSymbol(AllBiomeData, &dBiomeData, sizeof(void*)));
+
 	cudaSetDeviceFlags(cudaDeviceMapHost);
 
 	uint64_t outputSize = config.NumBlocks * BLOCKSIZE * config.memSizes.outputSize;
 
 	//Host
 	uint8_t* hOutput;
-	cudaHostAlloc(&hOutput, outputSize, cudaHostAllocDefault);
+	checkCudaErrors(cudaHostAlloc(&hOutput, outputSize, cudaHostAllocDefault));
 
 	//Device
 	uint8_t* dArena;
@@ -420,9 +405,8 @@ AllPointers AllocateMemory(DeviceConfig config)
 	uint8_t* hPtr = (uint8_t*)malloc(3 * 256 * 103);
 	ReadImage("wang_tiles/coalmine_overlay.png", hPtr);
 	checkCudaErrors(cudaMemcpy(dOverlayMem, hPtr, 3 * 256 * 103, cudaMemcpyHostToDevice));
-	cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0);
+	checkCudaErrors(cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0));
 	free(hPtr);
-	InitPixelScenes << <1, 1 >> > ();
 
 	//Unified
 	volatile int* hActiveThreads, *dActiveThreads;
@@ -443,7 +427,8 @@ AllPointers AllocateMemory(DeviceConfig config)
 	checkCudaErrors(cudaHostAlloc((void**)&hUnifiedOutput, outputSize, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&dUnifiedOutput, (void*)hUnifiedOutput, 0));
 
-	printf("Allocated %iMB of host and %iMB of device memory\n", (2 * outputSize + sizeof(BlockIO) * config.NumBlocks) / 1_MB, config.generalCfg.requestedMemory / 1_MB);
+	printf("Allocated %lliMB of host and %lliMB of device memory\n", (2 * outputSize + sizeof(BlockIO) * config.NumBlocks) / 1_MB, config.generalCfg.requestedMemory / 1_MB);
+
 
 	return { {dActiveThreads, dThreads, dUnifiedOutput, dArena}, {hActiveThreads, hThreads, hUnifiedOutput, hOutput} };
 }
@@ -497,7 +482,7 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 				writeInt(output, _, currentSeed);
 				nextSeed = GenerateSeed(startTime + currentSeed);
 	#endif
-				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
+				uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
 				blockIO->inputs.inputs[inputIdx] = { nextSeed, length };
 				currentSeed += length;
 			}
@@ -591,7 +576,7 @@ Vec2i OutputLoop(DeviceConfig config, AllPointers pointers, FILE* outputFile, ti
 					writeInt(output, _, currentSeed);
 					nextSeed = GenerateSeed(startTime + currentSeed);
 #endif
-					uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
+					uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
 					blockIO->inputs.inputs[inputIdx] = { nextSeed, length };
 					currentSeed += length;
 				}
@@ -802,17 +787,37 @@ void FreeMemory(AllPointers pointers)
 	checkCudaErrors(cudaFree((void*)pointers.dPointers.dArena));
 }
 
-void FindInterestingColors(const char* path)
+void FindInterestingColors(const char* path, int initialPathLen)
 {
 	const uint32_t interestingColors[] = { 0x78ffff, 0x55ff8c, 0x50a000, 0x00ff00, 0xff0000, 0x800000 };
-	const char* interestingFunctions[] = { "spawnHeart", "spawnChest", "spawnPotion", "spawnWand", "spawnSmallEnemies", "spawnBigEnemies" };
+	const char* typeEnum[] = { "PSST_SpawnHeart", "PSST_SpawnChest", "PSST_SpawnFlask", "PSST_SpawnItem", "PSST_SmallEnemy", "PSST_LargeEnemy"};
 
+	char path2[100];
+	int i = 0;
+	while (path[i] != '/')
+	{
+		path2[i] = toupper(path[i]);
+		i++;
+	}
+	path2[i++] = '_';
+	while (path[i] != '.')
+	{
+		path2[i] = toupper(path[i]);
+		i++;
+	}
+	path2[i++] = '\0';
+
+#if 1
+	printf("PS_%s,\n", path2);
+#else
 	png_byte color_type = GetColorType(path);
 	if (color_type != PNG_COLOR_TYPE_RGB) ConvertRGBAToRGB(path);
 	Vec2i dims = GetImageDimensions(path);
 	uint8_t* data = (uint8_t*)malloc(3 * dims.x * dims.y);
 	ReadImage(path, data);
-	printf("%s:\n", path);
+
+	printf("%s = {\n", path2);
+
 	for (int x = 0; x < dims.x; x++)
 	{
 		for (int y = 0; y < dims.y; y++)
@@ -822,10 +827,14 @@ void FindInterestingColors(const char* path)
 			for (int i = 0; i < 6; i++)
 			{
 				if (pix == interestingColors[i])
-					printf("	%s(x + %i, y + %i, seed, mCfg, sCfg, output, offset, sCount);\n", interestingFunctions[i], x, y);
+				{
+					printf("	\"PixelSceneSpawn(%s, %i, %i),\",\n", typeEnum[i], x, y);
+				}
 			}
 		}
 	}
+	printf("},\n");
+#endif
 }
 
 void GetAllInterestingPixelsInFolder(const char* path)
@@ -851,7 +860,7 @@ void GetAllInterestingPixelsInFolder(const char* path)
 				_putstr_offset(path, buffer, offset);
 				_putstr_offset(fd.cFileName, buffer, offset);
 				buffer[offset] = '\0';
-				FindInterestingColors(buffer);
+				FindInterestingColors(buffer, strlen(path));
 			}
 		} while (::FindNextFile(hFind, &fd));
 		::FindClose(hFind);
@@ -860,6 +869,8 @@ void GetAllInterestingPixelsInFolder(const char* path)
 
 int main()
 {
+	//ConvertRGBAToRGB("wang_tiles/liquidcave.png");
+	//ConvertRGBAToRGB("wang_tiles/meat.png");
 //#define SFML
 #ifdef SFML
 	SfmlMain();
@@ -871,8 +882,9 @@ int main()
 	//CloseDatabase(db);
 	//return;
 	
-	//GetAllInterestingPixelsInFolder("coalmine/");
+	//GetAllInterestingPixelsInFolder("excavationsite/");
 	//return;
+
 	for (global_iters = 0; global_iters < 1; global_iters++)
 	{
 		time_t startTime = _time64(NULL);
@@ -881,18 +893,20 @@ int main()
 		BiomeWangScope biomes[20];
 		int biomeCount = 0;
 		int maxMapArea = 0;
-		biomes[biomeCount++] = InstantiateBiome("wang_tiles/coalmine.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/coalmine_alt.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/excavationsite.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/fungicave.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/snowcave.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/snowcastle.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/rainforest.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/rainforest_open.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/vault.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/vault_frozen.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/crypt.png", maxMapArea);
-		//biomes[biomeCount++] = InstantiateBiome("wang_tiles/fungiforest.png", maxMapArea);
+		//InstantiateBiome("wang_tiles/coalmine.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/coalmine_alt.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/excavationsite.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/fungicave.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/snowcave.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/snowcastle.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/rainforest.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/rainforest_open.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/vault.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/crypt.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/fungiforest.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/vault_frozen.png", biomes, biomeCount, maxMapArea);
+		InstantiateBiome("wang_tiles/liquidcave.png", biomes, biomeCount, maxMapArea);
+		//InstantiateBiome("wang_tiles/meat.png", biomes, biomeCount, maxMapArea);
 
 		DeviceConfig config = CreateConfigs(maxMapArea, biomeCount);
 

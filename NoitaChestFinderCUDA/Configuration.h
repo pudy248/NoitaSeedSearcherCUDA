@@ -63,7 +63,7 @@ struct BiomeModifierConfig
 	BiomeModifier modifiers[9];
 };
 
-constexpr int maxFungalShifts = 20;
+constexpr int maxFungalShifts = 4;
 struct FungalShiftConfig
 {
 	bool check;
@@ -91,34 +91,6 @@ struct StaticPrecheckConfig
 	bool precheckUpwarps;
 };
 
-struct MapConfig
-{
-	//Initialized manually
-	Biome biome;
-
-	int worldX;
-	int worldY;
-	int worldW;
-	int worldH;
-
-	int biomeIdx;
-
-	//Auto-initialized
-	int minX;
-	int maxX;
-	int minY;
-	int maxY;
-
-	uint32_t tiles_w;
-	uint32_t tiles_h;
-	uint32_t map_w;
-	uint32_t map_h;
-
-	//bool isNightmare;
-	bool isCoalMine;
-	int maxTries;
-};
-
 struct SpawnableConfig
 {
 	Vec2i pwCenter;
@@ -137,8 +109,8 @@ struct SpawnableConfig
 	bool biomeChests;
 	bool biomePedestals;
 	bool biomeAltars;
-	bool pixelScenes;
-	bool enemies;
+	bool biomePixelScenes;
+	bool biomeEnemies;
 	bool hellShops;
 
 	bool genPotions;

@@ -31,7 +31,7 @@ int GenerateSeed(uint64_t ECX)
 {
 	if (ECX > 0x7fffffff)
 		ECX >>= 1;
-	double XMM0_D = ECX;
+	double XMM0_D = (double)ECX;
 	ECX >>= 0x1f;
 	XMM0_D += ECX * 8;
 

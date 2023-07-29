@@ -86,18 +86,6 @@
     <ClInclude Include="misc\pngutils.h">
       <Filter>misc</Filter>
     </ClInclude>
-    <ClInclude Include="data\pixelscenes.h">
-      <Filter>data</Filter>
-    </ClInclude>
-    <ClInclude Include="misc\pixelscene_gen.h">
-      <Filter>misc</Filter>
-    </ClInclude>
-    <ClInclude Include="misc\enemy_gen.h">
-      <Filter>misc</Filter>
-    </ClInclude>
-    <ClInclude Include="data\enemies.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="worldSeedGeneration.h" />
     <ClInclude Include="misc\databaseutils.h">
       <Filter>misc</Filter>
@@ -117,6 +105,24 @@
     <ClInclude Include="data\biomeMap.h">
       <Filter>data</Filter>
     </ClInclude>
+    <ClInclude Include="structs\biomeStructs.h">
+      <Filter>structs</Filter>
+    </ClInclude>
+    <ClInclude Include="biomes\coalmine.h">
+      <Filter>biomes</Filter>
+    </ClInclude>
+    <ClInclude Include="biomes\allBiomes.h">
+      <Filter>biomes</Filter>
+    </ClInclude>
+    <ClInclude Include="biomes\coalmine_alt.h">
+      <Filter>biomes</Filter>
+    </ClInclude>
+    <ClInclude Include="biomes\excavationsite.h">
+      <Filter>biomes</Filter>
+    </ClInclude>
+    <ClInclude Include="biomes\liquidcave.h">
+      <Filter>biomes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">
@@ -130,6 +136,9 @@
     </Filter>
     <Filter Include="gui">
       <UniqueIdentifier>{02beb5c2-a54b-48a2-aea5-f8c91548837f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="biomes">
+      <UniqueIdentifier>{06a131a2-f7c4-43c7-a176-6e9005390269}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

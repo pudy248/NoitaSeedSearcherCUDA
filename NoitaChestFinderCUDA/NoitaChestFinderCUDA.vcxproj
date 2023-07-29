@@ -92,10 +92,13 @@
     <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="biomes\allBiomes.h" />
+    <ClInclude Include="biomes\coalmine.h" />
+    <ClInclude Include="biomes\coalmine_alt.h" />
+    <ClInclude Include="biomes\excavationsite.h" />
+    <ClInclude Include="biomes\liquidcave.h" />
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="data\biomeMap.h" />
-    <ClInclude Include="data\enemies.h" />
-    <ClInclude Include="data\pixelscenes.h" />
     <ClInclude Include="data\temples.h" />
     <ClInclude Include="data\uiNames.h" />
     <ClInclude Include="data\wand_sprites.h" />
@@ -106,15 +109,14 @@
     <ClInclude Include="gui\guiMain.h" />
     <ClInclude Include="gui\guiPrimitives.h" />
     <ClInclude Include="misc\databaseutils.h" />
-    <ClInclude Include="misc\enemy_gen.h" />
     <ClInclude Include="misc\memory.h" />
-    <ClInclude Include="misc\pixelscene_gen.h" />
     <ClInclude Include="misc\pngutils.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
     <ClInclude Include="Output.h" />
     <ClInclude Include="Precheckers.h" />
     <ClInclude Include="misc\wandgen.h" />
+    <ClInclude Include="structs\biomeStructs.h" />
     <ClInclude Include="structs\enums.h" />
     <ClInclude Include="structs\filterStructs.h" />
     <ClInclude Include="structs\primitives.h" />

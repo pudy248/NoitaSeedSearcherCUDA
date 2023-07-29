@@ -139,7 +139,7 @@ PLASMA_FADING_GREEN,
 FUNGI_YELLOW,
 };
 
-constexpr int liquidMaterialCount = 91;
+constexpr int liquidMaterialCount = 92;
 __device__ const Material potionLiquids[] = {
 	WATER,
 WATER_TEMP,
@@ -224,6 +224,7 @@ RADIOACTIVE_LIQUID_YELLOW,
 CURSED_LIQUID,
 POISON,
 BLOOD_FADING_SLOW,
+PUS,
 MIDAS,
 MIDAS_PRECURSOR,
 LIQUID_FIRE_WEAK,

@@ -15,7 +15,7 @@
 struct BiomeWangScope
 {
 	uint8_t* tileSet;
-	MapConfig cfg;
+	BiomeSector bSec;
 };
 
 __global__ void buildTS(uint8_t* dTileData, uint8_t* dTileSet, int tiles_w, int tiles_h)
@@ -26,32 +26,34 @@ __global__ void buildTS(uint8_t* dTileData, uint8_t* dTileSet, int tiles_w, int 
 
 __device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_t* output, uint8_t* res, uint8_t* visited, uint8_t* miscMem)
 {
-	WorldgenPRNG rng = GetRNG(worldSeed, scope.cfg.map_w);
-	//if (scope.cfg.isNightmare) rng.Next();
+	constexpr int MAX_TRIES = 100;
+
+	WorldgenPRNG rng = GetRNG(worldSeed, scope.bSec.map_w);
+	//if (scope.bSec.isNightmare) rng.Next();
 	int tries = 0;
 	bool has_path = false;
 
-	uint8_t* map = res + 4 * 3 * scope.cfg.map_w;
+	uint8_t* map = res + 4 * 3 * scope.bSec.map_w;
 	while (!has_path)
 	{
-		if (tries >= scope.cfg.maxTries) break;
+		if (tries >= MAX_TRIES) break;
 		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 
-		stbhw_generate_image(res, (stbhw_tileset*)scope.tileSet, scope.cfg.map_w * 3, scope.cfg.map_w, scope.cfg.map_h + 4, StaticRandom, &rng2);
+		stbhw_generate_image(res, (stbhw_tileset*)scope.tileSet, scope.bSec.map_w * 3, scope.bSec.map_w, scope.bSec.map_h + 4, StaticRandom, &rng2);
 
-		if (scope.cfg.isCoalMine)
+		if (scope.bSec.b == B_COALMINE)
 		{
-			doCoalMineHax(map, scope.cfg.map_w, scope.cfg.map_h);
+			doCoalMineHax(map, scope.bSec.map_w, scope.bSec.map_h);
 		}
 
-		has_path = isValid(map, miscMem, visited, scope.cfg.map_w, scope.cfg.map_h, scope.cfg.worldX, scope.cfg.worldY, scope.cfg.isCoalMine);
+		has_path = isValid(map, miscMem, visited, scope.bSec.map_w, scope.bSec.map_h, scope.bSec.worldX, scope.bSec.worldY, scope.bSec.b == B_COALMINE);
 		tries++;
 	}
-	//if (!has_path) memset(map, 0, 3 * scope.cfg.map_w * scope.cfg.map_h);
+	//if (!has_path) memset(map, 0, 3 * scope.bSec.map_w * scope.bSec.map_h);
 
 #ifdef IMAGE_OUTPUT
-	memcpy(output + 4, &scope.cfg.map_w, 4);
-	memcpy(output + 8, &scope.cfg.map_h, 8);
-	memcpy(output + 12, map, 3 * scope.cfg.map_w * scope.cfg.map_h);
+	memcpy(output + 4, &scope.bSec.map_w, 4);
+	memcpy(output + 8, &scope.bSec.map_h, 4);
+	memcpy(output + 12, map, 3 * scope.bSec.map_w * scope.bSec.map_h);
 #endif
 }

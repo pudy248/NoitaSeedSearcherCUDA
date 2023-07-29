@@ -21,11 +21,11 @@ struct Spawnable
 #pragma pack(pop)
 struct SpawnableBlock
 {
-	uint32_t seed;
+	int seed;
 	int count;
 	Spawnable** spawnables;
 };
-
+struct SpawnParams;
 
 #pragma pack(push, 1)
 struct LabelledSpell
@@ -89,15 +89,22 @@ struct WandData
 };
 #pragma pack(pop)
 
-struct wandLevel
+struct WandLevel
 {
 	float prob;
 	Item id;
+	__universal__ constexpr WandLevel() : prob(), id() {}
+	__universal__ constexpr WandLevel(float _p, Item _w) : prob(_p), id(_w) {}
 };
 struct BiomeWands
 {
 	int count;
-	wandLevel levels[6];
+	WandLevel levels[6];
+
+	__universal__ constexpr BiomeWands() : count(), levels() {}
+	__universal__ constexpr BiomeWands(int _c, std::initializer_list<WandLevel> list) : count(_c), levels() {
+		for (int i = 0; i < list.size(); i++) levels[i] = list.begin()[i];
+	}
 };
 
 struct WandSprite
@@ -125,62 +132,74 @@ struct WandSpaceDat
 	float reload_time;
 };
 
+struct PixelSceneSpawn
+{
+	PixelSceneSpawnType spawnType;
+	short x;
+	short y;
+	__universal__ constexpr PixelSceneSpawn() : spawnType(), x(), y() {}
+	__universal__ constexpr PixelSceneSpawn(PixelSceneSpawnType _t, short _x, short _y) : spawnType(_t), x(_x), y(_y) {}
+};
 struct PixelSceneData
 {
 	PixelScene scene;
 	float prob;
-	int materialCount;
-	Material extraMaterials[11];
-	bool hasExtraFunction;
-	void (*extraFunction)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount);
+	short materialCount;
+	short spawnCount;
+	Material materials[11];
+	PixelSceneSpawn spawns[10];
 
-	__device__ constexpr PixelSceneData() : scene(PS_NONE), prob(0), materialCount(0), hasExtraFunction(false), extraMaterials(), extraFunction(NULL)
-	{
+	__universal__ constexpr PixelSceneData()
+		: scene(PS_NONE), prob(0), materialCount(0), spawnCount(0), materials(), spawns() {}
 
-	}
+	__universal__ constexpr PixelSceneData(PixelScene _scene, float _prob)
+		: scene(_scene), prob(_prob), materialCount(0), spawnCount(0), materials(), spawns() {}
 
-	__device__ PixelSceneData(PixelScene _scene, float _prob)
-	{
-		scene = _scene;
-		prob = _prob;
-		materialCount = 0;
-		hasExtraFunction = false;
-	}
-
-	__device__ PixelSceneData(PixelScene _scene, float _prob, void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
-	{
-		scene = _scene;
-		prob = _prob;
-		materialCount = 0;
-		hasExtraFunction = true;
-		extraFunction = _func;
-	}
-
-	__device__ PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats)
+	__universal__ constexpr PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats)
+		: scene(_scene), prob(_prob), materialCount(), spawnCount(0), materials(), spawns()
 	{
 		scene = _scene;
 		prob = _prob;
 		materialCount = _mats.size();
-		memcpy(extraMaterials, _mats.begin(), sizeof(Material) * materialCount);
-		hasExtraFunction = false;
+		for (int i = 0; i < materialCount; i++) materials[i] = _mats.begin()[i];
 	}
 
-	__device__ PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, void (*_func)(int x, int y, uint32_t seed, PixelScene scene, MapConfig mCfg, SpawnableConfig sCfg, uint8_t* output, int& offset, int& sCount))
+	__universal__ constexpr PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<PixelSceneSpawn> _spawns)
+		: scene(_scene), prob(_prob), materialCount(0), spawnCount(), materials(), spawns()
+	{
+		scene = _scene;
+		prob = _prob;
+		spawnCount = _spawns.size();
+		for (int i = 0; i < spawnCount; i++) spawns[i] = _spawns.begin()[i];
+	}
+
+	__universal__ constexpr PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, std::initializer_list<PixelSceneSpawn> _spawns)
+		: scene(_scene), prob(_prob), materialCount(), spawnCount(), materials(), spawns()
 	{
 		scene = _scene;
 		prob = _prob;
 		materialCount = _mats.size();
-		memcpy(extraMaterials, _mats.begin(), sizeof(Material) * materialCount);
-		hasExtraFunction = true;
-		extraFunction = _func;
+		spawnCount = _spawns.size();
+		for (int i = 0; i < materialCount; i++) materials[i] = _mats.begin()[i];
+		for (int i = 0; i < spawnCount; i++) spawns[i] = _spawns.begin()[i];
 	}
 };
 struct PixelSceneList
 {
 	int count;
 	float probSum;
-	int extraHeightNeeded;
 	PixelSceneData scenes[20];
+	__universal__ constexpr PixelSceneList() : count(), probSum(), scenes() {}
+	__universal__ constexpr PixelSceneList(int _c, std::initializer_list<PixelSceneData> list) : count(_c), probSum(), scenes()
+	{
+		float pSum = 0;
+		for (int i = 0; i < list.size(); i++)
+		{
+			pSum += list.begin()[i].prob;
+			scenes[i] = list.begin()[i];
+		}
+		probSum = pSum;
+	}
 };
 
 struct EnemyData
@@ -189,12 +208,25 @@ struct EnemyData
 	int minCount;
 	int maxCount;
 	Enemy enemy;
+	__universal__ constexpr EnemyData() : prob(), minCount(), maxCount(), enemy() {}
+	__universal__ constexpr EnemyData(float _p, int _min, int _max, Enemy _e) : prob(_p), minCount(_min), maxCount(_max), enemy(_e) {}
 };
 struct EnemyList
 {
 	int count;
 	float probSum;
 	EnemyData enemies[20];
+	__universal__ constexpr EnemyList() : count(), probSum(), enemies() {}
+	__universal__ constexpr EnemyList(int _c, std::initializer_list<EnemyData> list) : count(_c), probSum(), enemies()
+	{
+		float pSum = 0;
+		for (int i = 0; i < list.size(); i++)
+		{
+			pSum += list.begin()[i].prob;
+			enemies[i] = list.begin()[i];
+		}
+		probSum = pSum;
+	}
 };
 
 __universal__

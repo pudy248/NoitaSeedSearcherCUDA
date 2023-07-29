@@ -55,14 +55,16 @@ __device__ void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
 
 		else
 		{
+			bool iFound = f.items[0] == ITEM_NONE;
 			for (int i = 0; i < FILTER_OR_COUNT; i++)
 			{
 				if (f.items[i] != ITEM_NONE && c == f.items[i])
 				{
-					foundCount++;
+					iFound = true;
 					break;
 				}
 			}
+			if (iFound) foundCount++;
 		}
 	}
 }
@@ -77,16 +79,17 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 		{
 			int offset = n + 1;
 			Material m2 = (Material)readShort((uint8_t*)(&s->contents), offset);
-
-
+			
+			bool mPassed = mf.materials[0] == MATERIAL_NONE;
 			for (int i = 0; i < FILTER_OR_COUNT; i++)
 			{
 				if (mf.materials[i] != MATERIAL_NONE && m2 == mf.materials[i])
 				{
-					foundCount++;
+					mPassed = true;
 					break;
 				}
 			}
+			if (mPassed) foundCount++;
 
 			n += 2;
 			continue;
@@ -125,7 +128,7 @@ __device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, i
 			int offset = n + 1;
 			Spell sp2 = (Spell)readShort((uint8_t*)(&s->contents), offset);
 
-			bool foundOnThisSpell = false;
+			bool foundOnThisSpell = sf.spells[0] == SPELL_NONE;
 			for (int i = 0; i < FILTER_OR_COUNT; i++)
 			{
 				if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i])
@@ -230,7 +233,7 @@ __device__ void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& 
 			PixelScene ps = (PixelScene)readShort((uint8_t*)(&s->contents), offset);
 			Material m = (Material)readShort((uint8_t*)(&s->contents), offset);
 
-			bool psMatch = false;
+			bool psMatch = psf.pixelScenes[0] == PS_NONE;
 			bool mMatch = !psf.checkMats;
 
 			for (int i = 0; i < FILTER_OR_COUNT; i++)

@@ -7,23 +7,7 @@
 #include "../structs/enums.h"
 #include "../structs/spawnableStructs.h"
 
-__device__ const static BiomeWands wandLevels[] = {
-{ //coalmine
-	2,
-	{{17, UNKNOWN_WAND},
-	{1.9f, WAND_T1}}
-},
-{ //coalmine_alt
-	2,
-	{{17, UNKNOWN_WAND},
-	{1.9f, WAND_T1}}
-},
-{ //excavationsite
-	3,
-	{{2, WAND_T1NS},
-	{2, WAND_T2},
-	{2, WAND_T2B}}
-},
+/*
 { //fungicave
 	2,
 	{{5, WAND_T2NS},
@@ -139,27 +123,16 @@ __device__ const static BiomeWands wandLevels[] = {
 	{5, WAND_T5B},
 	{3, WAND_T3NS},
 	{2, WAND_T4NS}}
-}};
+},
+{ //meat
+	4,
+	{{5, WAND_T5},
+	{5, WAND_T6},
+	{5, WAND_T4NS},
+	{5, WAND_T5NS}}
+} 
+};*/
 
-__device__ bool wandCheck_coalmine(NollaPRNG& random, int x, int y)
-{
-	float r = random.ProceduralRandomf(x, y, 0, 1);
-	if (r < 0.47) return false;
-	r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-	return r > 0.755;
-}
-__device__ bool wandCheck_coalminealt(NollaPRNG& random, int x, int y)
-{
-	float r = random.ProceduralRandomf(x, y, 0, 1);
-	if (r < 0.47) return false;
-	r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-	return r > 0.725;
-}
-__device__ bool wandCheck_excavationsite(NollaPRNG& random, int x, int y)
-{
-	float r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-	return r > 0.725;
-}
 __device__ bool wandCheck_fungicave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -197,9 +170,6 @@ __device__ bool wandCheck_sandcave(NollaPRNG& random, int x, int y)
 }
 
 __device__ bool(*wandChecks[])(NollaPRNG&, int, int) = {
-	wandCheck_coalmine,
-	wandCheck_coalminealt,
-	wandCheck_excavationsite,
 	wandCheck_fungicave,
 	wandCheck_snowcave,
 	wandCheck_snowcastle,

@@ -419,6 +419,7 @@ __device__ const static SpellData allSpells[] =
 
 namespace pregenerated
 {
+	__device__ const static bool spellSpawnableInBoxes[] = { false };
 	__device__ const static bool spellSpawnableInChests[] = {
 true,
 true,
