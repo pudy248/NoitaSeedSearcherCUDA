@@ -1,21 +1,18 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/enums.h"
 
-constexpr int rainCount = 4;
-
-__device__ const Material rainMaterials[] = {
+_data constexpr int rainCount = 4;
+_data const Material rainMaterials[rainCount] = {
 	Material::WATER,
 	Material::BLOOD,
 	Material::ACID,
 	Material::SLIME,
 };
 
-constexpr float rainProbSum = 0.0513f;
-__device__ const float rainProbs[] = {
+_data constexpr float rainProbSum = 0.0513f;
+_data const float rainProbs[rainCount] = {
 	0.05f,
 	0.001f,
 	0.0002f,

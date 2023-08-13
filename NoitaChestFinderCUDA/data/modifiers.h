@@ -1,12 +1,9 @@
 #pragma once
+#include "../platforms/platform_compute_helpers.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-constexpr int biomeModifierCount = 22;
-
-constexpr float biomeModifierProbSum = 9.71025f;
-__device__ const float biomeModifierProbs[] = {
+_data constexpr int biomeModifierCount = 22;
+_data constexpr float biomeModifierProbSum = 9.71025f;
+_data const float biomeModifierProbs[biomeModifierCount] = {
 	0.7f,
 	1,
 	0.5f,

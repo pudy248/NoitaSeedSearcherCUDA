@@ -94,9 +94,6 @@
   <ItemGroup>
     <ClInclude Include="biomes\allBiomes.h" />
     <ClInclude Include="biomes\coalmine.h" />
-    <ClInclude Include="biomes\coalmine_alt.h" />
-    <ClInclude Include="biomes\excavationsite.h" />
-    <ClInclude Include="biomes\liquidcave.h" />
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="data\biomeMap.h" />
     <ClInclude Include="data\temples.h" />
@@ -108,12 +105,22 @@
     <ClInclude Include="gui\guiLayout.h" />
     <ClInclude Include="gui\guiMain.h" />
     <ClInclude Include="gui\guiPrimitives.h" />
-    <ClInclude Include="misc\databaseutils.h" />
+    <ClInclude Include="misc\data_generation.h" />
     <ClInclude Include="misc\memory.h" />
     <ClInclude Include="misc\pngutils.h" />
     <ClInclude Include="misc\utilities.h" />
     <ClInclude Include="data\potions.h" />
     <ClInclude Include="Output.h" />
+    <ClInclude Include="platforms\impl_cpu.h" />
+    <ClInclude Include="platforms\impl_cpu_compute_helpers.h" />
+    <ClInclude Include="platforms\impl_cpu_defines.h" />
+    <ClInclude Include="platforms\impl_cuda.h" />
+    <ClInclude Include="platforms\impl_cuda_compute_helpers.h" />
+    <ClInclude Include="platforms\impl_cuda_defines.h" />
+    <ClInclude Include="platforms\platform.h" />
+    <ClInclude Include="platforms\platform_api.h" />
+    <ClInclude Include="platforms\platform_compute_helpers.h" />
+    <ClInclude Include="platforms\platform_defines.h" />
     <ClInclude Include="Precheckers.h" />
     <ClInclude Include="misc\wandgen.h" />
     <ClInclude Include="structs\biomeStructs.h" />
@@ -127,9 +134,7 @@
     <ClInclude Include="data\modifiers.h" />
     <ClInclude Include="data\perks.h" />
     <ClInclude Include="data\spells.h" />
-    <ClInclude Include="data\wand_levels.h" />
     <ClInclude Include="data\fungal.h" />
-    <ClInclude Include="misc\error.h" />
     <ClInclude Include="misc\stb_hbwang.h" />
     <ClInclude Include="misc\noita_random.h" />
     <ClInclude Include="data\rains.h" />

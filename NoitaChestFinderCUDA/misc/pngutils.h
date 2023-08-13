@@ -1,14 +1,11 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/primitives.h"
 #include "../Configuration.h"
 
-#include <stdlib.h>
-
 #define PNG_DEBUG 3
+#include <cstdlib>
 #include <png.h>
 
 void WriteImage(const char* file_name, uint8_t* data, int w, int h)

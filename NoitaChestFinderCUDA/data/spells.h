@@ -1,15 +1,14 @@
 #pragma once
+#include "../platforms/platform_compute_helpers.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "../structs/primitives.h"
 #include "../structs/enums.h"
 #include "../structs/spawnableStructs.h"
 
-constexpr int SpellCount = SPELL_RAINBOW_TRAIL;
+//We just have to hope that this continues to be the last spell.
+_data constexpr int SpellCount = SPELL_RAINBOW_TRAIL;
 
-const static SpellData allSpells[] = {
+//This is used solely for data generation and shouldn't actually be referenced.
+const static SpellData allSpells[SpellCount] = {
 	{ SPELL_BOMB, PROJECTILE, {1,1,1,1,0.5,0.5,0.1,0,0,0,0} },
 	{ SPELL_LIGHT_BULLET, PROJECTILE, {2,1,0.5,0,0,0,0,0,0,0,0} },
 	{ SPELL_LIGHT_BULLET_TRIGGER, PROJECTILE, {1,0.5,0.5,0.5,0,0,0,0,0,0,0} },
@@ -427,7 +426,7 @@ const static SpellData allSpells[] = {
 //namespace exists so I can delete the whole thing and repaste easier
 namespace generated_spelldata
 {
-	__device__ const static bool spellSpawnableInChests[] = {
+	_compute const static bool spellSpawnableInChests[] = {
 true,
 true,
 true,
@@ -842,7 +841,7 @@ true,
 true,
 false,
 	};
-	__device__ const static bool spellSpawnableInBoxes[] = {
+	_compute const static bool spellSpawnableInBoxes[] = {
 	false,
 	false,
 	false,
@@ -1257,7 +1256,7 @@ false,
 	true,
 	false,
 	};
-	__device__ const static SpellProb spellProbs_0[] = {
+	_compute const static SpellProb spellProbs_0[] = {
 	{1.000000,SPELL_BOMB},
 	{3.000000,SPELL_LIGHT_BULLET},
 	{4.000000,SPELL_LIGHT_BULLET_TRIGGER},
@@ -1333,7 +1332,7 @@ false,
 	{44.400000,SPELL_ENERGY_SHIELD_SECTOR},
 	{44.500000,SPELL_ALL_DISCS},
 	};
-	__device__ const static SpellProb spellProbs_1[] = {
+	_compute const static SpellProb spellProbs_1[] = {
 	{1.000000,SPELL_BOMB},
 	{2.000000,SPELL_LIGHT_BULLET},
 	{2.500000,SPELL_LIGHT_BULLET_TRIGGER},
@@ -1506,7 +1505,7 @@ false,
 	{83.400010,SPELL_ALL_ROCKETS},
 	{83.600010,SPELL_COLOUR_RED},
 	};
-	__device__ const static SpellProb spellProbs_2[] = {
+	_compute const static SpellProb spellProbs_2[] = {
 	{1.000000,SPELL_BOMB},
 	{1.500000,SPELL_LIGHT_BULLET},
 	{2.000000,SPELL_LIGHT_BULLET_TRIGGER},
@@ -1783,7 +1782,7 @@ false,
 	{136.160000,SPELL_COLOUR_RAINBOW},
 	{136.260000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_3[] = {
+	_compute const static SpellProb spellProbs_3[] = {
 	{1.000000,SPELL_BOMB},
 	{1.500000,SPELL_LIGHT_BULLET_TRIGGER},
 	{2.000000,SPELL_LIGHT_BULLET_TRIGGER_2},
@@ -2047,7 +2046,7 @@ false,
 	{129.010000,SPELL_COLOUR_RAINBOW},
 	{129.110000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_4[] = {
+	_compute const static SpellProb spellProbs_4[] = {
 	{0.500000,SPELL_BOMB},
 	{1.300000,SPELL_BULLET},
 	{1.900000,SPELL_BULLET_TRIGGER},
@@ -2338,7 +2337,7 @@ false,
 	{142.390000,SPELL_COLOUR_RAINBOW},
 	{142.490000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_5[] = {
+	_compute const static SpellProb spellProbs_5[] = {
 	{0.500000,SPELL_BOMB},
 	{1.500000,SPELL_LIGHT_BULLET_TRIGGER_2},
 	{2.000000,SPELL_BULLET},
@@ -2603,7 +2602,7 @@ false,
 	{124.710000,SPELL_DIVIDE_4},
 	{124.910000,SPELL_COLOUR_RED},
 	};
-	__device__ const static SpellProb spellProbs_6[] = {
+	_compute const static SpellProb spellProbs_6[] = {
 	{0.100000,SPELL_BOMB},
 	{1.100000,SPELL_LIGHT_BULLET_TRIGGER_2},
 	{1.700000,SPELL_BULLET_TIMER},
@@ -2789,7 +2788,7 @@ false,
 	{81.660000,SPELL_WORM_RAIN},
 	{81.860000,SPELL_COLOUR_RED},
 	};
-	__device__ const static SpellProb spellProbs_7[] = {
+	_compute const static SpellProb spellProbs_7[] = {
 	{0.100000,SPELL_TOUCH_GOLD},
 	{0.200000,SPELL_TOUCH_WATER},
 	{0.300000,SPELL_TOUCH_OIL},
@@ -2797,7 +2796,7 @@ false,
 	{0.500000,SPELL_TOUCH_BLOOD},
 	{0.600000,SPELL_TOUCH_SMOKE},
 	};
-	__device__ const static SpellProb spellProbs_10[] = {
+	_compute const static SpellProb spellProbs_10[] = {
 	{0.200000,SPELL_LIGHT_BULLET_TRIGGER_2},
 	{0.700000,SPELL_BLACK_HOLE_BIG},
 	{0.900000,SPELL_WHITE_HOLE_BIG},
@@ -2903,7 +2902,7 @@ false,
 	{57.200000,SPELL_COLOUR_RAINBOW},
 	{57.300000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static int spellTierCounts[] = {
+	_compute const static int spellTierCounts[] = {
 	74,
 	171,
 	275,
@@ -2916,7 +2915,7 @@ false,
 	0,
 	104,
 	};
-	__device__ const static float spellTierSums[] = {
+	_compute const static float spellTierSums[] = {
 	44.500000,
 	83.600010,
 	136.260000,
@@ -2930,7 +2929,7 @@ false,
 	57.300000,
 	};
 
-	__device__ const static SpellProb spellProbs_0_T0[] = {
+	_compute const static SpellProb spellProbs_0_T0[] = {
 	{1.000000,SPELL_BOMB},
 	{3.000000,SPELL_LIGHT_BULLET},
 	{4.000000,SPELL_LIGHT_BULLET_TRIGGER},
@@ -2967,7 +2966,7 @@ false,
 	{27.000000,SPELL_SWAPPER_PROJECTILE},
 	{27.400000,SPELL_TELEPORT_PROJECTILE_CLOSER},
 	};
-	__device__ const static SpellProb spellProbs_0_T1[] = {
+	_compute const static SpellProb spellProbs_0_T1[] = {
 	{0.400000,SPELL_WALL_HORIZONTAL},
 	{0.800000,SPELL_WALL_VERTICAL},
 	{1.100000,SPELL_WALL_SQUARE},
@@ -2984,7 +2983,7 @@ false,
 	{5.300000,SPELL_CLOUD_ACID},
 	{5.600000,SPELL_CLOUD_THUNDER},
 	};
-	__device__ const static SpellProb spellProbs_0_T2[] = {
+	_compute const static SpellProb spellProbs_0_T2[] = {
 	{0.600000,SPELL_HEAVY_SPREAD},
 	{1.600000,SPELL_LIGHT},
 	{2.100000,SPELL_BOUNCE_SMALL_EXPLOSION},
@@ -2992,13 +2991,13 @@ false,
 	{2.700000,SPELL_FIRE_TRAIL},
 	{3.100000,SPELL_BURN_TRAIL},
 	};
-	__device__ const static SpellProb spellProbs_0_T3[] = {
+	_compute const static SpellProb spellProbs_0_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.600000,SPELL_SCATTER_2},
 	{2.200000,SPELL_SCATTER_3},
 	{3.000000,SPELL_Y_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_0_T4[] = {
+	_compute const static SpellProb spellProbs_0_T4[] = {
 	{0.200000,SPELL_SEA_LAVA},
 	{0.500000,SPELL_SEA_ALCOHOL},
 	{0.800000,SPELL_SEA_OIL},
@@ -3006,19 +3005,19 @@ false,
 	{1.500000,SPELL_SEA_ACID},
 	{1.800000,SPELL_SEA_ACID_GAS},
 	};
-	__device__ const static SpellProb spellProbs_0_T6[] = {
+	_compute const static SpellProb spellProbs_0_T6[] = {
 	{0.100000,SPELL_TEMPORARY_WALL},
 	{0.200000,SPELL_TEMPORARY_PLATFORM},
 	{0.800000,SPELL_LONG_DISTANCE_CAST},
 	{1.600000,SPELL_X_RAY},
 	{1.700000,SPELL_ALL_DISCS},
 	};
-	__device__ const static SpellProb spellProbs_0_T7[] = {
+	_compute const static SpellProb spellProbs_0_T7[] = {
 	{1.000000,SPELL_TORCH},
 	{1.800000,SPELL_TORCH_ELECTRIC},
 	{1.900000,SPELL_ENERGY_SHIELD_SECTOR},
 	};
-	__device__ const static SpellProb* spellProbs_0_Types[] = {
+	_compute const static SpellProb* spellProbs_0_Types[] = {
 	spellProbs_0_T0,
 	spellProbs_0_T1,
 	spellProbs_0_T2,
@@ -3028,7 +3027,7 @@ false,
 	spellProbs_0_T6,
 	spellProbs_0_T7,
 	};
-	__device__ const static int spellProbs_0_Counts[] = {
+	_compute const static int spellProbs_0_Counts[] = {
 	35,
 	15,
 	6,
@@ -3039,7 +3038,7 @@ false,
 	3,
 	};
 
-	__device__ const static SpellProb spellProbs_1_T0[] = {
+	_compute const static SpellProb spellProbs_1_T0[] = {
 	{1.000000,SPELL_BOMB},
 	{2.000000,SPELL_LIGHT_BULLET},
 	{2.500000,SPELL_LIGHT_BULLET_TRIGGER},
@@ -3102,7 +3101,7 @@ false,
 	{39.700000,SPELL_NUKE},
 	{40.700000,SPELL_FIREWORK},
 	};
-	__device__ const static SpellProb spellProbs_1_T1[] = {
+	_compute const static SpellProb spellProbs_1_T1[] = {
 	{0.800000,SPELL_BLACK_HOLE_BIG},
 	{0.900000,SPELL_WHITE_HOLE_BIG},
 	{1.300000,SPELL_WALL_HORIZONTAL},
@@ -3126,7 +3125,7 @@ false,
 	{9.100000,SPELL_CLOUD_ACID},
 	{9.400000,SPELL_CLOUD_THUNDER},
 	};
-	__device__ const static SpellProb spellProbs_1_T2[] = {
+	_compute const static SpellProb spellProbs_1_T2[] = {
 	{0.800000,SPELL_SPREAD_REDUCE},
 	{1.500000,SPELL_HEAVY_SPREAD},
 	{2.300000,SPELL_RECHARGE},
@@ -3184,7 +3183,7 @@ false,
 	{19.650010,SPELL_BURN_TRAIL},
 	{19.850010,SPELL_COLOUR_RED},
 	};
-	__device__ const static SpellProb spellProbs_1_T3[] = {
+	_compute const static SpellProb spellProbs_1_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.500000,SPELL_BURST_3},
 	{2.300000,SPELL_SCATTER_2},
@@ -3196,7 +3195,7 @@ false,
 	{4.900000,SPELL_CIRCLE_SHAPE},
 	{5.300000,SPELL_PENTAGRAM_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_1_T4[] = {
+	_compute const static SpellProb spellProbs_1_T4[] = {
 	{0.800000,SPELL_SOILBALL},
 	{1.200000,SPELL_CIRCLE_FIRE},
 	{1.600000,SPELL_CIRCLE_ACID},
@@ -3206,7 +3205,7 @@ false,
 	{3.200000,SPELL_MATERIAL_OIL},
 	{3.600000,SPELL_MATERIAL_BLOOD},
 	};
-	__device__ const static SpellProb spellProbs_1_T6[] = {
+	_compute const static SpellProb spellProbs_1_T6[] = {
 	{0.100000,SPELL_TEMPORARY_WALL},
 	{0.200000,SPELL_TEMPORARY_PLATFORM},
 	{0.900000,SPELL_LONG_DISTANCE_CAST},
@@ -3217,14 +3216,14 @@ false,
 	{2.800000,SPELL_X_RAY},
 	{2.900000,SPELL_ALL_ROCKETS},
 	};
-	__device__ const static SpellProb spellProbs_1_T7[] = {
+	_compute const static SpellProb spellProbs_1_T7[] = {
 	{0.600000,SPELL_TORCH},
 	{1.200000,SPELL_TORCH_ELECTRIC},
 	{1.250000,SPELL_ENERGY_SHIELD},
 	{1.750000,SPELL_ENERGY_SHIELD_SECTOR},
 	{1.850000,SPELL_TINY_GHOST},
 	};
-	__device__ const static SpellProb* spellProbs_1_Types[] = {
+	_compute const static SpellProb* spellProbs_1_Types[] = {
 	spellProbs_1_T0,
 	spellProbs_1_T1,
 	spellProbs_1_T2,
@@ -3234,7 +3233,7 @@ false,
 	spellProbs_1_T6,
 	spellProbs_1_T7,
 	};
-	__device__ const static int spellProbs_1_Counts[] = {
+	_compute const static int spellProbs_1_Counts[] = {
 	61,
 	22,
 	56,
@@ -3245,7 +3244,7 @@ false,
 	5,
 	};
 
-	__device__ const static SpellProb spellProbs_2_T0[] = {
+	_compute const static SpellProb spellProbs_2_T0[] = {
 	{1.000000,SPELL_BOMB},
 	{1.500000,SPELL_LIGHT_BULLET},
 	{2.000000,SPELL_LIGHT_BULLET_TRIGGER},
@@ -3343,7 +3342,7 @@ false,
 	{64.350000,SPELL_FIREWORK},
 	{64.550000,SPELL_RANDOM_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_2_T1[] = {
+	_compute const static SpellProb spellProbs_2_T1[] = {
 	{0.500000,SPELL_BOMB_DETONATOR},
 	{0.800000,SPELL_SWARM_FLY},
 	{1.000000,SPELL_SWARM_FIREBUG},
@@ -3375,7 +3374,7 @@ false,
 	{13.700000,SPELL_CLOUD_ACID},
 	{13.900000,SPELL_CLOUD_THUNDER},
 	};
-	__device__ const static SpellProb spellProbs_2_T2[] = {
+	_compute const static SpellProb spellProbs_2_T2[] = {
 	{0.800000,SPELL_SPREAD_REDUCE},
 	{1.600000,SPELL_HEAVY_SPREAD},
 	{2.500000,SPELL_RECHARGE},
@@ -3481,7 +3480,7 @@ false,
 	{39.430000,SPELL_COLOUR_RAINBOW},
 	{39.530000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_2_T3[] = {
+	_compute const static SpellProb spellProbs_2_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.500000,SPELL_BURST_3},
 	{1.900000,SPELL_BURST_4},
@@ -3495,7 +3494,7 @@ false,
 	{5.900000,SPELL_CIRCLE_SHAPE},
 	{6.300000,SPELL_PENTAGRAM_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_2_T4[] = {
+	_compute const static SpellProb spellProbs_2_T4[] = {
 	{0.800000,SPELL_SOILBALL},
 	{1.200000,SPELL_CIRCLE_FIRE},
 	{1.600000,SPELL_CIRCLE_ACID},
@@ -3507,12 +3506,12 @@ false,
 	{4.000000,SPELL_MATERIAL_ACID},
 	{4.400000,SPELL_MATERIAL_CEMENT},
 	};
-	__device__ const static SpellProb spellProbs_2_T5[] = {
+	_compute const static SpellProb spellProbs_2_T5[] = {
 	{0.300000,SPELL_DRAW_RANDOM},
 	{0.400000,SPELL_DRAW_3_RANDOM},
 	{0.600000,SPELL_ZETA},
 	};
-	__device__ const static SpellProb spellProbs_2_T6[] = {
+	_compute const static SpellProb spellProbs_2_T6[] = {
 	{0.300000,SPELL_TEMPORARY_WALL},
 	{0.600000,SPELL_TEMPORARY_PLATFORM},
 	{1.400000,SPELL_LONG_DISTANCE_CAST},
@@ -3529,14 +3528,14 @@ false,
 	{4.480000,SPELL_X_RAY},
 	{4.580000,SPELL_ALL_DEATHCROSSES},
 	};
-	__device__ const static SpellProb spellProbs_2_T7[] = {
+	_compute const static SpellProb spellProbs_2_T7[] = {
 	{0.500000,SPELL_TORCH},
 	{0.900000,SPELL_TORCH_ELECTRIC},
 	{1.300000,SPELL_ENERGY_SHIELD},
 	{1.900000,SPELL_ENERGY_SHIELD_SECTOR},
 	{2.400000,SPELL_TINY_GHOST},
 	};
-	__device__ const static SpellProb* spellProbs_2_Types[] = {
+	_compute const static SpellProb* spellProbs_2_Types[] = {
 	spellProbs_2_T0,
 	spellProbs_2_T1,
 	spellProbs_2_T2,
@@ -3546,7 +3545,7 @@ false,
 	spellProbs_2_T6,
 	spellProbs_2_T7,
 	};
-	__device__ const static int spellProbs_2_Counts[] = {
+	_compute const static int spellProbs_2_Counts[] = {
 	96,
 	30,
 	104,
@@ -3557,7 +3556,7 @@ false,
 	5,
 	};
 
-	__device__ const static SpellProb spellProbs_3_T0[] = {
+	_compute const static SpellProb spellProbs_3_T0[] = {
 	{1.000000,SPELL_BOMB},
 	{1.500000,SPELL_LIGHT_BULLET_TRIGGER},
 	{2.000000,SPELL_LIGHT_BULLET_TRIGGER_2},
@@ -3640,7 +3639,7 @@ false,
 	{53.310000,SPELL_MIST_BLOOD},
 	{54.310000,SPELL_FIREWORK},
 	};
-	__device__ const static SpellProb spellProbs_3_T1[] = {
+	_compute const static SpellProb spellProbs_3_T1[] = {
 	{0.800000,SPELL_BLACK_HOLE_BIG},
 	{0.900000,SPELL_WHITE_HOLE_BIG},
 	{1.900000,SPELL_BOMB_DETONATOR},
@@ -3666,7 +3665,7 @@ false,
 	{12.000000,SPELL_CLOUD_THUNDER},
 	{12.200000,SPELL_RANDOM_STATIC_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_3_T2[] = {
+	_compute const static SpellProb spellProbs_3_T2[] = {
 	{0.800000,SPELL_SPREAD_REDUCE},
 	{1.800000,SPELL_RECHARGE},
 	{2.300000,SPELL_LIFETIME},
@@ -3784,7 +3783,7 @@ false,
 	{45.500000,SPELL_COLOUR_RAINBOW},
 	{45.600000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_3_T3[] = {
+	_compute const static SpellProb spellProbs_3_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.500000,SPELL_BURST_3},
 	{2.000000,SPELL_BURST_4},
@@ -3797,7 +3796,7 @@ false,
 	{5.100000,SPELL_CIRCLE_SHAPE},
 	{5.400000,SPELL_PENTAGRAM_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_3_T4[] = {
+	_compute const static SpellProb spellProbs_3_T4[] = {
 	{1.000000,SPELL_SOILBALL},
 	{1.400000,SPELL_CIRCLE_FIRE},
 	{1.800000,SPELL_CIRCLE_ACID},
@@ -3809,7 +3808,7 @@ false,
 	{4.200000,SPELL_MATERIAL_ACID},
 	{4.600000,SPELL_MATERIAL_CEMENT},
 	};
-	__device__ const static SpellProb spellProbs_3_T5[] = {
+	_compute const static SpellProb spellProbs_3_T5[] = {
 	{0.200000,SPELL_RANDOM_SPELL},
 	{0.400000,SPELL_DRAW_RANDOM},
 	{0.500000,SPELL_DRAW_RANDOM_X3},
@@ -3819,7 +3818,7 @@ false,
 	{1.600000,SPELL_ADD_DEATH_TRIGGER},
 	{1.800000,SPELL_DIVIDE_2},
 	};
-	__device__ const static SpellProb spellProbs_3_T6[] = {
+	_compute const static SpellProb spellProbs_3_T6[] = {
 	{0.500000,SPELL_I_SHOT},
 	{1.000000,SPELL_Y_SHOT},
 	{1.200000,SPELL_T_SHOT},
@@ -3830,12 +3829,12 @@ false,
 	{2.500000,SPELL_X_RAY},
 	{2.600000,SPELL_ALL_BLACKHOLES},
 	};
-	__device__ const static SpellProb spellProbs_3_T7[] = {
+	_compute const static SpellProb spellProbs_3_T7[] = {
 	{0.800000,SPELL_ENERGY_SHIELD},
 	{1.600000,SPELL_ENERGY_SHIELD_SECTOR},
 	{2.600000,SPELL_TINY_GHOST},
 	};
-	__device__ const static SpellProb* spellProbs_3_Types[] = {
+	_compute const static SpellProb* spellProbs_3_Types[] = {
 	spellProbs_3_T0,
 	spellProbs_3_T1,
 	spellProbs_3_T2,
@@ -3845,7 +3844,7 @@ false,
 	spellProbs_3_T6,
 	spellProbs_3_T7,
 	};
-	__device__ const static int spellProbs_3_Counts[] = {
+	_compute const static int spellProbs_3_Counts[] = {
 	81,
 	24,
 	116,
@@ -3856,7 +3855,7 @@ false,
 	3,
 	};
 
-	__device__ const static SpellProb spellProbs_4_T0[] = {
+	_compute const static SpellProb spellProbs_4_T0[] = {
 	{0.500000,SPELL_BOMB},
 	{1.300000,SPELL_BULLET},
 	{1.900000,SPELL_BULLET_TRIGGER},
@@ -3949,7 +3948,7 @@ false,
 	{57.460000,SPELL_FIREWORK},
 	{57.860000,SPELL_RANDOM_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_4_T1[] = {
+	_compute const static SpellProb spellProbs_4_T1[] = {
 	{0.400000,SPELL_BOMB_DETONATOR},
 	{0.800000,SPELL_SWARM_FLY},
 	{1.000000,SPELL_SWARM_WASP},
@@ -3979,7 +3978,7 @@ false,
 	{12.450000,SPELL_CLOUD_ACID},
 	{12.850000,SPELL_CLOUD_THUNDER},
 	};
-	__device__ const static SpellProb spellProbs_4_T2[] = {
+	_compute const static SpellProb spellProbs_4_T2[] = {
 	{0.800000,SPELL_SPREAD_REDUCE},
 	{1.600000,SPELL_HEAVY_SPREAD},
 	{2.400000,SPELL_RECHARGE},
@@ -4105,7 +4104,7 @@ false,
 	{52.780000,SPELL_COLOUR_RAINBOW},
 	{52.880000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_4_T3[] = {
+	_compute const static SpellProb spellProbs_4_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.500000,SPELL_BURST_3},
 	{2.100000,SPELL_BURST_4},
@@ -4115,7 +4114,7 @@ false,
 	{4.000000,SPELL_CIRCLE_SHAPE},
 	{4.200000,SPELL_PENTAGRAM_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_4_T4[] = {
+	_compute const static SpellProb spellProbs_4_T4[] = {
 	{0.400000,SPELL_CIRCLE_FIRE},
 	{0.800000,SPELL_CIRCLE_ACID},
 	{1.200000,SPELL_CIRCLE_OIL},
@@ -4132,7 +4131,7 @@ false,
 	{5.400000,SPELL_SEA_ACID},
 	{5.800000,SPELL_SEA_ACID_GAS},
 	};
-	__device__ const static SpellProb spellProbs_4_T5[] = {
+	_compute const static SpellProb spellProbs_4_T5[] = {
 	{0.300000,SPELL_RANDOM_SPELL},
 	{0.500000,SPELL_DRAW_RANDOM},
 	{0.800000,SPELL_DRAW_RANDOM_X3},
@@ -4142,7 +4141,7 @@ false,
 	{2.700000,SPELL_SIGMA},
 	{2.800000,SPELL_DIVIDE_3},
 	};
-	__device__ const static SpellProb spellProbs_4_T6[] = {
+	_compute const static SpellProb spellProbs_4_T6[] = {
 	{0.400000,SPELL_TEMPORARY_WALL},
 	{0.800000,SPELL_TEMPORARY_PLATFORM},
 	{1.400000,SPELL_LONG_DISTANCE_CAST},
@@ -4156,12 +4155,12 @@ false,
 	{4.300000,SPELL_X_RAY},
 	{4.400000,SPELL_ALL_ACID},
 	};
-	__device__ const static SpellProb spellProbs_4_T7[] = {
+	_compute const static SpellProb spellProbs_4_T7[] = {
 	{0.400000,SPELL_ENERGY_SHIELD},
 	{0.900000,SPELL_ENERGY_SHIELD_SECTOR},
 	{1.700000,SPELL_TINY_GHOST},
 	};
-	__device__ const static SpellProb* spellProbs_4_Types[] = {
+	_compute const static SpellProb* spellProbs_4_Types[] = {
 	spellProbs_4_T0,
 	spellProbs_4_T1,
 	spellProbs_4_T2,
@@ -4171,7 +4170,7 @@ false,
 	spellProbs_4_T6,
 	spellProbs_4_T7,
 	};
-	__device__ const static int spellProbs_4_Counts[] = {
+	_compute const static int spellProbs_4_Counts[] = {
 	91,
 	28,
 	124,
@@ -4182,7 +4181,7 @@ false,
 	3,
 	};
 
-	__device__ const static SpellProb spellProbs_5_T0[] = {
+	_compute const static SpellProb spellProbs_5_T0[] = {
 	{0.500000,SPELL_BOMB},
 	{1.500000,SPELL_LIGHT_BULLET_TRIGGER_2},
 	{2.000000,SPELL_BULLET},
@@ -4254,7 +4253,7 @@ false,
 	{46.060000,SPELL_FIREWORK},
 	{46.160000,SPELL_RANDOM_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_5_T1[] = {
+	_compute const static SpellProb spellProbs_5_T1[] = {
 	{0.800000,SPELL_BLACK_HOLE_BIG},
 	{0.900000,SPELL_WHITE_HOLE_BIG},
 	{1.400000,SPELL_BOMB_DETONATOR},
@@ -4290,7 +4289,7 @@ false,
 	{13.900000,SPELL_CLOUD_THUNDER},
 	{14.000000,SPELL_RANDOM_STATIC_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_5_T2[] = {
+	_compute const static SpellProb spellProbs_5_T2[] = {
 	{0.700000,SPELL_SPREAD_REDUCE},
 	{1.500000,SPELL_HEAVY_SPREAD},
 	{2.400000,SPELL_RECHARGE},
@@ -4387,7 +4386,7 @@ false,
 	{41.800000,SPELL_LARPA_DEATH},
 	{42.000000,SPELL_COLOUR_RED},
 	};
-	__device__ const static SpellProb spellProbs_5_T3[] = {
+	_compute const static SpellProb spellProbs_5_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.500000,SPELL_BURST_3},
 	{2.100000,SPELL_BURST_4},
@@ -4398,7 +4397,7 @@ false,
 	{3.700000,SPELL_CIRCLE_SHAPE},
 	{3.800000,SPELL_PENTAGRAM_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_5_T4[] = {
+	_compute const static SpellProb spellProbs_5_T4[] = {
 	{0.750000,SPELL_SOILBALL},
 	{1.150000,SPELL_MATERIAL_WATER},
 	{1.550000,SPELL_MATERIAL_OIL},
@@ -4418,7 +4417,7 @@ false,
 	{5.750000,SPELL_SEA_ACID},
 	{6.150000,SPELL_SEA_ACID_GAS},
 	};
-	__device__ const static SpellProb spellProbs_5_T5[] = {
+	_compute const static SpellProb spellProbs_5_T5[] = {
 	{0.100000,SPELL_DUPLICATE},
 	{0.300000,SPELL_RANDOM_SPELL},
 	{0.400000,SPELL_DRAW_RANDOM},
@@ -4439,7 +4438,7 @@ false,
 	{4.000000,SPELL_DIVIDE_3},
 	{4.100000,SPELL_DIVIDE_4},
 	};
-	__device__ const static SpellProb spellProbs_5_T6[] = {
+	_compute const static SpellProb spellProbs_5_T6[] = {
 	{0.200000,SPELL_TEMPORARY_WALL},
 	{0.400000,SPELL_TEMPORARY_PLATFORM},
 	{0.700000,SPELL_LONG_DISTANCE_CAST},
@@ -4456,12 +4455,12 @@ false,
 	{6.900000,SPELL_BLOOD_TO_POWER},
 	{7.200000,SPELL_X_RAY},
 	};
-	__device__ const static SpellProb spellProbs_5_T7[] = {
+	_compute const static SpellProb spellProbs_5_T7[] = {
 	{0.400000,SPELL_ENERGY_SHIELD},
 	{0.800000,SPELL_ENERGY_SHIELD_SECTOR},
 	{1.500000,SPELL_TINY_GHOST},
 	};
-	__device__ const static SpellProb* spellProbs_5_Types[] = {
+	_compute const static SpellProb* spellProbs_5_Types[] = {
 	spellProbs_5_T0,
 	spellProbs_5_T1,
 	spellProbs_5_T2,
@@ -4471,7 +4470,7 @@ false,
 	spellProbs_5_T6,
 	spellProbs_5_T7,
 	};
-	__device__ const static int spellProbs_5_Counts[] = {
+	_compute const static int spellProbs_5_Counts[] = {
 	70,
 	34,
 	95,
@@ -4482,7 +4481,7 @@ false,
 	3,
 	};
 
-	__device__ const static SpellProb spellProbs_6_T0[] = {
+	_compute const static SpellProb spellProbs_6_T0[] = {
 	{0.100000,SPELL_BOMB},
 	{1.100000,SPELL_LIGHT_BULLET_TRIGGER_2},
 	{1.700000,SPELL_BULLET_TIMER},
@@ -4537,7 +4536,7 @@ false,
 	{31.400000,SPELL_FIREWORK},
 	{31.600000,SPELL_RANDOM_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_6_T1[] = {
+	_compute const static SpellProb spellProbs_6_T1[] = {
 	{0.800000,SPELL_BLACK_HOLE_BIG},
 	{1.200000,SPELL_WHITE_HOLE_BIG},
 	{2.200000,SPELL_BOMB_DETONATOR},
@@ -4565,7 +4564,7 @@ false,
 	{10.000000,SPELL_METEOR_RAIN},
 	{10.100000,SPELL_WORM_RAIN},
 	};
-	__device__ const static SpellProb spellProbs_6_T2[] = {
+	_compute const static SpellProb spellProbs_6_T2[] = {
 	{0.600000,SPELL_SPREAD_REDUCE},
 	{1.200000,SPELL_HEAVY_SPREAD},
 	{2.200000,SPELL_RECHARGE},
@@ -4616,7 +4615,7 @@ false,
 	{23.510000,SPELL_RANDOM_MODIFIER},
 	{23.710000,SPELL_COLOUR_RED},
 	};
-	__device__ const static SpellProb spellProbs_6_T3[] = {
+	_compute const static SpellProb spellProbs_6_T3[] = {
 	{0.800000,SPELL_BURST_2},
 	{1.500000,SPELL_BURST_3},
 	{2.100000,SPELL_BURST_4},
@@ -4626,7 +4625,7 @@ false,
 	{3.200000,SPELL_W_SHAPE},
 	{3.500000,SPELL_CIRCLE_SHAPE},
 	};
-	__device__ const static SpellProb spellProbs_6_T4[] = {
+	_compute const static SpellProb spellProbs_6_T4[] = {
 	{0.400000,SPELL_MATERIAL_ACID},
 	{0.800000,SPELL_MATERIAL_CEMENT},
 	{0.900000,SPELL_TOUCH_GOLD},
@@ -4642,7 +4641,7 @@ false,
 	{3.300000,SPELL_SEA_ACID},
 	{3.600000,SPELL_SEA_ACID_GAS},
 	};
-	__device__ const static SpellProb spellProbs_6_T5[] = {
+	_compute const static SpellProb spellProbs_6_T5[] = {
 	{0.200000,SPELL_DUPLICATE},
 	{0.300000,SPELL_RANDOM_SPELL},
 	{0.400000,SPELL_DRAW_RANDOM},
@@ -4658,7 +4657,7 @@ false,
 	{2.100000,SPELL_DIVIDE_3},
 	{2.200000,SPELL_DIVIDE_4},
 	};
-	__device__ const static SpellProb spellProbs_6_T6[] = {
+	_compute const static SpellProb spellProbs_6_T6[] = {
 	{0.400000,SPELL_LONG_DISTANCE_CAST},
 	{1.400000,SPELL_TELEPORT_CAST},
 	{2.200000,SPELL_SUPER_TELEPORT_CAST},
@@ -4678,11 +4677,11 @@ false,
 	{6.000000,SPELL_ALL_BLACKHOLES},
 	{6.050000,SPELL_ALL_ACID},
 	};
-	__device__ const static SpellProb spellProbs_6_T7[] = {
+	_compute const static SpellProb spellProbs_6_T7[] = {
 	{0.600000,SPELL_ENERGY_SHIELD},
 	{1.100000,SPELL_TINY_GHOST},
 	};
-	__device__ const static SpellProb* spellProbs_6_Types[] = {
+	_compute const static SpellProb* spellProbs_6_Types[] = {
 	spellProbs_6_T0,
 	spellProbs_6_T1,
 	spellProbs_6_T2,
@@ -4692,7 +4691,7 @@ false,
 	spellProbs_6_T6,
 	spellProbs_6_T7,
 	};
-	__device__ const static int spellProbs_6_Counts[] = {
+	_compute const static int spellProbs_6_Counts[] = {
 	53,
 	26,
 	49,
@@ -4703,7 +4702,7 @@ false,
 	2,
 	};
 
-	__device__ const static SpellProb spellProbs_7_T4[] = {
+	_compute const static SpellProb spellProbs_7_T4[] = {
 	{0.100000,SPELL_TOUCH_GOLD},
 	{0.200000,SPELL_TOUCH_WATER},
 	{0.300000,SPELL_TOUCH_OIL},
@@ -4711,7 +4710,7 @@ false,
 	{0.500000,SPELL_TOUCH_BLOOD},
 	{0.600000,SPELL_TOUCH_SMOKE},
 	};
-	__device__ const static SpellProb* spellProbs_7_Types[] = {
+	_compute const static SpellProb* spellProbs_7_Types[] = {
 	NULL,
 	NULL,
 	NULL,
@@ -4721,7 +4720,7 @@ false,
 	NULL,
 	NULL,
 	};
-	__device__ const static int spellProbs_7_Counts[] = {
+	_compute const static int spellProbs_7_Counts[] = {
 	0,
 	0,
 	0,
@@ -4732,7 +4731,7 @@ false,
 	0,
 	};
 
-	__device__ const static SpellProb* spellProbs_8_Types[] = {
+	_compute const static SpellProb* spellProbs_8_Types[] = {
 	NULL,
 	NULL,
 	NULL,
@@ -4742,28 +4741,7 @@ false,
 	NULL,
 	NULL,
 	};
-	__device__ const static int spellProbs_8_Counts[] = {
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	};
-
-	__device__ const static SpellProb* spellProbs_9_Types[] = {
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	};
-	__device__ const static int spellProbs_9_Counts[] = {
+	_compute const static int spellProbs_8_Counts[] = {
 	0,
 	0,
 	0,
@@ -4774,7 +4752,28 @@ false,
 	0,
 	};
 
-	__device__ const static SpellProb spellProbs_10_T0[] = {
+	_compute const static SpellProb* spellProbs_9_Types[] = {
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	};
+	_compute const static int spellProbs_9_Counts[] = {
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	};
+
+	_compute const static SpellProb spellProbs_10_T0[] = {
 	{0.200000,SPELL_LIGHT_BULLET_TRIGGER_2},
 	{0.400000,SPELL_TENTACLE_PORTAL},
 	{0.800000,SPELL_DISC_BULLET_BIGGER},
@@ -4794,7 +4793,7 @@ false,
 	{5.900000,SPELL_NUKE_GIGA},
 	{6.400000,SPELL_RANDOM_PROJECTILE},
 	};
-	__device__ const static SpellProb spellProbs_10_T1[] = {
+	_compute const static SpellProb spellProbs_10_T1[] = {
 	{0.500000,SPELL_BLACK_HOLE_BIG},
 	{0.700000,SPELL_WHITE_HOLE_BIG},
 	{1.700000,SPELL_BLACK_HOLE_GIGA},
@@ -4804,7 +4803,7 @@ false,
 	{4.300000,SPELL_METEOR_RAIN},
 	{5.300000,SPELL_WORM_RAIN},
 	};
-	__device__ const static SpellProb spellProbs_10_T2[] = {
+	_compute const static SpellProb spellProbs_10_T2[] = {
 	{0.100000,SPELL_LIFETIME},
 	{0.200000,SPELL_LIFETIME_DOWN},
 	{1.200000,SPELL_NOLLA},
@@ -4835,11 +4834,11 @@ false,
 	{6.700000,SPELL_COLOUR_RAINBOW},
 	{6.800000,SPELL_COLOUR_INVIS},
 	};
-	__device__ const static SpellProb spellProbs_10_T3[] = {
+	_compute const static SpellProb spellProbs_10_T3[] = {
 	{0.500000,SPELL_BURST_8},
 	{1.000000,SPELL_BURST_X},
 	};
-	__device__ const static SpellProb spellProbs_10_T4[] = {
+	_compute const static SpellProb spellProbs_10_T4[] = {
 	{0.500000,SPELL_TOUCH_GOLD},
 	{0.900000,SPELL_TOUCH_WATER},
 	{1.300000,SPELL_TOUCH_OIL},
@@ -4847,7 +4846,7 @@ false,
 	{2.200000,SPELL_TOUCH_BLOOD},
 	{2.600000,SPELL_TOUCH_SMOKE},
 	};
-	__device__ const static SpellProb spellProbs_10_T5[] = {
+	_compute const static SpellProb spellProbs_10_T5[] = {
 	{1.000000,SPELL_DUPLICATE},
 	{1.500000,SPELL_RANDOM_SPELL},
 	{2.500000,SPELL_DRAW_RANDOM},
@@ -4876,7 +4875,7 @@ false,
 	{25.000000,SPELL_IF_END},
 	{26.000000,SPELL_IF_ELSE},
 	};
-	__device__ const static SpellProb spellProbs_10_T6[] = {
+	_compute const static SpellProb spellProbs_10_T6[] = {
 	{0.200000,SPELL_CASTER_CAST},
 	{0.300000,SPELL_SUMMON_WANDGHOST},
 	{0.500000,SPELL_PENTA_SHOT},
@@ -4892,7 +4891,7 @@ false,
 	{8.200000,SPELL_ALL_ACID},
 	{9.200000,SPELL_RESET},
 	};
-	__device__ const static SpellProb* spellProbs_10_Types[] = {
+	_compute const static SpellProb* spellProbs_10_Types[] = {
 	spellProbs_10_T0,
 	spellProbs_10_T1,
 	spellProbs_10_T2,
@@ -4902,7 +4901,7 @@ false,
 	spellProbs_10_T6,
 	NULL,
 	};
-	__device__ const static int spellProbs_10_Counts[] = {
+	_compute const static int spellProbs_10_Counts[] = {
 	18,
 	8,
 	29,
@@ -4914,7 +4913,7 @@ false,
 	};
 }
 using namespace generated_spelldata;
-__device__ const static SpellProb* allSpellProbs[] = {
+_data const static SpellProb* allSpellProbs[] = {
 	spellProbs_0,
 	spellProbs_1,
 	spellProbs_2,
@@ -4927,7 +4926,7 @@ __device__ const static SpellProb* allSpellProbs[] = {
 	NULL,
 	spellProbs_10,
 };
-__device__ const static SpellProb** spellProbs_Types[] = {
+_data const static SpellProb** spellProbs_Types[] = {
 	spellProbs_0_Types,
 	spellProbs_1_Types,
 	spellProbs_2_Types,
@@ -4940,7 +4939,7 @@ __device__ const static SpellProb** spellProbs_Types[] = {
 	NULL,
 	spellProbs_10_Types,
 };
-__device__ const static int* spellProbs_Counts[] = {
+_data const static int* spellProbs_Counts[] = {
 	spellProbs_0_Counts,
 	spellProbs_1_Counts,
 	spellProbs_2_Counts,

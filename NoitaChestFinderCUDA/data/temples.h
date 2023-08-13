@@ -1,9 +1,7 @@
 #pragma once
+#include "../platforms/platform_compute_helpers.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-__device__ const int temple_x[] = {
+_data const int temple_x[] = {
 	-32,
 	-32,
 	-32,
@@ -13,7 +11,7 @@ __device__ const int temple_x[] = {
 	2560
 };
 
-__device__ const int temple_y[] = {
+_data const int temple_y[] = {
 	1410,
 	2946,
 	4994,
@@ -23,7 +21,7 @@ __device__ const int temple_y[] = {
 	13181
 };
 
-__device__ const int temple_tiers[] = {
+_data const int temple_tiers[] = {
 	0,
 	1,
 	2,
@@ -33,8 +31,8 @@ __device__ const int temple_tiers[] = {
 	6
 };
 
-constexpr int shopOffsetX = -299;
-constexpr int shopOffsetY = -15;
+_data constexpr int shopOffsetX = -299;
+_data constexpr int shopOffsetY = -15;
 
-constexpr int chestOffsetX = -46;
-constexpr int chestOffsetY = -39;
+_data constexpr int chestOffsetX = -46;
+_data constexpr int chestOffsetY = -39;

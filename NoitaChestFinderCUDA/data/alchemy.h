@@ -1,12 +1,10 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/enums.h"
 
 constexpr int alchemyLiquidCount = 30;
-__device__ const Material alchemyLiquids[] = {
+_data const Material alchemyLiquids[] = {
 	Material::ACID,
 	Material::ALCOHOL,
 	Material::BLOOD,
@@ -40,7 +38,7 @@ __device__ const Material alchemyLiquids[] = {
 };
 
 constexpr int alchemySolidCount = 18;
-__device__ const Material alchemySolids[] = {
+_data const Material alchemySolids[] = {
 	Material::BONE,
 	Material::BRASS,
 	Material::COAL,

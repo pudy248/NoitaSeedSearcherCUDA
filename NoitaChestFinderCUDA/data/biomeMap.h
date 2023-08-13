@@ -1,11 +1,9 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/enums.h"
 
-__device__ const Biome biomeMap[70 * 48] = { B_NONE,
+_data const Biome biomeMap[70 * 48] = { B_NONE,
 		B_NONE,
 		B_NONE,
 		B_NONE,

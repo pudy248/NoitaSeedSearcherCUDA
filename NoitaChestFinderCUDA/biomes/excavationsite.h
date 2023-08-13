@@ -1,7 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/IPlatform.h"
 
 #include "../structs/biomeStructs.h"
 #include "../structs/spawnableStructs.h"
@@ -11,20 +9,20 @@
 
 namespace FUNCS_EXCAVATIONSITE
 {
-	__device__ void spawn_pixel_scene_01(int x, int y, SpawnParams params)
+	__compute__ void spawn_pixel_scene_01(int x, int y, SpawnParams params)
 	{
 		LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_01, params);
 	}
-	__device__ void spawn_pixel_scene_02(int x, int y, SpawnParams params)
+	__compute__ void spawn_pixel_scene_02(int x, int y, SpawnParams params)
 	{
 		LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_02, params);
 	}
-	__device__ void spawn_pixel_scene_03(int x, int y, SpawnParams params)
+	__compute__ void spawn_pixel_scene_03(int x, int y, SpawnParams params)
 	{
 
 	}
 
-	__device__ void spawn_small_enemies(int x, int y, SpawnParams params)
+	__compute__ void spawn_small_enemies(int x, int y, SpawnParams params)
 	{
 		int topY = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, 0, 0).y;
 		float verticalPercent = (float)(y - topY) / (params.currentSector.map_h * 10);
@@ -33,7 +31,7 @@ namespace FUNCS_EXCAVATIONSITE
 		if (random.ProceduralRandomf(x, y, 0, 1) <= spawnPercent)
 			SpawnEnemies(x, y, AllBiomeData[params.currentSector.b].smallEnemies, params);
 	}
-	__device__ void spawn_big_enemies(int x, int y, SpawnParams params)
+	__compute__ void spawn_big_enemies(int x, int y, SpawnParams params)
 	{
 		int topY = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, 0, 0).y;
 		float verticalPercent = (float)(y - topY) / (params.currentSector.map_h * 10);
@@ -42,14 +40,14 @@ namespace FUNCS_EXCAVATIONSITE
 		if (random.ProceduralRandomf(x, y, 0, 1) <= spawnPercent)
 			SpawnEnemies(x, y, AllBiomeData[params.currentSector.b].bigEnemies, params);
 	}
-	__device__ bool spawn_item(int x, int y, SpawnParams params)
+	__compute__ bool spawn_item(int x, int y, SpawnParams params)
 	{
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
 		return r > 0.725;
 	}
 
-	__device__ void SetFunctionPointers(SpawnParams params)
+	__compute__ void SetFunctionPointers(SpawnParams params)
 	{
 		spawnPixelScene01 = spawn_pixel_scene_01;
 		spawnPixelScene02 = spawn_pixel_scene_02;

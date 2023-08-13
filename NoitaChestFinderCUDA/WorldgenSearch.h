@@ -1,7 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "platforms/platform_compute_helpers.h"
 
 #include "structs/primitives.h"
 #include "structs/enums.h"
@@ -20,7 +18,7 @@
 #include "defines.h"
 #include "Configuration.h"
 
-__device__ void createPotion(double x, double y, Item type, SpawnParams params)
+_compute void createPotion(double x, double y, Item type, SpawnParams params)
 {
 	if (!params.sCfg.genPotions) writeByte(params.bytes, params.offset, type);
 	else
@@ -58,7 +56,7 @@ __device__ void createPotion(double x, double y, Item type, SpawnParams params)
 		}
 	}
 }
-__device__ void createWand(double x, double y, Item type, bool addOffset, SpawnParams params)
+_compute void createWand(double x, double y, Item type, bool addOffset, SpawnParams params)
 {
 	writeByte(params.bytes, params.offset, type);
 
@@ -80,17 +78,17 @@ __device__ void createWand(double x, double y, Item type, bool addOffset, SpawnP
 			rand_y += 683;
 		}
 
-		Wand w = GetWandWithLevel(seed, rand_x, rand_y, tier, nonshuffle, better);
+		Wand w = GetWandWithLevel(params.seed, rand_x, rand_y, tier, nonshuffle, better);
 		writeByte(params.bytes, params.offset, DATA_WAND); //-1
-		memcpy(params.bytes + params.offset, &w.capacity, 37);
+		cMemcpy(params.bytes + params.offset, &w.capacity, 37);
 		params.offset += 37;
-		memcpy(params.bytes + params.offset, w.spells, w.spellCount * 3);
+		cMemcpy(params.bytes + params.offset, w.spells, w.spellCount * 3);
 		params.offset += w.spellCount * 3;
 	}
 #endif
 }
 
-__device__ Spell MakeRandomCard(NollaPRNG& random)
+_compute Spell MakeRandomCard(NollaPRNG& random)
 {
 	Spell res = SPELL_NONE;
 	char valid = 0;
@@ -104,7 +102,7 @@ __device__ Spell MakeRandomCard(NollaPRNG& random)
 	}
 	return res;
 }
-__device__ Spell MakeRandomUtility(NollaPRNG& random)
+_compute Spell MakeRandomUtility(NollaPRNG& random)
 {
 	Spell res = SPELL_NONE;
 	char valid = 0;
@@ -119,7 +117,7 @@ __device__ Spell MakeRandomUtility(NollaPRNG& random)
 	return res;
 }
 
-__device__ __noinline__ void CheckNormalChestLoot(int x, int y, bool hasMimicSign, SpawnParams params)
+_compute _noinline void CheckNormalChestLoot(int x, int y, bool hasMimicSign, SpawnParams params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -268,7 +266,7 @@ __device__ __noinline__ void CheckNormalChestLoot(int x, int y, bool hasMimicSig
 	}
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
-__device__ __noinline__ void CheckGreatChestLoot(int x, int y, bool hasMimicSign, SpawnParams params)
+_compute _noinline void CheckGreatChestLoot(int x, int y, bool hasMimicSign, SpawnParams params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -350,7 +348,7 @@ __device__ __noinline__ void CheckGreatChestLoot(int x, int y, bool hasMimicSign
 	}
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
-__device__ __noinline__ void CheckItemPedestalLoot(int x, int y, SpawnParams params)
+_compute _noinline void CheckItemPedestalLoot(int x, int y, SpawnParams params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -394,7 +392,7 @@ __device__ __noinline__ void CheckItemPedestalLoot(int x, int y, SpawnParams par
 
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
-__device__ __noinline__ void CheckUtilityBoxLoot(int x, int y, SpawnParams params)
+_compute _noinline void CheckUtilityBoxLoot(int x, int y, SpawnParams params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -468,8 +466,9 @@ __device__ __noinline__ void CheckUtilityBoxLoot(int x, int y, SpawnParams param
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
 
-__device__ void spawnHeart(int x, int y, SpawnParams params)
+_compute void spawnHeart(int x, int y, SpawnParams params)
 {
+	if (!params.sCfg.biomeChests) return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	float heart_spawn_percent = 0.7f;
@@ -521,8 +520,9 @@ __device__ void spawnHeart(int x, int y, SpawnParams params)
 		}
 	}
 }
-__device__ void spawnChest(int x, int y, SpawnParams params)
+_compute void spawnChest(int x, int y, SpawnParams params)
 {
+	if (!params.sCfg.biomeChests) return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	random.SetRandomSeed(x, y);
 	int super_chest_spawn_rate = params.sCfg.greedCurse ? 100 : 2000;
@@ -533,22 +533,24 @@ __device__ void spawnChest(int x, int y, SpawnParams params)
 	else
 		CheckNormalChestLoot(x, y, false, params);
 }
-__device__ void spawnPotion(int x, int y, SpawnParams params)
+_compute void spawnPotion(int x, int y, SpawnParams params)
 {
+	if (!params.sCfg.biomePedestals) return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	float rnd = random.ProceduralRandomf(x, y, 0, 1);
 
 	if (rnd > 0.65f)
 		CheckItemPedestalLoot(x + 5, y - 4, params);
 }
-__device__ void spawnWand(int x, int y, SpawnParams params)
+_compute void spawnWand(int x, int y, SpawnParams params)
 {
-	NollaPRNG random = NollaPRNG(params.seed);
-	if (!spawnItem(x, y, params)) return;
+	if (!params.sCfg.biomeAltars) return;
+	if (!params.spawnItem(x, y, params)) return;
 
+	NollaPRNG random = NollaPRNG(params.seed);
 	int nx = x - 5;
 	int ny = y - 14;
-	BiomeWands wandSet = AllBiomeData[params.currentSector.b].wandTiers;
+	BiomeWands wandSet = *AllWandLevels[params.currentSector.b];
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
 	float r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
@@ -570,7 +572,7 @@ __device__ void spawnWand(int x, int y, SpawnParams params)
 	}
 }
 
-__device__ void LoadPixelScene(int x, int y, PixelSceneList list, SpawnParams params)
+_compute void LoadPixelScene(int x, int y, PixelSceneList list, SpawnParams params)
 {
 	
 	NollaPRNG random = NollaPRNG(params.seed);
@@ -635,7 +637,7 @@ __device__ void LoadPixelScene(int x, int y, PixelSceneList list, SpawnParams pa
 		}
 	}
 }
-__device__ void SpawnEnemies(int x, int y, EnemyList list, SpawnParams params)
+_compute void SpawnEnemies(int x, int y, EnemyList list, SpawnParams params)
 {
 	NollaPRNG random = NollaPRNG(params.seed);
 	float rnd2 = random.ProceduralRandomf(x, y, 0, list.probSum);
@@ -709,7 +711,7 @@ if (w.capacity > 30)
 }
 */
 
-__device__ void spawnHellShop(int x, int y, SpawnParams params)
+_compute void spawnHellShop(int x, int y, SpawnParams params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -721,14 +723,14 @@ __device__ void spawnHellShop(int x, int y, SpawnParams params)
 	writeShort(params.bytes, params.offset, GetRandomAction(params.seed, x, y, 10, 0));
 }
 
-__device__ Wand GetShopWand(NollaPRNG& random, double x, double y, int level)
+_compute Wand GetShopWand(NollaPRNG& random, double x, double y, int level)
 {
 	random.SetRandomSeed(x, y);
 	bool shuffle = random.Random(0, 100) <= 50;
 	return GetWandWithLevel(random.world_seed, x, y, level, shuffle, false);
 }
 
-__device__ void CheckMountains(int seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
+_compute void CheckMountains(int seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
 	if (sCfg.pacifist)
 	{
@@ -775,9 +777,9 @@ __device__ void CheckMountains(int seed, SpawnableConfig sCfg, uint8_t* bytes, i
 					{
 						Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier));
 						writeByte(bytes, offset, DATA_WAND);
-						memcpy(bytes + offset, &w.capacity, 37);
+						cMemcpy(bytes + offset, &w.capacity, 37);
 						offset += 37;
-						memcpy(bytes + offset, w.spells, w.spellCount * 3);
+						cMemcpy(bytes + offset, w.spells, w.spellCount * 3);
 						offset += w.spellCount * 3;
 					}
 					writeInt(bytes, countOffset, offset - countOffset - 4);
@@ -804,7 +806,7 @@ __device__ void CheckMountains(int seed, SpawnableConfig sCfg, uint8_t* bytes, i
 		}
 	}
 }
-__device__ void CheckEyeRooms(int seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
+_compute void CheckEyeRooms(int seed, SpawnableConfig sCfg, uint8_t* bytes, int& offset, int& sCount)
 {
 	Vec2i positions[8] = { {-3992, 5380}, {-3971, 5397}, {-3949, 5414}, {-3926, 5428}, {-3758, 5424}, {-3735, 5410}, {-3713, 5393}, {-3692, 5376} };
 	if (sCfg.eyeRooms)
@@ -831,9 +833,20 @@ __device__ void CheckEyeRooms(int seed, SpawnableConfig sCfg, uint8_t* bytes, in
 	}
 }
 
-__device__ void CheckSpawnables(uint8_t* res, SpawnParams params, int maxMemory)
+_compute void CheckSpawnables(uint8_t* res, SpawnParams params, int maxMemory)
 {
-	BiomeFnPtrs[params.currentSector.b](params);
+	BiomeSpawnFunctions* funcs = AllSpawnFunctions[params.currentSector.b];
+	funcs->setSharedFuncs(params);
+
+	BiomeSpawnFunctions defaultFunctions(6, NULL, {
+		SpawnFunction(0x78ffff, spawnHeart),
+		SpawnFunction(0x55ff8c, spawnChest),
+		SpawnFunction(0x50a000, spawnPotion),
+		SpawnFunction(0x00ff00, spawnWand),
+		SpawnFunction(0xff0000, params.spawnSmallEnemies),
+		SpawnFunction(0x800000, params.spawnBigEnemies),
+		//SpawnFunction(0x808000, spawnHellShop),
+	});
 
 	uint8_t* map = res + 4 * 3 * params.currentSector.map_w;
 
@@ -842,111 +855,48 @@ __device__ void CheckSpawnables(uint8_t* res, SpawnParams params, int maxMemory)
 		for (int py = 0; py < params.currentSector.map_h; py++)
 		{
 			int pixelPos = 3 * (px + py * params.currentSector.map_w);
+			//0x0000XX and 0xFFFFXX never appear in the spawn functions, and black and white are common, so we can save resources by skipping them
 			if (map[pixelPos] == 0 && map[pixelPos + 1] == 0)
 				continue;
 			if (map[pixelPos] == 255 && map[pixelPos + 1] == 255)
 				continue;
 
-			//avoids having to switch every loop
-			auto func = spawnChest;
 			uint32_t pix = createRGB(map[pixelPos], map[pixelPos + 1], map[pixelPos + 2]);
-			for (int pwY = params.sCfg.pwCenter.y - params.sCfg.pwWidth.y; pwY <= params.sCfg.pwCenter.y + params.sCfg.pwWidth.y; pwY++)
+			auto func = spawnChest;
+			bool check = false;
+
+			for (int i = 0; i < defaultFunctions.count; i++)
 			{
-				bool check = false;
-				switch (pix)
+				if (defaultFunctions.funcs[i].color == pix)
 				{
-				case 0x78ffff:
-					if (params.sCfg.biomeChests && pwY == 0)
-					{
-						func = spawnHeart;
-						check = true;
-					}
-					else continue;
+					func = defaultFunctions.funcs[i].func;
+					check = true;
 					break;
-				case 0x55ff8c:
-					if (params.sCfg.biomeChests && pwY == 0)
-					{
-						func = spawnChest;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0xff0aff:
-					if (params.sCfg.biomePixelScenes && pwY == 0)
-					{
-						func = spawnPixelScene01;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0xff0080:
-					if (params.sCfg.biomePixelScenes && pwY == 0)
-					{
-						func = spawnPixelScene02;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0xc35700:
-					if (params.sCfg.biomePixelScenes && pwY == 0)
-					{
-						func = spawnPixelScene03;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0x50a000:
-					if (params.sCfg.biomePedestals && pwY == 0)
-					{
-						func = spawnPotion;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0x00ff00:
-					if (params.sCfg.biomeAltars && pwY == 0)
-					{
-						func = spawnWand;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0xff0000:
-					if (params.sCfg.biomeEnemies && pwY == 0)
-					{
-						func = spawnSmallEnemies;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0x800000:
-					if (params.sCfg.biomeEnemies && pwY == 0)
-					{
-						func = spawnBigEnemies;
-						check = true;
-					}
-					else continue;
-					break;
-				case 0x808000:
-					if (params.sCfg.hellShops && pwY != 0)
-					{
-						func = spawnHellShop;
-						check = true;
-					}
-					else continue;
-					break;
-				default:
-					continue;
 				}
-
-				if (check)
+			}
+			if (!check)
+			{
+				for (int i = 0; i < funcs->count; i++)
 				{
-					Vec2i gp2 = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
-					Vec2i chunk = GetLocalPos(gp2.x, gp2.y);
-					Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
-					if (cBiome != params.currentSector.b)
-						continue;
+					if (funcs->funcs[i].color == pix)
+					{
+						func = funcs->funcs[i].func;
+						check = true;
+						break;
+					}
+				}
+			}
 
+			if (check)
+			{
+				Vec2i gp2 = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, px * 10, py * 10);
+				Vec2i chunk = GetLocalPos(gp2.x, gp2.y);
+				Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
+				if (cBiome != params.currentSector.b)
+					continue;
+
+				for (int pwY = params.sCfg.pwCenter.y - params.sCfg.pwWidth.y; pwY <= params.sCfg.pwCenter.y + params.sCfg.pwWidth.y; pwY++)
+				{
 					for (int pwX = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x; pwX <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pwX++)
 					{
 						Vec2i gp = GetGlobalPos(params.currentSector.worldX + 70 * pwX, params.currentSector.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
@@ -961,7 +911,7 @@ __device__ void CheckSpawnables(uint8_t* res, SpawnParams params, int maxMemory)
 	}
 }
 
-__device__ SpawnableBlock ParseSpawnableBlock(uint8_t* bytes, uint8_t* putSpawnablesHere, SpawnableConfig sCfg, int maxMemory)
+_compute SpawnableBlock ParseSpawnableBlock(uint8_t* bytes, uint8_t* putSpawnablesHere, SpawnableConfig sCfg, int maxMemory)
 {
 	int offset = 0;
 	int seed = readInt(bytes, offset);

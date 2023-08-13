@@ -1,25 +1,15 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../biomes/coalmine.h"
-#include "../biomes/coalmine_alt.h"
+//#include "../biomes/coalmine_alt.h"
 //todo excavationsite
-#include "../biomes/liquidcave.h"
+//#include "../biomes/liquidcave.h"
 
-__device__ void SetFunctionPointerSetterFunctionPointerArrayPointers()
+_compute void SetSpawnFuncsFromGlobals()
 {
-	BiomeFnPtrs[B_COALMINE] = FUNCS_COALMINE::SetFunctionPointers;
-	BiomeFnPtrs[B_COALMINE_ALT] = FUNCS_COALMINE_ALT::SetFunctionPointers;
+	AllSpawnFunctions[B_COALMINE] = &DAT_COALMINE;
+	AllWandLevels[B_COALMINE] = &FUNCS_COALMINE::wandLevels;
 
-	BiomeFnPtrs[B_LIQUIDCAVE] = FUNCS_LIQUIDCAVE::SetFunctionPointers;
-}
 
-__host__ void SetBiomeData(BiomeData* ptr)
-{
-	ptr[B_COALMINE] = DAT_COALMINE;
-	ptr[B_COALMINE_ALT] = DAT_COALMINE_ALT;
-
-	ptr[B_LIQUIDCAVE] = DAT_LIQUIDCAVE;
 }

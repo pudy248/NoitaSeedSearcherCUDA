@@ -1,8 +1,5 @@
 #pragma once
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
 const char* SpawnableTypeNames[] = {
 	"CHEST",
 	"GREAT_CHEST",

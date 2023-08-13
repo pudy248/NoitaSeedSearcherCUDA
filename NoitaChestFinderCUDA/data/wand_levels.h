@@ -1,7 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/IPlatform.h"
 
 #include "../structs/primitives.h"
 #include "../structs/enums.h"
@@ -133,43 +131,43 @@
 } 
 };*/
 
-__device__ bool wandCheck_fungicave(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_fungicave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.06;
 }
-__device__ bool wandCheck_snowcave(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_snowcave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.45;
 }
-__device__ bool wandCheck_snowcastle(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_snowcastle(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.2;
 }
-__device__ bool wandCheck_rainforest(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_rainforest(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.27;
 }
-__device__ bool wandCheck_vault(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_vault(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.93;
 }
-__device__ bool wandCheck_crypt(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_crypt(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r > 0.38;
 }
-__device__ bool wandCheck_sandcave(NollaPRNG& random, int x, int y)
+__compute__ bool wandCheck_sandcave(NollaPRNG& random, int x, int y)
 {
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 	return r < 0.94;
 }
 
-__device__ bool(*wandChecks[])(NollaPRNG&, int, int) = {
+__compute__ bool(*wandChecks[])(NollaPRNG&, int, int) = {
 	wandCheck_fungicave,
 	wandCheck_snowcave,
 	wandCheck_snowcastle,

@@ -1,7 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "primitives.h"
 #include "enums.h"
@@ -10,15 +8,15 @@ struct AlchemyRecipe
 {
 	Material mats[4];
 
-	__universal__ AlchemyRecipe() {}
-	__universal__ AlchemyRecipe(Material mat1, Material mat2, Material mat3)
+	_universal AlchemyRecipe() {}
+	_universal AlchemyRecipe(Material mat1, Material mat2, Material mat3)
 	{
 		mats[0] = mat1;
 		mats[1] = mat2;
 		mats[2] = mat3;
 	}
 
-	__universal__ static bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered)
+	_universal static bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered)
 	{
 		if (ordered == STRICT_ORDERED)
 		{
@@ -55,11 +53,11 @@ struct FungalShift
 	bool toFlask;
 	int minIdx;
 	int maxIdx;
-	__universal__ constexpr FungalShift()
+	_universal constexpr FungalShift()
 		: from(SS_NONE), to(SD_NONE), fromFlask(false), toFlask(false), minIdx(0), maxIdx(0)
 	{
 	}
-	__universal__ FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx)
+	_universal FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx)
 	{
 		if (_from == SS_FLASK) { from = SS_NONE; fromFlask = true; }
 		else { from = _from; fromFlask = false; }

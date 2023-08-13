@@ -1,14 +1,11 @@
 #pragma once
+#include "../platforms/platform_compute_helpers.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "../structs/primitives.h"
 #include "../structs/enums.h"
 #include "../structs/staticPrecheckStructs.h"
 
-constexpr int perkCount = 106;
-__device__ const PerkData perkAttrs[] =
+_data constexpr int perkCount = 106;
+_data const PerkData perkAttrs[] =
 {
 	{true}, //CRITICAL_HIT
 	{true, true}, //BREATH_UNDERWATER
@@ -118,7 +115,7 @@ __device__ const PerkData perkAttrs[] =
 	{true} //MEGA_BEAM_STONE
 };
 
-__device__ const signed char perkStackableDistances[] = {
+_data const signed char perkStackableDistances[] = {
 	4,
 	4,
 	4,

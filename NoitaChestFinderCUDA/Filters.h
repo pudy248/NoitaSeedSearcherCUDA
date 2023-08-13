@@ -1,18 +1,17 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "platforms/platform_compute_helpers.h"
 
 #include "structs/primitives.h"
 #include "structs/enums.h"
 #include "structs/spawnableStructs.h"
+#include "misc/utilities.h"
 
 #include "data/uiNames.h"
 
 #include "Output.h"
 #include "Configuration.h"
 
-__device__ void PrintBytes(uint8_t* ptr, int count)
+_compute void PrintBytes(uint8_t* ptr, int count)
 {
 	char buffer[2000];
 	int offset = 0;
@@ -29,7 +28,7 @@ __device__ void PrintBytes(uint8_t* ptr, int count)
 	printf("%s\n", buffer);
 }
 
-__device__ void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
+_compute void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -69,7 +68,7 @@ __device__ void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
 	}
 }
 
-__device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& foundCount)
+_compute void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& foundCount)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -116,7 +115,7 @@ __device__ void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& found
 	}
 }
 
-__device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, int& foundCount)
+_compute void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, int& foundCount)
 {
 	int count = readMisaligned(&(s->count));
 	int largestChain = 0;
@@ -190,7 +189,7 @@ __device__ void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, i
 	if (sf.consecutive) foundCount = largestChain;
 }
 
-__device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
+_compute bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -221,7 +220,7 @@ __device__ bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 	return false;
 }
 
-__device__ void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& foundCount)
+_compute void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& foundCount)
 {
 	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
@@ -265,7 +264,7 @@ __device__ void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& 
 	}
 }
 
-__device__ bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, bool write)
+_compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, bool write)
 {
 	int relevantSpawnableCount = 0;
 	Spawnable* relevantSpawnables[50];

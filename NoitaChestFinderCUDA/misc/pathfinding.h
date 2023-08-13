@@ -1,14 +1,10 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "../structs/primitives.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "worldgen_helpers.h"
 
 /*
-__device__ void Push(IntPair* stackMem, IntPair* stackCache, int* cacheSize, int* stackSize) {
+_compute void Push(IntPair* stackMem, IntPair* stackCache, int* cacheSize, int* stackSize) {
 	//memcpy(stackMem + *stackSize, stackCache, sizeof(IntPair) * *cacheSize);
 	//*stackSize += *cacheSize;
 	//*cacheSize = 0;
@@ -17,14 +13,14 @@ __device__ void Push(IntPair* stackMem, IntPair* stackCache, int* cacheSize, int
 	}
 }
 
-__device__ bool traversable(byte* map, int x, int y, int rmw)
+_compute bool traversable(byte* map, int x, int y, int rmw)
 {
 	long c = getPixelColor(map, rmw, x, y);
 
 	return c == COLOR_BLACK;// || c == COLOR_COFFEE;
 }
 
-__device__ void tryNext(IntPair position, byte *map, byte* visited, IntPair* stackCache, int& cacheSize, int rmw, int rmh)
+_compute void tryNext(IntPair position, byte *map, byte* visited, IntPair* stackCache, int& cacheSize, int rmw, int rmh)
 {
 	if (position.x >= 0 && position.y >= 0 && position.x < rmw && position.y < rmh) {
 		if (visited[position.y * rmw + position.x] == 0 && traversable(map, position.x, position.y, rmw))
@@ -35,7 +31,7 @@ __device__ void tryNext(IntPair position, byte *map, byte* visited, IntPair* sta
 	}
 }
 
-__device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uint map_w, const uint map_h, int x, int y)
+_compute bool findPath(byte* map, byte* stackMemArea, byte* visited, const uint map_w, const uint map_h, int x, int y)
 {
 	int rmw = map_w; //register map width
 	int rmh = map_h; //register map height
@@ -69,14 +65,14 @@ __device__ bool findPath(byte* map, byte* stackMemArea, byte* visited, const uin
 	return pathFound;
 }*/
 
-__device__ bool traversable(uint8_t* map, int x, int y, int rmw)
+_compute bool traversable(uint8_t* map, int x, int y, int rmw)
 {
 	long c = getPixelColor(map, rmw, x, y);
 
 	return c == COLOR_BLACK || c == COLOR_COFFEE || c == COLOR_HELL_GREEN || c == COLOR_FROZEN_VAULT_MINT;
 }
 
-__device__
+_compute
 void tryNext(int x, int y, uint8_t* map, Vec2i* stackCache, int& stackSize, uint8_t* visited, int rmw, int rmh)
 {
 	if (x >= 0 && y >= 0 && x < rmw && y < rmh) {
@@ -88,7 +84,7 @@ void tryNext(int x, int y, uint8_t* map, Vec2i* stackCache, int& stackSize, uint
 	}
 }
 
-__device__ bool findPath(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, const uint32_t map_w, const uint32_t map_h, int x, int y)
+_compute bool findPath(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, const uint32_t map_w, const uint32_t map_h, int x, int y)
 {
 	int rmw = map_w; //register map width
 	int rmh = map_h; //register map height
@@ -120,7 +116,7 @@ __device__ bool findPath(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, 
 	return pathFound;
 }
 
-__device__ bool HasPathToBottom(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, uint32_t map_w, uint32_t map_h, uint32_t path_start_x, bool fixed_x)
+_compute bool HasPathToBottom(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, uint32_t map_w, uint32_t map_h, uint32_t path_start_x, bool fixed_x)
 {
 	if (fixed_x)
 	{
@@ -153,7 +149,7 @@ __device__ bool HasPathToBottom(uint8_t* map, uint8_t* stackMemArea, uint8_t* vi
 	return false;
 }
 
-__device__ bool isValid(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, uint32_t map_w, uint32_t map_h, int worldX, int worldY, bool isCoalMine) {
+_compute bool isValid(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, uint32_t map_w, uint32_t map_h, int worldX, int worldY, bool isCoalMine) {
 	uint32_t path_start_x = 0;
 	bool mainPath = isMainPath(map_w, worldX);
 	if (isCoalMine)

@@ -1,32 +1,11 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "primitives.h"
 #include "enums.h"
 #include "spawnableStructs.h"
 
 #include "../Configuration.h"
-#include "../WorldgenSearch.h"
-
-struct BiomeData
-{
-	BiomeWands wandTiers;
-	PixelSceneList pixel_scenes_01;
-	PixelSceneList pixel_scenes_02;
-	PixelSceneList pixel_scenes_03;
-	EnemyList smallEnemies;
-	EnemyList bigEnemies;
-
-	__universal__ constexpr BiomeData() {};
-
-	__universal__ constexpr BiomeData(BiomeWands _tiers, PixelSceneList _01, PixelSceneList _02, PixelSceneList _03, EnemyList _small, EnemyList _big)
-		: wandTiers(_tiers), pixel_scenes_01(_01), pixel_scenes_02(_02), pixel_scenes_03(_03), smallEnemies(_small), bigEnemies(_big) {}
-};
-
-__device__ BiomeData* AllBiomeData;
-__device__ void(*BiomeFnPtrs[30])(SpawnParams params);
 
 struct BiomeSector
 {
@@ -42,6 +21,12 @@ struct BiomeSector
 	uint32_t map_h;
 };
 
+struct BiomeWangScope
+{
+	uint8_t* tileSet;
+	BiomeSector bSec;
+};
+
 struct SpawnParams
 {
 	int seed;
@@ -50,11 +35,33 @@ struct SpawnParams
 	uint8_t* bytes;
 	int& offset;
 	int& sCount;
+
+	void(*spawnSmallEnemies)(int x, int y, SpawnParams params);
+	void(*spawnBigEnemies)(int x, int y, SpawnParams params);
+	bool(*spawnItem)(int x, int y, SpawnParams params);
 };
 
-__device__ void(*spawnPixelScene01)(int x, int y, SpawnParams params);
-__device__ void(*spawnPixelScene02)(int x, int y, SpawnParams params);
-__device__ void(*spawnPixelScene03)(int x, int y, SpawnParams params);
-__device__ void(*spawnSmallEnemies)(int x, int y, SpawnParams params);
-__device__ void(*spawnBigEnemies)(int x, int y, SpawnParams params);
-__device__ bool(*spawnItem)(int x, int y, SpawnParams params);
+struct SpawnFunction
+{
+	uint32_t color;
+	void(*func)(int, int, SpawnParams);
+
+	_compute constexpr SpawnFunction() : color(0), func(NULL) {}
+	_compute constexpr SpawnFunction(uint32_t _c, void(*_fn)(int, int, SpawnParams)) : color(_c), func(_fn) {}
+};
+
+struct BiomeSpawnFunctions
+{
+	int count;
+	void(*setSharedFuncs)(SpawnParams& params);
+	SpawnFunction funcs[10];
+
+	_compute constexpr BiomeSpawnFunctions() : count(0), setSharedFuncs(NULL), funcs() {}
+	_compute constexpr BiomeSpawnFunctions(int _c, void(*_fn)(SpawnParams& params), std::initializer_list<SpawnFunction> list) : count(_c), setSharedFuncs(_fn), funcs()
+	{
+		for (int i = 0; i < list.size(); i++) funcs[i] = list.begin()[i];
+	}
+};
+
+_compute BiomeSpawnFunctions* AllSpawnFunctions[30];
+_compute BiomeWands* AllWandLevels[30];

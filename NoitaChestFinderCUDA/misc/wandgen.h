@@ -1,7 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/primitives.h"
 #include "../structs/enums.h"
@@ -12,7 +10,7 @@
 
 #include "noita_random.h"
 
-__device__ void GetBestSprite(NollaPRNG* rnd, Wand w)
+_compute void GetBestSprite(NollaPRNG* rnd, Wand w)
 {
 	WandSpaceDat gunInWandSpace = {};
 	gunInWandSpace.fire_rate_wait = fminf(fmaxf(((w.delay + 5) / 7.0f) - 1, 0), 4);
@@ -57,7 +55,7 @@ struct StatProbBlock
 	StatProb probs[10];
 };
 
-__device__ StatProbBlock statProbabilities[] = {
+_compute StatProbBlock statProbabilities[] = {
 	{
 		4, 1.87f,
 		{
@@ -118,7 +116,7 @@ __device__ StatProbBlock statProbabilities[] = {
 		0
 	}
 };
-__device__ StatProbBlock statProbabilitiesBetter[] = {
+_compute StatProbBlock statProbabilitiesBetter[] = {
 	{
 		1, 1,
 		{
@@ -160,7 +158,7 @@ __device__ StatProbBlock statProbabilitiesBetter[] = {
 	}
 };
 
-__device__ Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset)
+_compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset)
 {
 	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
 	random.SetRandomSeed(x, y);
@@ -184,7 +182,7 @@ __device__ Spell GetRandomAction(uint32_t seed, double x, double y, int level, i
 	}
 	return tierProbs[low].s;
 }
-__device__ Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset)
+_compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset)
 {
 	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
 	random.SetRandomSeed(x, y);
@@ -211,7 +209,7 @@ __device__ Spell GetRandomActionWithType(uint32_t seed, double x, double y, int 
 	return tierProbs[low].s;
 }
 
-__device__ StatProb getGunProbs(WandStat s, StatProbBlock* dict, NollaPRNG* random)
+_compute StatProb getGunProbs(WandStat s, StatProbBlock* dict, NollaPRNG* random)
 {
 	if (dict[s].count == 0) return {};
 	float rnd = (float)random->Next() * dict[s].probSum;
@@ -223,7 +221,7 @@ __device__ StatProb getGunProbs(WandStat s, StatProbBlock* dict, NollaPRNG* rand
 	return {};
 }
 
-__device__ void shuffleTable(WandStat table[4], int length, NollaPRNG* random)
+_compute void shuffleTable(WandStat table[4], int length, NollaPRNG* random)
 {
 	for (int i = length - 1; i >= 1; i--)
 	{
@@ -234,32 +232,32 @@ __device__ void shuffleTable(WandStat table[4], int length, NollaPRNG* random)
 	}
 }
 
-__device__ void applyReload(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applyReload(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	int min = fminf(fmaxf(60 - (gun->cost * 5), 1), 240);
 	int max = 1024;
 	gun->reload = (int)fminf(fmaxf(random->RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max);
 	gun->cost -= (60 - gun->reload) / 5;
 }
-__device__ void applyDelay(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applyDelay(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	int min = fminf(fmaxf(16 - gun->cost, -50), 50);
 	int max = 50;
 	gun->delay = (int)fminf(fmaxf(random->RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max);
 	gun->cost -= 16 - gun->delay;
 }
-__device__ void applySpread(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applySpread(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	int min = fminf(fmaxf(gun->cost / -1.5f, -35), 35);
 	int max = 35;
 	gun->spread = (int)fminf(fmaxf(random->RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max);
 	gun->cost -= 16 - gun->spread;
 }
-__device__ void applySpeed(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applySpeed(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	gun->speed = random->RandomDistributionf(prob.min, prob.max, prob.mean, prob.sharpness);
 }
-__device__ void applyCapacity(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applyCapacity(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	int min = 1;
 	int max = fminf(fmaxf((gun->cost / 5) + 6, 1), 20);
@@ -275,7 +273,7 @@ __device__ void applyCapacity(Wand* gun, StatProb prob, NollaPRNG* random)
 	gun->capacity = fminf(fmaxf(random->RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max);
 	gun->cost -= (gun->capacity - 6) * 5;
 }
-__device__ void applyMulticast(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applyMulticast(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	float actionCosts[] = {
 			0,
@@ -296,7 +294,7 @@ __device__ void applyMulticast(Wand* gun, StatProb prob, NollaPRNG* random)
 	gun->multicast = (int)floor(fminf(fmaxf(random->RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max));
 	gun->cost -= actionCosts[(int)(fminf(fmaxf(gun->multicast, 1), 5) - 1)];
 }
-__device__ void applyShuffle(Wand* gun, StatProb prob, NollaPRNG* random)
+_compute void applyShuffle(Wand* gun, StatProb prob, NollaPRNG* random)
 {
 	int rnd = random->Random(0, 1);
 	if (gun->force_unshuffle)
@@ -308,14 +306,14 @@ __device__ void applyShuffle(Wand* gun, StatProb prob, NollaPRNG* random)
 	}
 }
 
-__device__ void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock dict[7], NollaPRNG* random)
+_compute void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock dict[7], NollaPRNG* random)
 {
 	StatProb prob = getGunProbs(s, dict, random);
 	static void (*applyVars[7])(Wand*, StatProb, NollaPRNG*) = { applyReload, applyDelay, applySpread, applySpeed, applyCapacity, applyMulticast, applyShuffle, };
 	applyVars[s](gun, prob, random);
 }
 
-__device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPRNG* random)
+_compute Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPRNG* random)
 {
 	Wand gun = { level };
 	int cost = _cost;
@@ -425,7 +423,7 @@ __device__ Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPR
 
 	return gun;
 }
-__device__ Wand GetWandStatsBetter(int _cost, int level, NollaPRNG* random)
+_compute Wand GetWandStatsBetter(int _cost, int level, NollaPRNG* random)
 {
 	Wand gun = { level, true };
 	int cost = _cost;
@@ -528,7 +526,7 @@ __device__ Wand GetWandStatsBetter(int _cost, int level, NollaPRNG* random)
 	return gun;
 }
 
-__device__ void AddRandomCards(Wand* gun, uint32_t seed, double x, double y, int _level, NollaPRNG* random)
+_compute void AddRandomCards(Wand* gun, uint32_t seed, double x, double y, int _level, NollaPRNG* random)
 {
 	bool is_rare = gun->is_rare;
 	int goodCards = 5;
@@ -649,7 +647,7 @@ __device__ void AddRandomCards(Wand* gun, uint32_t seed, double x, double y, int
 		}
 	}
 }
-__device__ void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, double y, int _level, NollaPRNG* random)
+_compute void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, double y, int _level, NollaPRNG* random)
 {
 	bool is_rare = gun->is_rare;
 	int goodCards = 5;
@@ -729,7 +727,7 @@ __device__ void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, double 
 	}
 }
 
-__device__ Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle)
+_compute Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
@@ -739,7 +737,7 @@ __device__ Wand GetWand(uint32_t seed, double x, double y, int cost, int level, 
 	AddRandomCards(&wand, seed, x, y, level, &random);
 	return wand;
 }
-__device__ Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level)
+_compute Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
@@ -750,7 +748,7 @@ __device__ Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int l
 	return wand;
 }
 
-__device__ __noinline__ Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better)
+_compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better)
 {
 	if (nonshuffle)
 		switch (level)

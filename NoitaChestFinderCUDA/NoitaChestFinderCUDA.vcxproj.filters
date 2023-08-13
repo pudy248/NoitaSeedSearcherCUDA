@@ -23,9 +23,6 @@
     <ClInclude Include="data\spells.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="misc\error.h">
-      <Filter>misc</Filter>
-    </ClInclude>
     <ClInclude Include="misc\noita_random.h">
       <Filter>misc</Filter>
     </ClInclude>
@@ -37,9 +34,6 @@
     </ClInclude>
     <ClInclude Include="misc\utilities.h">
       <Filter>misc</Filter>
-    </ClInclude>
-    <ClInclude Include="data\wand_levels.h">
-      <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="misc\worldgen_helpers.h">
       <Filter>misc</Filter>
@@ -87,9 +81,6 @@
       <Filter>misc</Filter>
     </ClInclude>
     <ClInclude Include="worldSeedGeneration.h" />
-    <ClInclude Include="misc\databaseutils.h">
-      <Filter>misc</Filter>
-    </ClInclude>
     <ClInclude Include="gui\guiMain.h">
       <Filter>gui</Filter>
     </ClInclude>
@@ -114,14 +105,38 @@
     <ClInclude Include="biomes\allBiomes.h">
       <Filter>biomes</Filter>
     </ClInclude>
-    <ClInclude Include="biomes\coalmine_alt.h">
-      <Filter>biomes</Filter>
+    <ClInclude Include="platforms\platform.h">
+      <Filter>platforms</Filter>
     </ClInclude>
-    <ClInclude Include="biomes\excavationsite.h">
-      <Filter>biomes</Filter>
+    <ClInclude Include="misc\data_generation.h">
+      <Filter>misc</Filter>
     </ClInclude>
-    <ClInclude Include="biomes\liquidcave.h">
-      <Filter>biomes</Filter>
+    <ClInclude Include="platforms\impl_cuda.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform_compute_helpers.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform_api.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cuda_compute_helpers.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cuda_defines.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform_defines.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cpu.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cpu_compute_helpers.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cpu_defines.h">
+      <Filter>platforms</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -139,6 +154,9 @@
     </Filter>
     <Filter Include="biomes">
       <UniqueIdentifier>{06a131a2-f7c4-43c7-a176-6e9005390269}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="platforms">
+      <UniqueIdentifier>{d4593f88-769e-42d8-8677-acdf37596b3f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

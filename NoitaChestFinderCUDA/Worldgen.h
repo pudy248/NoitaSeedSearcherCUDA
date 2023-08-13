@@ -1,9 +1,7 @@
 #pragma once
+#include "platforms/platform_compute_helpers.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "structs/primitives.h"
+#include "structs/biomeStructs.h"
 
 #include "misc/noita_random.h"
 #include "misc/stb_hbwang.h"
@@ -12,19 +10,7 @@
 
 #include "Configuration.h"
 
-struct BiomeWangScope
-{
-	uint8_t* tileSet;
-	BiomeSector bSec;
-};
-
-__global__ void buildTS(uint8_t* dTileData, uint8_t* dTileSet, int tiles_w, int tiles_h)
-{
-	MemoryArena arena = { dTileSet, 0 };
-	stbhw_build_tileset_from_image(dTileData, arena, tiles_w * 3, tiles_w, tiles_h);
-}
-
-__device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_t* output, uint8_t* res, uint8_t* visited, uint8_t* miscMem)
+_compute void GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_t* output, uint8_t* res, uint8_t* visited, uint8_t* miscMem)
 {
 	constexpr int MAX_TRIES = 100;
 
@@ -54,6 +40,6 @@ __device__ uint8_t* GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_
 #ifdef IMAGE_OUTPUT
 	memcpy(output + 4, &scope.bSec.map_w, 4);
 	memcpy(output + 8, &scope.bSec.map_h, 4);
-	memcpy(output + 12, map, 3 * scope.bSec.map_w * scope.bSec.map_h);
+	dMemcpy(output + 12, map, 3 * scope.bSec.map_w * scope.bSec.map_h);
 #endif
 }

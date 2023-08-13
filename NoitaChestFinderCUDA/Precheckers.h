@@ -1,9 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "structs/primitives.h"
+#include "platforms/platform_compute_helpers.h"
 
 #include "data/rains.h"
 #include "data/alchemy.h"
@@ -14,7 +10,6 @@
 
 #include "defines.h"
 #include "misc/noita_random.h"
-#include "misc/utilities.h"
 
 #include "WorldgenSearch.h"
 #include "Filters.h"
@@ -22,7 +17,7 @@
 
 #include <iostream>
 
-__device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed)
+_compute AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed)
 {
 	AlchemyRecipe result;
 	int counter = 0;
@@ -75,13 +70,13 @@ __device__ AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed)
 }
 
 constexpr int materialVarEntryCount = 10;
-__device__ static bool MaterialRefEquals(Material reference, Material test)
+_compute static bool MaterialRefEquals(Material reference, Material test)
 {
 	if (reference == MATERIAL_NONE) return true;
 	if (test == MATERIAL_NONE) return false;
 	return reference == test;
 }
-__device__ static bool MaterialEquals(Material reference, Material test, bool writeRef, int* ptrs, Material* variables)
+_compute static bool MaterialEquals(Material reference, Material test, bool writeRef, int* ptrs, Material* variables)
 {
 	if (reference == MATERIAL_NONE) return true;
 	else if ((int)reference <= MATERIAL_VAR4)
@@ -130,7 +125,7 @@ __device__ static bool MaterialEquals(Material reference, Material test, bool wr
 	return reference == test;
 }
 
-__device__ static bool FungalShiftEquals(FungalShift reference, FungalShift test, int ptrs[4], Material vars[materialVarEntryCount * 4])
+_compute static bool FungalShiftEquals(FungalShift reference, FungalShift test, int ptrs[4], Material vars[materialVarEntryCount * 4])
 {
 	if (reference.fromFlask && !test.fromFlask) return false;
 	if (reference.toFlask && !test.toFlask) return false;
@@ -139,7 +134,7 @@ __device__ static bool FungalShiftEquals(FungalShift reference, FungalShift test
 	return true;
 }
 
-__device__ void shuffle_table(uint8_t* perk_deck, NollaPRNG& rng, int iters)
+_compute void shuffle_table(uint8_t* perk_deck, NollaPRNG& rng, int iters)
 {
 	for (int i = iters; i > 0; i--)
 	{
@@ -150,17 +145,16 @@ __device__ void shuffle_table(uint8_t* perk_deck, NollaPRNG& rng, int iters)
 	}
 }
 
-__device__ bool CheckCart(SQLRow& row, NollaPRNG& random, StartingCartConfig c)
+_compute bool CheckCart(NollaPRNG& random, StartingCartConfig c)
 {
 	float r = random.ProceduralRandomf(673, -100, 0, 1) * 0.505f;
 	CartType cart = SKATEBOARD;
 	if (r < 0.25f) cart = MINECART;
 	else if (r < 0.5f) cart = WOODCART;
-	row.CART = cart;
 	return c.cart == cart;
 }
 
-__device__ bool CheckRain(SQLRow& row, NollaPRNG& random, RainConfig c)
+_compute bool CheckRain(NollaPRNG& random, RainConfig c)
 {
 	float rainfall_chance = 1.0f / 15;
 	Vec2i rnd = { 7893434, 3458934 };
@@ -170,11 +164,10 @@ __device__ bool CheckRain(SQLRow& row, NollaPRNG& random, RainConfig c)
 		int seedRainIndex = pick_random_from_table_backwards(rainProbs, rainCount, random, rnd);
 		rain = rainMaterials[seedRainIndex];
 	}
-	row.RAIN = rain;
 	return c.rain == rain;
 }
 
-__device__ bool CheckStartingFlask(SQLRow& row, NollaPRNG& random, StartingFlaskConfig c)
+_compute bool CheckStartingFlask(NollaPRNG& random, StartingFlaskConfig c)
 {
 	random.SetRandomSeed(-4.5, -4);
 	Material material = Material::MATERIAL_NONE;
@@ -218,11 +211,10 @@ __device__ bool CheckStartingFlask(SQLRow& row, NollaPRNG& random, StartingFlask
 		else if (random.Random(0, 1) == 0) material = Material::SLIME;
 		else material = Material::GUNPOWDER_UNSTABLE;
 	}
-	row.FLASK = material;
 	return material == c.flask;
 }
 
-__device__ bool CheckStartingWands(SQLRow& row, NollaPRNG& random, StartingWandConfig c)
+_compute bool CheckStartingWands(NollaPRNG& random, StartingWandConfig c)
 {
 	if (c.projectile != SPELL_NONE)
 	{
@@ -268,22 +260,16 @@ __device__ bool CheckStartingWands(SQLRow& row, NollaPRNG& random, StartingWandC
 	return true;
 }
 
-__device__ bool CheckAlchemy(SQLRow& row, NollaPRNG& random, AlchemyConfig c)
+_compute bool CheckAlchemy(NollaPRNG& random, AlchemyConfig c)
 {
 	NollaPRNG prng((int)(random.world_seed * 0.17127 + 1323.5903));
 	for (int i = 0; i < 6; i++) prng.Next();
 	AlchemyRecipe lc = MaterialPicker(prng, random.world_seed);
 	AlchemyRecipe ap = MaterialPicker(prng, random.world_seed);
-	row.LC1 = lc.mats[0];
-	row.LC2 = lc.mats[1];
-	row.LC3 = lc.mats[2];
-	row.AP1 = ap.mats[0];
-	row.AP2 = ap.mats[1];
-	row.AP3 = ap.mats[2];
 	return AlchemyRecipe::Equals(c.LC, lc, c.ordering) && AlchemyRecipe::Equals(c.AP, ap, c.ordering);
 }
 
-__device__ bool CheckFungalShifts(SQLRow& row, NollaPRNG& random, FungalShiftConfig c)
+_compute bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c)
 {
 	FungalShift generatedShifts[maxFungalShifts];
 	for (int i = 0; i < maxFungalShifts; i++)
@@ -335,7 +321,7 @@ __device__ bool CheckFungalShifts(SQLRow& row, NollaPRNG& random, FungalShiftCon
 	return true;
 }
 
-__device__ bool CheckBiomeModifiers(SQLRow& row, NollaPRNG& random, BiomeModifierConfig c)
+_compute bool CheckBiomeModifiers(NollaPRNG& random, BiomeModifierConfig c)
 {
 	BiomeModifier modifiers[9];
 	memset(modifiers, 0, 9);
@@ -352,7 +338,7 @@ __device__ bool CheckBiomeModifiers(SQLRow& row, NollaPRNG& random, BiomeModifie
 	return true;
 }
 
-__device__ bool CheckPerks(SQLRow& row, NollaPRNG& random, PerkConfig c)
+_compute bool CheckPerks(NollaPRNG& random, PerkConfig c)
 {
 	random.SetRandomSeedInt(1, 2);
 
@@ -459,7 +445,7 @@ __device__ bool CheckPerks(SQLRow& row, NollaPRNG& random, PerkConfig c)
 }
 
 
-__device__ bool PrecheckSeed(SQLRow& outputRow, uint32_t seed, StaticPrecheckConfig c)
+_compute bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c)
 {
 	NollaPRNG sharedRandom = NollaPRNG(seed);
 	/*for (int max_safe_polymorphs = 0; max_safe_polymorphs < 100; max_safe_polymorphs++)
@@ -471,39 +457,29 @@ __device__ bool PrecheckSeed(SQLRow& outputRow, uint32_t seed, StaticPrecheckCon
 
 	//Keep ordered by total runtime, so faster checks are run first and long checks can be skipped
 
-	constexpr bool generateForDB = false;
-
-	if (generateForDB)
-	{
-		CheckCart(outputRow, sharedRandom, c.cart);
-		CheckStartingFlask(outputRow, sharedRandom, c.flask);
-		CheckRain(outputRow, sharedRandom, c.rain);
-		CheckAlchemy(outputRow, sharedRandom, c.alchemy);
-	}
-
 	if (c.cart.check)
-		if (!CheckCart(outputRow, sharedRandom, c.cart)) return false;
+		if (!CheckCart(sharedRandom, c.cart)) return false;
 
 	if (c.flask.check)
-		if (!CheckStartingFlask(outputRow, sharedRandom, c.flask)) return false;
+		if (!CheckStartingFlask(sharedRandom, c.flask)) return false;
 
 	if (c.wands.check)
-		if (!CheckStartingWands(outputRow, sharedRandom, c.wands)) return false;
+		if (!CheckStartingWands(sharedRandom, c.wands)) return false;
 
 	if (c.alchemy.check)
-		if (!CheckAlchemy(outputRow, sharedRandom, c.alchemy)) return false;
+		if (!CheckAlchemy(sharedRandom, c.alchemy)) return false;
 
 	if (c.rain.check)
-		if (!CheckRain(outputRow, sharedRandom, c.rain)) return false;
+		if (!CheckRain(sharedRandom, c.rain)) return false;
 
 	if (c.biomes.check)
-		if (!CheckBiomeModifiers(outputRow, sharedRandom, c.biomes)) return false;
+		if (!CheckBiomeModifiers(sharedRandom, c.biomes)) return false;
 
 	if (c.fungal.check)
-		if (!CheckFungalShifts(outputRow, sharedRandom, c.fungal)) return false;
+		if (!CheckFungalShifts(sharedRandom, c.fungal)) return false;
 
 	if (c.perks.check)
-		if (!CheckPerks(outputRow, sharedRandom, c.perks)) return false;
+		if (!CheckPerks(sharedRandom, c.perks)) return false;
 
 	return true;
 }

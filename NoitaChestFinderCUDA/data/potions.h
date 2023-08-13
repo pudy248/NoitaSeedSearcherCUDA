@@ -1,12 +1,10 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/enums.h"
 
-constexpr int standardMaterialCount = 11;
-__device__ const Material potionMaterialsStandard[] = {
+_data constexpr int standardMaterialCount = 11;
+_data const Material potionMaterialsStandard[standardMaterialCount] = {
 	LAVA,
 	WATER,
 	BLOOD,
@@ -20,8 +18,8 @@ __device__ const Material potionMaterialsStandard[] = {
 	BLOOD_COLD
 };
 
-constexpr int magicMaterialCount = 12;
-__device__ const Material potionMaterialsMagic[] = {
+_data constexpr int magicMaterialCount = 12;
+_data const Material potionMaterialsMagic[magicMaterialCount] = {
 	MAGIC_LIQUID_UNSTABLE_TELEPORTATION,
 	MAGIC_LIQUID_POLYMORPH,
 	MAGIC_LIQUID_RANDOM_POLYMORPH,
@@ -36,8 +34,8 @@ __device__ const Material potionMaterialsMagic[] = {
 	MAGIC_LIQUID_MANA_REGENERATION
 };
 
-constexpr int secretMaterialCount = 13;
-__device__ const Material potionMaterialsSecret[] = {
+_data constexpr int secretMaterialCount = 13;
+_data const Material potionMaterialsSecret[secretMaterialCount] = {
 	MAGIC_LIQUID_HP_REGENERATION_UNSTABLE,
 	BLOOD_WORM,
 	GOLD,
@@ -53,8 +51,8 @@ __device__ const Material potionMaterialsSecret[] = {
 	PURIFYING_POWDER
 };
 
-constexpr int sandMaterialCount = 82;
-__device__ const Material potionSands[] = {
+_data constexpr int sandMaterialCount = 82;
+_data const Material potionSands[sandMaterialCount] = {
 	MUD,
 	CONCRETE_SAND,
 	SAND,
@@ -139,8 +137,8 @@ __device__ const Material potionSands[] = {
 	FUNGI_YELLOW,
 };
 
-constexpr int liquidMaterialCount = 92;
-__device__ const Material potionLiquids[] = {
+_data constexpr int liquidMaterialCount = 93;
+_data const Material potionLiquids[liquidMaterialCount] = {
 	WATER,
 	WATER_TEMP,
 	WATER_ICE,

@@ -1,13 +1,10 @@
 #pragma once
+#include "../platforms/platform_compute_helpers.h"
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
-#include "../structs/primitives.h"
 #include "../structs/enums.h"
 #include "../structs/spawnableStructs.h"
 
-__device__ const static WandSprite wandSprites[] = {
+_data const static WandSprite wandSprites[] = {
 {"Spread staff",0,2,2,21,5,4,1,true,5,1,1},
 {"Burst staff",1,2,2,19,5,3,0,false,6,0,1},
 {"Eradication staff",2,1,1,21,6,3,1,false,7,0,0},

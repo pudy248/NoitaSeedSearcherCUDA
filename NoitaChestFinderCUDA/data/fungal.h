@@ -1,12 +1,10 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/enums.h"
 
-constexpr auto fungalMaterialsFromCount = 18;
-__device__ const ShiftSource fungalMaterialsFrom[] = {
+_data constexpr int fungalMaterialsFromCount = 18;
+_data const ShiftSource fungalMaterialsFrom[] = {
 	SS_WATER,
 	SS_LAVA,
 	SS_RADIOACTIVE_LIQUID,
@@ -26,8 +24,8 @@ __device__ const ShiftSource fungalMaterialsFrom[] = {
 	SS_ROCK_STATIC,
 	SS_GOLD
 };
-constexpr auto fungalSumFrom = 11.4503f;
-__device__ const float fungalProbsFrom[] = {
+_data constexpr float fungalSumFrom = 11.4503f;
+_data const float fungalProbsFrom[] = {
 	1,
 	1,
 	1,
@@ -48,8 +46,8 @@ __device__ const float fungalProbsFrom[] = {
 	0.0003f,
 };
 
-constexpr auto fungalMaterialsToCount = 31;
-__device__ const ShiftDest fungalMaterialsTo[] = {
+_data constexpr int fungalMaterialsToCount = 31;
+_data const ShiftDest fungalMaterialsTo[] = {
 	SD_WATER,
 	SD_LAVA,
 	SD_RADIOACTIVE_LIQUID,
@@ -82,8 +80,8 @@ __device__ const ShiftDest fungalMaterialsTo[] = {
 	SD_VOID_LIQUID,
 	SD_CHEESE_STATIC,
 };
-constexpr auto fungalSumTo = 20.63f;
-__device__ const float fungalProbsTo[] = {
+_data constexpr float fungalSumTo = 20.63f;
+_data const float fungalProbsTo[] = {
 	1,
 	1,
 	1,

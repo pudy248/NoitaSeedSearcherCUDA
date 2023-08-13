@@ -1,5 +1,7 @@
 #pragma once
+#include "platforms/platform_compute_helpers.h"
 
+#include <cstdint>
 #include <cmath>
 
 int SetWorldSeedHelper(double r)

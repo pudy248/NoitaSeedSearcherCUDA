@@ -81,6 +81,7 @@ struct SfmlSharedState
 
 	MouseRect* clickedRect = NULL;
 	TextInput* selectedText = NULL;
+
 } *sfmlState;
 struct GuiPrimitive
 {
@@ -189,7 +190,7 @@ void DrawImage(RawImage image, sf::FloatRect rect)
 struct ColorRect : GuiPrimitive
 {
 	sf::Color color;
-
+	ColorRect() = default;
 	ColorRect(sf::FloatRect _rect, sf::Color _color)
 	{
 		mRect = { _rect, false };
@@ -206,18 +207,27 @@ struct OutlinedRect : GuiPrimitive
 	float outlineThickness;
 	sf::Color color;
 	sf::Color outlineColor;
-
-	OutlinedRect(sf::FloatRect _rect, float _thickness, sf::Color _color, sf::Color _outlineColor)
+	bool fill = false;
+	OutlinedRect() = default;
+	OutlinedRect(sf::FloatRect _rect, float _thickness, sf::Color _outlineColor)
 	{
 		mRect = { _rect, false };
 		outlineThickness = _thickness;
-		color = _color;
 		outlineColor = _outlineColor;
+		fill = false;
+	}
+	OutlinedRect(sf::FloatRect _rect, float _thickness, sf::Color _outlineColor, sf::Color _fillColor)
+	{
+		mRect = { _rect, false };
+		outlineThickness = _thickness;
+		outlineColor = _outlineColor;
+		color = _fillColor;
+		fill = true;
 	}
 
 	void Render()
 	{
-		DrawRectOutline(mRect.rect, outlineThickness, color, outlineColor);
+		DrawRectOutline(mRect.rect, outlineThickness, fill ? color : sf::Color::Transparent, outlineColor);
 	}
 };
 struct BGTextRect : GuiPrimitive

@@ -21,10 +21,10 @@ struct TabSelector : GuiObject
 		sf::Color textCol = sf::Color::White;
 		sf::Color bgCol = sf::Color(20, 20, 20);
 		selectedTab = 0;
-		staticConfig = BGTextRect("static tab", sf::FloatRect(50, 20, 110, 50), 36, textCol, bgCol);
-		worldConfig = BGTextRect("world tab", sf::FloatRect(170, 20, 110, 50), 36, textCol, bgCol);
-		searchConfig = BGTextRect("search tab", sf::FloatRect(290, 20, 110, 50), 36, textCol, bgCol);
-		output = BGTextRect("output tab", sf::FloatRect(410, 20, 110, 50), 36, textCol, bgCol);
+		staticConfig = BGTextRect("static tab", sf::FloatRect(20, 20, 110, 50), 36, textCol, bgCol);
+		worldConfig = BGTextRect("world tab", sf::FloatRect(140, 20, 110, 50), 36, textCol, bgCol);
+		searchConfig = BGTextRect("search tab", sf::FloatRect(260, 20, 110, 50), 36, textCol, bgCol);
+		output = BGTextRect("output tab", sf::FloatRect(380, 20, 110, 50), 36, textCol, bgCol);
 	}
 
 	void Render()
@@ -77,11 +77,11 @@ struct TabSelector : GuiObject
 
 struct StaticConfigTab : GuiObject
 {
-	AlignedTextRect bg;
+	ColorRect bg;
 
 	StaticConfigTab()
 	{
-		bg = AlignedTextRect("STATIC CONFIG!", sf::FloatRect(100, 100, 500, 200), 128, sf::Color::White, 1, 0, 0);
+		bg = ColorRect(sf::FloatRect(20, 90, 1880, 970), sf::Color(30, 30, 30));
 	}
 
 	void Render()
@@ -137,7 +137,22 @@ struct SearchConfigTab : GuiObject
 	SearchConfigTab()
 	{
 		bg = AlignedTextRect("SEARCH CONFIG!", sf::FloatRect(100, 100, 500, 200), 128, sf::Color::White, 1, 0, 0);
-		dropdown.drawRect = sf::FloatRect(100, 100, 500, 500);
+
+		dropdown.openRect = sf::FloatRect(100, 100, 500, 500);
+
+		dropdown.numElements = 20;
+		char buffer[4];
+		char** elements = (char**)malloc(sizeof(char*) * dropdown.numElements);
+		for (int i = 0; i < dropdown.numElements; i++)
+		{
+			char* element = (char*)malloc(20);
+			strcpy(element, "ELEMENT ");
+			strcpy(element + 8, itoa(i, buffer, 10));
+			elements[i] = element;
+		}
+
+		dropdown.elements = (const char**)elements;
+		dropdown.textSize = 36;
 	}
 
 	void Render()
@@ -148,7 +163,7 @@ struct SearchConfigTab : GuiObject
 
 	void HandleClick(sf::Vector2f position)
 	{
-
+		dropdown.HandleClick(position);
 	}
 
 	void HandleMouse(sf::Vector2f position)

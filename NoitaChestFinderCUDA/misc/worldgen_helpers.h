@@ -1,11 +1,11 @@
 #pragma once
-
-#include "../structs/primitives.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "noita_random.h"
 #include "stb_hbwang.h"
+#include "utilities.h"
 
-__device__ uint8_t* coalmine_overlay;
+_compute uint8_t* coalmine_overlay;
 
 constexpr uint32_t COLOR_PURPLE = 0x7f007fU;
 constexpr uint32_t COLOR_BLACK = 0x000000U;
@@ -32,13 +32,13 @@ const uint32_t blockedColors[BCSize] = {
 	0xff0affU, //load_pixel_scene
 };
 
-__universal__ bool contains(const uint32_t arr[BCSize], uint32_t val)
+_universal bool contains(const uint32_t arr[BCSize], uint32_t val)
 {
 	for (int i = 0; i < BCSize; i++)
 		if (arr[i] == val) return true;
 	return false;
 };
-__device__ WorldgenPRNG GetRNG(uint32_t world_seed, int map_w)
+_compute WorldgenPRNG GetRNG(uint32_t world_seed, int map_w)
 {
 	WorldgenPRNG rng = WorldgenPRNG(world_seed);
 
@@ -55,12 +55,12 @@ __device__ WorldgenPRNG GetRNG(uint32_t world_seed, int map_w)
 	return rng;
 }
 
-__universal__ uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x, const uint32_t y)
+_universal uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x, const uint32_t y)
 {
 	return s * (w * y + x);
 }
 
-__device__ void doCoalMineHax(uint8_t* map, uint32_t map_w, uint32_t map_h)
+_compute void doCoalMineHax(uint8_t* map, uint32_t map_w, uint32_t map_h)
 {
 	for (int y = 0; y < map_h; y++)
 	{
@@ -91,16 +91,16 @@ __device__ void doCoalMineHax(uint8_t* map, uint32_t map_w, uint32_t map_h)
 	}
 }
 
-__universal__ uint32_t getPixelColor(const uint8_t* map, uint32_t pos)
+_universal uint32_t getPixelColor(const uint8_t* map, uint32_t pos)
 {
 	return createRGB(map[pos], map[pos + 1], map[pos + 2]);
 }
-__universal__ uint32_t getPixelColor(const uint8_t* map, const uint32_t w, const uint32_t x, const uint32_t y)
+_universal uint32_t getPixelColor(const uint8_t* map, const uint32_t w, const uint32_t x, const uint32_t y)
 {
 	uint32_t pos = getPos(w, 3, x, y);
 	return getPixelColor(map, pos);
 }
-__universal__ void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
+_universal void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
 {
 	uint8_t r = ((color >> 16) & 0xff);
 	uint8_t g = ((color >> 8) & 0xff);
@@ -109,13 +109,13 @@ __universal__ void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
 	map[pos + 1] = g;
 	map[pos + 2] = b;
 }
-__universal__ void setPixelColor(uint8_t* map, uint32_t w, uint32_t x, uint32_t y, uint32_t color)
+_universal void setPixelColor(uint8_t* map, uint32_t w, uint32_t x, uint32_t y, uint32_t color)
 {
 	uint32_t pos = getPos(w, 3, x, y);
 	setPixelColor(map, pos, color);
 }
 
-__universal__ void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32_t color)
+_universal void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32_t color)
 {
 	for (int x = x1; x <= x2; x++)
 	{
@@ -189,13 +189,13 @@ void blockOutRooms(uint8_t* map, int map_w, int map_h, uint32_t targetColor)
 	}
 }
 
-__device__ bool isMainPath(uint32_t map_w, int worldX)
+_compute bool isMainPath(uint32_t map_w, int worldX)
 {
 	int fill_x_from = (BIOME_PATH_FIND_WORLD_POS_MIN_X - (worldX - WORLD_OFFSET_X) * 512.0) / 10;
 	int fill_x_to = fill_x_from + (BIOME_PATH_FIND_WORLD_POS_MAX_X - BIOME_PATH_FIND_WORLD_POS_MIN_X) / 10;
 	return fill_x_to > 0 && fill_x_from > 0 && map_w > fill_x_from && fill_x_to < map_w + fill_x_from;
 }
-__device__ int fillMainPath(uint8_t* map, uint32_t map_w, int worldX)
+_compute int fillMainPath(uint8_t* map, uint32_t map_w, int worldX)
 {
 	int fill_x_from = (BIOME_PATH_FIND_WORLD_POS_MIN_X - (worldX - WORLD_OFFSET_X) * 512.0) / 10;
 	int fill_x_to = fill_x_from + (BIOME_PATH_FIND_WORLD_POS_MAX_X - BIOME_PATH_FIND_WORLD_POS_MIN_X) / 10;

@@ -1,7 +1,5 @@
 #pragma once
-
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+#include "../platforms/platform_compute_helpers.h"
 
 #include "../structs/biomeStructs.h"
 #include "../structs/spawnableStructs.h"
@@ -9,78 +7,16 @@
 
 namespace FUNCS_COALMINE
 {
-	__device__ void spawn_pixel_scene_01(int x, int y, SpawnParams params)
-	{
-		NollaPRNG random = NollaPRNG(params.seed);
-		random.SetRandomSeed(x, y);
-		int rnd = random.Random(1, 100);
-		if (rnd <= 50)
-			LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_01, params);
-		else
-			LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_03, params);
-	}
-	__device__ void spawn_pixel_scene_02(int x, int y, SpawnParams params)
-	{
-		LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_02, params);
-	}
-	__device__ void spawn_pixel_scene_03(int x, int y, SpawnParams params)
-	{
-		NollaPRNG random = NollaPRNG(params.seed);
-		random.SetRandomSeed(x, y);
-		int rnd = random.Random(1, 100);
-		if (rnd > 50)
-			LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_01, params);
-		else
-			LoadPixelScene(x, y, AllBiomeData[params.currentSector.b].pixel_scenes_03, params);
-	}
 
-	__device__ void spawn_small_enemies(int x, int y, SpawnParams params)
-	{
-		int topY = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, 0, 0).y;
-		float verticalPercent = (float)(y - topY) / (params.currentSector.map_h * 10);
-		float spawnPercent = 2.1f * verticalPercent + 0.2f;
-		NollaPRNG random(params.seed);
-		if (random.ProceduralRandomf(x, y, 0, 1) <= spawnPercent)
-			SpawnEnemies(x, y, AllBiomeData[params.currentSector.b].smallEnemies, params);
-	}
-	__device__ void spawn_big_enemies(int x, int y, SpawnParams params)
-	{
-		int topY = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, 0, 0).y;
-		float verticalPercent = (float)(y - topY) / (params.currentSector.map_h * 10);
-		float spawnPercent = 1.75f * verticalPercent - 0.1f;
-		NollaPRNG random(params.seed);
-		if (random.ProceduralRandomf(x, y, 0, 1) <= spawnPercent)
-			SpawnEnemies(x, y, AllBiomeData[params.currentSector.b].bigEnemies, params);
-	}
-	__device__ bool spawn_item(int x, int y, SpawnParams params)
-	{
-		NollaPRNG random(params.seed);
-		float r = random.ProceduralRandomf(x, y, 0, 1);
-		if (r < 0.47) return false;
-		r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-		return r > 0.755;
-	}
-
-	__device__ void SetFunctionPointers(SpawnParams params)
-	{
-		spawnPixelScene01 = spawn_pixel_scene_01;
-		spawnPixelScene02 = spawn_pixel_scene_02;
-		spawnPixelScene03 = spawn_pixel_scene_03;
-		spawnSmallEnemies = spawn_small_enemies;
-		spawnBigEnemies = spawn_big_enemies;
-		spawnItem = spawn_item;
-	}
-};
-
-const BiomeData DAT_COALMINE(
-	BiomeWands(
+	_data BiomeWands wandLevels(
 		2,
 		{
 			WandLevel(17, UNKNOWN_WAND),
 			WandLevel(1.9f, WAND_T1)
 		}
-	),
-	PixelSceneList(
+	);
+
+	_data PixelSceneList pixel_scene_01(
 		6,
 		{
 			PixelSceneData(PS_COALMINE_COALPIT01, 0.5f),
@@ -90,8 +26,9 @@ const BiomeData DAT_COALMINE(
 			PixelSceneData(PS_COALMINE_COALPIT04, 0.5f),
 			PixelSceneData(PS_COALMINE_COALPIT05, 0.5f, {PixelSceneSpawn(PSST_SpawnHeart, 66, 215),}),
 		}
-	),
-	PixelSceneList(
+	);
+
+	_data PixelSceneList pixel_scene_02(
 		17,
 		{
 				PixelSceneData(PS_COALMINE_SHRINE01, 0.5f, {PixelSceneSpawn(PSST_SmallEnemy, 106, 97),PixelSceneSpawn(PSST_LargeEnemy, 122, 99),PixelSceneSpawn(PSST_SmallEnemy, 132, 100),PixelSceneSpawn(PSST_SpawnHeart, 133, 86),PixelSceneSpawn(PSST_LargeEnemy, 142, 99),PixelSceneSpawn(PSST_SmallEnemy, 153, 99),PixelSceneSpawn(PSST_LargeEnemy, 165, 100),PixelSceneSpawn(PSST_SmallEnemy, 176, 98),}),
@@ -112,8 +49,9 @@ const BiomeData DAT_COALMINE(
 				PixelSceneData(PS_COALMINE_PHYSICS_SWING_PUZZLE, 0.5f),
 				PixelSceneData(PS_COALMINE_RECEPTACLE_OIL, 0.5f, {PixelSceneSpawn(PSST_SmallEnemy, 26, 106),PixelSceneSpawn(PSST_SmallEnemy, 71, 113),PixelSceneSpawn(PSST_SmallEnemy, 238, 109),}),
 		}
-	),
-	PixelSceneList(
+	);
+
+	_data PixelSceneList oiltank(
 		8,
 		{
 			PixelSceneData(PS_COALMINE_OILTANK_1, 1.0f, {WATER,OIL,WATER,OIL,ALCOHOL,SAND,COAL,RADIOACTIVE_LIQUID,}, {PixelSceneSpawn(PSST_SpawnItem, 65, 236),}),
@@ -125,36 +63,108 @@ const BiomeData DAT_COALMINE(
 			PixelSceneData(PS_COALMINE_OILTANK_5, 1.0f, {WATER,OIL,WATER,OIL,ALCOHOL,RADIOACTIVE_LIQUID,COAL,RADIOACTIVE_LIQUID,}, {PixelSceneSpawn(PSST_SpawnItem, 65, 236),}),
 			PixelSceneData(PS_COALMINE_OILTANK_PUZZLE, 0.05f),
 		}
-	),
+	);
 
-	EnemyList(
-		6,
-		{
-			EnemyData(0.1f, 0, 0, ENEMY_NONE),
-			EnemyData(0.5f, 1, 2, ENEMY_ZOMBIE_WEAK),
-			EnemyData(0.1f, 1, 1, ENEMY_SLIMESHOOTER_WEAK),
-			EnemyData(0.2f, 1, 3, ENEMY_HAMIS),
-			EnemyData(0.25f, 1, 2, ENEMY_MINER_WEAK),
-			EnemyData(0.1f, 1, 1, ENEMY_SHOTGUNNER_WEAK)
-		}
+	_compute void spawn_pixel_scene_01(int x, int y, SpawnParams params)
+	{
+		if (!params.sCfg.biomePixelScenes) return;
+		NollaPRNG random = NollaPRNG(params.seed);
+		random.SetRandomSeed(x, y);
+		int rnd = random.Random(1, 100);
+		if (rnd <= 50)
+			LoadPixelScene(x, y, pixel_scene_01, params);
+		else
+			LoadPixelScene(x, y, oiltank, params);
+	}
+	_compute void spawn_pixel_scene_02(int x, int y, SpawnParams params)
+	{
+		if (!params.sCfg.biomePixelScenes) return;
+		LoadPixelScene(x, y, pixel_scene_02, params);
+	}
+	_compute void spawn_oiltank(int x, int y, SpawnParams params)
+	{
+		if (!params.sCfg.biomePixelScenes) return;
+		NollaPRNG random = NollaPRNG(params.seed);
+		random.SetRandomSeed(x, y);
+		int rnd = random.Random(1, 100);
+		if (rnd > 50)
+			LoadPixelScene(x, y, pixel_scene_01, params);
+		else
+			LoadPixelScene(x, y, oiltank, params);
+	}
+
+	_compute void spawn_small_enemies(int x, int y, SpawnParams params)
+	{
+		if (!params.sCfg.biomeEnemies) return;
+		int topY = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, 0, 0).y;
+		float verticalPercent = (float)(y - topY) / (params.currentSector.map_h * 10);
+		float spawnPercent = 2.1f * verticalPercent + 0.2f;
+		NollaPRNG random(params.seed);
+		//if (random.ProceduralRandomf(x, y, 0, 1) <= spawnPercent)
+			//SpawnEnemies(x, y, AllBiomeData[params.currentSector.b].smallEnemies, params);
+	}
+	_compute void spawn_big_enemies(int x, int y, SpawnParams params)
+	{
+		if (!params.sCfg.biomeEnemies) return;
+		int topY = GetGlobalPos(params.currentSector.worldX, params.currentSector.worldY, 0, 0).y;
+		float verticalPercent = (float)(y - topY) / (params.currentSector.map_h * 10);
+		float spawnPercent = 1.75f * verticalPercent - 0.1f;
+		NollaPRNG random(params.seed);
+		//if (random.ProceduralRandomf(x, y, 0, 1) <= spawnPercent)
+			//SpawnEnemies(x, y, AllBiomeData[params.currentSector.b].bigEnemies, params);
+	}
+	_compute bool spawn_item(int x, int y, SpawnParams params)
+	{
+		NollaPRNG random(params.seed);
+		float r = random.ProceduralRandomf(x, y, 0, 1);
+		if (r < 0.47) return false;
+		r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
+		return r > 0.755;
+	}
+
+	_compute void SetFunctionPointers(SpawnParams& params)
+	{
+		params.spawnSmallEnemies = spawn_small_enemies;
+		params.spawnBigEnemies = spawn_big_enemies;
+		params.spawnItem = spawn_item;
+	}
+};
+
+_data BiomeSpawnFunctions DAT_COALMINE = BiomeSpawnFunctions(3, FUNCS_COALMINE::SetFunctionPointers, {
+	SpawnFunction(0xff0aff, FUNCS_COALMINE::spawn_pixel_scene_01),
+	SpawnFunction(0xff0080, FUNCS_COALMINE::spawn_pixel_scene_02),
+	SpawnFunction(0xc35700, FUNCS_COALMINE::spawn_oiltank),
+});
+
 	
-	), //Small Enemies
+/*
+EnemyList(
+6,
+{
+	EnemyData(0.1f, 0, 0, ENEMY_NONE),
+	EnemyData(0.5f, 1, 2, ENEMY_ZOMBIE_WEAK),
+	EnemyData(0.1f, 1, 1, ENEMY_SLIMESHOOTER_WEAK),
+	EnemyData(0.2f, 1, 3, ENEMY_HAMIS),
+	EnemyData(0.25f, 1, 2, ENEMY_MINER_WEAK),
+	EnemyData(0.1f, 1, 1, ENEMY_SHOTGUNNER_WEAK)
+}
+	
+), //Small Enemies
 
-	EnemyList(
-		10,
-		{
-			EnemyData(0.7f, 0, 0, ENEMY_NONE),
-			EnemyData(0.2f, 1, 1, ENEMY_FIREMAGE_WEAK),
-			EnemyData(0.01f, 1, 1, ENEMY_WORM),
-			EnemyData(0.2f, 5, 10, ENEMY_HAMIS),
-			EnemyData(0.1f, 2, 2, ENEMY_MINER_WEAK),
-			//EnemyData(0.3f, 1, 2, ENEMY_MINER_SANTA),
-			EnemyData(0.2f, 1, 1, ENEMY_SHOTGUNNER_WEAK),
-			EnemyData(0.1f, 1, 1, ENEMY_ACIDSHOOTER_WEAK),
-			EnemyData(0.08f, 1, 1, ENEMY_GIANTSHOOTER_WEAK),
-			EnemyData(0.09f, 1, 1, ENEMY_FIRESKULL),
-			//EnemyData(0.3f, 1, 2, ENEMY_MINER_SANTA),
-			EnemyData(0.02f, 1, 1, ENEMY_SHAMAN)
-		}
-	) //Large Enemies
-);
+EnemyList(
+10,
+{
+	EnemyData(0.7f, 0, 0, ENEMY_NONE),
+	EnemyData(0.2f, 1, 1, ENEMY_FIREMAGE_WEAK),
+	EnemyData(0.01f, 1, 1, ENEMY_WORM),
+	EnemyData(0.2f, 5, 10, ENEMY_HAMIS),
+	EnemyData(0.1f, 2, 2, ENEMY_MINER_WEAK),
+	//EnemyData(0.3f, 1, 2, ENEMY_MINER_SANTA),
+	EnemyData(0.2f, 1, 1, ENEMY_SHOTGUNNER_WEAK),
+	EnemyData(0.1f, 1, 1, ENEMY_ACIDSHOOTER_WEAK),
+	EnemyData(0.08f, 1, 1, ENEMY_GIANTSHOOTER_WEAK),
+	EnemyData(0.09f, 1, 1, ENEMY_FIRESKULL),
+	//EnemyData(0.3f, 1, 2, ENEMY_MINER_SANTA),
+	EnemyData(0.02f, 1, 1, ENEMY_SHAMAN)
+}
+) //Large Enemies*/
