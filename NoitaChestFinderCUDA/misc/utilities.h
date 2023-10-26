@@ -122,7 +122,7 @@ _universal void _itoa_offset_decimal(int num, int base, int fixedPoint, char* bu
 		num = -num;
 	}
 
-	while (num != 0)
+	while (num != 0 || 10 - i < (fixedPoint + 2))
 	{
 		int rem = num % base;
 

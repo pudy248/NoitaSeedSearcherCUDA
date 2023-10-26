@@ -3,68 +3,6 @@
 
 #include "worldgen_helpers.h"
 
-/*
-_compute void Push(IntPair* stackMem, IntPair* stackCache, int* cacheSize, int* stackSize) {
-	//memcpy(stackMem + *stackSize, stackCache, sizeof(IntPair) * *cacheSize);
-	//*stackSize += *cacheSize;
-	//*cacheSize = 0;
-	while (stackSize > 0) {
-		stackMem[(*stackSize)++] = stackCache[--(*cacheSize)];
-	}
-}
-
-_compute bool traversable(byte* map, int x, int y, int rmw)
-{
-	long c = getPixelColor(map, rmw, x, y);
-
-	return c == COLOR_BLACK;// || c == COLOR_COFFEE;
-}
-
-_compute void tryNext(IntPair position, byte *map, byte* visited, IntPair* stackCache, int& cacheSize, int rmw, int rmh)
-{
-	if (position.x >= 0 && position.y >= 0 && position.x < rmw && position.y < rmh) {
-		if (visited[position.y * rmw + position.x] == 0 && traversable(map, position.x, position.y, rmw))
-		{
-			visited[position.y * rmw + position.x] = 1;
-			stackCache[cacheSize++] = position;
-		}
-	}
-}
-
-_compute bool findPath(byte* map, byte* stackMemArea, byte* visited, const uint map_w, const uint map_h, int x, int y)
-{
-	int rmw = map_w; //register map width
-	int rmh = map_h; //register map height
-	bool pathFound = false;
-
-	int stackSize = 1;
-	IntPair* stackMem = (IntPair*)stackMemArea;
-	memset(visited, 0, map_w * map_h);
-	memset(stackMem, 0, sizeof(IntPair) * rmw * rmh);
-
-	stackMem[0] = { x , y };
-
-	while (stackSize > 0 && !pathFound)
-	{
-		if(blockDim.x * blockIdx.x + threadIdx.x == 55) printf("%i\n", stackSize);
-		IntPair n = stackMem[--stackSize];
-		//if((n.x + n.y) % 2 == 0) 
-			setPixelColor(map, rmw, n.x, n.y, COLOR_PURPLE);
-		if (n.x != -1) {
-			if (n.y == rmh - 1)
-			{
-				pathFound = 1;
-			}
-			tryNext(n + IntPair(0, -1), map, visited, stackMem, stackSize, rmw, rmh);
-			tryNext(n + IntPair(-1, 0), map, visited, stackMem, stackSize, rmw, rmh);
-			tryNext(n + IntPair(1, 0), map, visited, stackMem, stackSize, rmw, rmh);
-			tryNext(n + IntPair(0, 1), map, visited, stackMem, stackSize, rmw, rmh);
-		}
-	}
-
-	return pathFound;
-}*/
-
 _compute bool traversable(uint8_t* map, int x, int y, int rmw)
 {
 	long c = getPixelColor(map, rmw, x, y);
@@ -93,7 +31,7 @@ _compute bool findPath(uint8_t* map, uint8_t* stackMemArea, uint8_t* visited, co
 
 	int stackSize = 1;
 	Vec2i* stackMem = (Vec2i*)stackMemArea;
-	memset(visited, 0, map_w * map_h);
+	cMemset(visited, 0, map_w * map_h);
 
 	stackMem[0] = { x , y };
 

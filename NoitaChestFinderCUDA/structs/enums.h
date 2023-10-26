@@ -227,6 +227,7 @@ enum Material : short
 	WOOD_PLAYER,
 	TRAILER_TEXT,
 	POO,
+	MAMMI,
 	GLASS_BROKEN,
 	BLOOD_THICK,
 	SAND_STATIC_RAINFOREST,
@@ -568,15 +569,16 @@ enum SpawnableMetadata : uint8_t
 
 enum CartType : uint8_t
 {
+	CART_NONE,
 	MINECART,
 	WOODCART,
 	SKATEBOARD
 };
 enum AlchemyOrdering
 {
-	UNORDERED,
+	STRICT_ORDERED,
 	ONLY_CONSUMED,
-	STRICT_ORDERED
+	UNORDERED,
 };
 
 enum ShiftSource : short
@@ -649,6 +651,7 @@ enum ShiftDest : short
 
 enum Biome : uint8_t
 {
+	B_NONE,
 	B_COALMINE,
 	B_COALMINE_ALT,
 	B_EXCAVATIONSITE,
@@ -680,10 +683,7 @@ enum Biome : uint8_t
 	B_SOLID_WALL_TOWER_6,
 	B_SOLID_WALL_TOWER_7,
 	B_SOLID_WALL_TOWER_8,
-	B_SOLID_WALL_TOWER_9,
-
-	//putting this at the end for arrays
-	B_NONE
+	B_SOLID_WALL_TOWER_9
 };
 enum BiomeModifier : uint8_t
 {

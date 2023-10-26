@@ -80,7 +80,7 @@ static void stbhw__parse_h_rect(stbhw__process* p, stbhw_tileset* tileSet, Memor
 	h->a = a, h->b = b, h->c = c, h->d = d, h->e = e, h->f = f;
 	for (j = 0; j < len; ++j)
 		for (i = 0; i < len * 2; ++i)
-			cMemcpy(h->pixels + j * (3 * len * 2) + i * 3, p->data + (ypos + j) * p->stride + (xpos + i) * 3, 3);
+			memcpy(h->pixels + j * (3 * len * 2) + i * 3, p->data + (ypos + j) * p->stride + (xpos + i) * 3, 3);
 	tileSet->h_tiles[tileSet->num_h_tiles++] = h;
 }
 
@@ -96,7 +96,7 @@ static void stbhw__parse_v_rect(stbhw__process* p, stbhw_tileset* tileSet, Memor
 	h->a = a, h->b = b, h->c = c, h->d = d, h->e = e, h->f = f;
 	for (j = 0; j < len * 2; ++j)
 		for (i = 0; i < len; ++i)
-			cMemcpy(h->pixels + j * (3 * len) + i * 3, p->data + (ypos + j) * p->stride + (xpos + i) * 3, 3);
+			memcpy(h->pixels + j * (3 * len) + i * 3, p->data + (ypos + j) * p->stride + (xpos + i) * 3, 3);
 	tileSet->v_tiles[tileSet->num_v_tiles++] = h;
 }
 
@@ -501,8 +501,8 @@ int stbhw_generate_image(uint8_t* output, stbhw_tileset* tileSet, int stride, in
 	{
 		// @TODO edge-color repetition reduction
 		int i, j, ypos;
-		memset(v_color, -1, sizeof(v_color));
-		memset(h_color, -1, sizeof(h_color));
+		cMemset(v_color, -1, sizeof(v_color));
+		cMemset(h_color, -1, sizeof(h_color));
 
 		ypos = -1 * sidelen;
 		for (j = -1; ypos < h; ++j)

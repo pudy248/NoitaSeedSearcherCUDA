@@ -94,14 +94,17 @@
   <ItemGroup>
     <ClInclude Include="biomes\allBiomes.h" />
     <ClInclude Include="biomes\coalmine.h" />
+    <ClInclude Include="Compute.h" />
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="data\biomeMap.h" />
+    <ClInclude Include="data\guiData.h" />
     <ClInclude Include="data\temples.h" />
     <ClInclude Include="data\uiNames.h" />
     <ClInclude Include="data\wand_sprites.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="Filters.h" />
     <ClInclude Include="gui\guiIntermediates.h" />
+    <ClInclude Include="gui\guiInterop.h" />
     <ClInclude Include="gui\guiLayout.h" />
     <ClInclude Include="gui\guiMain.h" />
     <ClInclude Include="gui\guiPrimitives.h" />

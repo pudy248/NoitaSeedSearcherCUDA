@@ -63,14 +63,14 @@ struct BiomeModifierConfig
 	BiomeModifier modifiers[9];
 };
 
-constexpr int maxFungalShifts = 4;
+constexpr int maxFungalShifts = 12;
 struct FungalShiftConfig
 {
 	bool check;
 	FungalShift shifts[maxFungalShifts];
 };
 
-constexpr int maxPerkFilters = 24;
+constexpr int maxPerkFilters = 12;
 struct PerkConfig
 {
 	bool check;
@@ -151,6 +151,7 @@ struct FilterConfig
 
 struct OutputConfig
 {
-	int printInterval;
+	float printInterval;
+	bool printProgressLog;
 	bool printOutputToConsole;
 };

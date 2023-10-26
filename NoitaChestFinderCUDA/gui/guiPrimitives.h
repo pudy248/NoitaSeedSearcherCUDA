@@ -1,8 +1,5 @@
 #pragma once
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-
 #include "../structs/primitives.h"
 #include "../misc/pngutils.h"
 
@@ -12,7 +9,7 @@
 struct MouseRect
 {
 	sf::FloatRect rect;
-	bool containedMouseLastFrame;
+	bool containedMouseLastFrame = false;
 
 	int HandleMouse(sf::Vector2f mPos)
 	{
@@ -76,11 +73,13 @@ struct TextInput
 struct SfmlSharedState
 {
 	sf::RenderWindow& window;
+	struct SearchGui* gui;
 	sf::VideoMode videoMode;
 	sf::Text* texts;
 
 	MouseRect* clickedRect = NULL;
 	TextInput* selectedText = NULL;
+	struct GuiScrollList* selectedScrollList = NULL;
 
 } *sfmlState;
 struct GuiPrimitive
@@ -89,6 +88,11 @@ struct GuiPrimitive
 	GuiPrimitive() = default;
 	virtual void Render() = 0;
 };
+
+sf::Vector2f TransformMouse(sf::Vector2f pos)
+{
+	return sf::Vector2f(pos * (1920.0f / sfmlState->videoMode.width));
+}
 
 struct RawImage
 {
@@ -122,16 +126,16 @@ void DrawRect(sf::FloatRect rect, sf::Color color)
 {
 	sf::RectangleShape sprite(sf::Vector2f(rect.width, rect.height));
 	sprite.setFillColor(color);
-	sprite.setPosition(sf::Vector2f(rect.left, rect.top));
+	sprite.setPosition(rect.left, rect.top);
 	sfmlState->window.draw(sprite);
 }
 void DrawRectOutline(sf::FloatRect rect, float borderThickness, sf::Color color, sf::Color borderColor)
 {
-	sf::RectangleShape sprite(sf::Vector2f(rect.width, rect.height));
+	sf::RectangleShape sprite(sf::Vector2f(rect.width - borderThickness * 2, rect.height - borderThickness * 2));
 	sprite.setOutlineThickness(borderThickness);
 	sprite.setFillColor(color);
 	sprite.setOutlineColor(borderColor);
-	sprite.setPosition(sf::Vector2f(rect.left, rect.top));
+	sprite.setPosition(rect.left + borderThickness, rect.top + borderThickness);
 	sfmlState->window.draw(sprite);
 }
 
@@ -150,7 +154,7 @@ void DrawTextCentered(const char* text, sf::Vector2f position, uint32_t size, sf
 	sfmlState->texts[fontIdx].setString(text);
 	sfmlState->texts[fontIdx].setPosition(position);
 	sf::FloatRect rect = sfmlState->texts[fontIdx].getGlobalBounds();
-	sfmlState->texts[fontIdx].setPosition(sf::Vector2f(2 * position.x - rect.left - rect.width * 0.5f, 2 * position.y - rect.top - rect.height * 0.5f));
+	sfmlState->texts[fontIdx].setPosition(2 * position.x - rect.left - rect.width * 0.5f, 2 * position.y - rect.top - rect.height * 0.5f);
 	sfmlState->window.draw(sfmlState->texts[fontIdx]);
 }
 void DrawTextAligned(const char* text, sf::FloatRect rect, uint32_t size, sf::Color color, int fontIdx, int hAlign, int vAlign)
@@ -158,7 +162,7 @@ void DrawTextAligned(const char* text, sf::FloatRect rect, uint32_t size, sf::Co
 	sfmlState->texts[fontIdx].setCharacterSize(size);
 	sfmlState->texts[fontIdx].setFillColor(color);
 	sfmlState->texts[fontIdx].setString(text);
-	sfmlState->texts[fontIdx].setPosition(sf::Vector2f(rect.left, rect.top));
+	sfmlState->texts[fontIdx].setPosition(rect.left, rect.top);
 	sf::FloatRect bounds = sfmlState->texts[fontIdx].getGlobalBounds();
 	int xPos = rect.left;
 	int yPos = rect.top;
@@ -166,6 +170,7 @@ void DrawTextAligned(const char* text, sf::FloatRect rect, uint32_t size, sf::Co
 	else if (hAlign == 1) xPos = rect.left + (rect.width - bounds.width) * 0.5f;
 	if (vAlign == 2) yPos = rect.top + rect.height - bounds.height;
 	else if (vAlign == 1) yPos = rect.top + (rect.height - bounds.height) * 0.5f;
+	sfmlState->texts[fontIdx].setPosition(xPos, yPos);
 	sfmlState->window.draw(sfmlState->texts[fontIdx]);
 }
 
@@ -325,22 +330,55 @@ struct ImageRect : GuiPrimitive
 struct InputRect : GuiPrimitive
 {
 	TextInput text;
+	AlignedTextRect display;
+	OutlinedRect bg;
 
 	InputRect() = default;
 
 	InputRect(sf::FloatRect _rect, uint8_t charset, int maxLen, const char* defaultText)
 	{
-		mRect = { _rect, false };
+		mRect.rect = _rect;
+		display = AlignedTextRect("", _rect, 24, sf::Color::White, 0, 1, 1);
 		text = { (TextInput::Charset)charset, maxLen, sf::String(defaultText) };
+		bg = OutlinedRect(mRect.rect, 0, sf::Color::White, sf::Color(20, 20, 20));
+	}
+	InputRect(sf::FloatRect _rect, uint8_t charset, int maxLen, const char* defaultText, sf::Color bgCol)
+	{
+		mRect.rect = _rect;
+		display = AlignedTextRect("", _rect, 24, sf::Color::White, 0, 1, 1);
+		text = { (TextInput::Charset)charset, maxLen, sf::String(defaultText) };
+		bg = OutlinedRect(mRect.rect, 0, sf::Color::White, bgCol);
+	}
+	InputRect(AlignedTextRect _display, uint8_t charset, int maxLen, const char* defaultText)
+	{
+		mRect = _display.mRect;
+		display = _display;
+		text = { (TextInput::Charset)charset, maxLen, sf::String(defaultText) };
+		bg = OutlinedRect(mRect.rect, 0, sf::Color::White, sf::Color(20, 20, 20));
+	}
+	InputRect(AlignedTextRect _display, uint8_t charset, int maxLen, const char* defaultText, sf::Color bgCol)
+	{
+		mRect = _display.mRect;
+		display = _display;
+		text = { (TextInput::Charset)charset, maxLen, sf::String(defaultText) };
+		bg = OutlinedRect(mRect.rect, 0, sf::Color::White, bgCol);
 	}
 
 	void Render()
 	{
-		DrawText(text.str.toAnsiString().c_str(), sf::Vector2f(mRect.rect.left, mRect.rect.top), 48, sf::Color::White, 0);
+		if (sfmlState->selectedText == &text) bg.outlineThickness = 1; else bg.outlineThickness = 0;
+		bg.Render();
+		display.text = text.str.toAnsiString().c_str();
+		display.Render();
 	}
 
-	void HandleClick(sf::Vector2f pos)
+	bool HandleClick(sf::Vector2f pos)
 	{
-		if (mRect.rect.contains(pos)) sfmlState->selectedText = &text;
+		if (mRect.rect.contains(pos))
+		{
+			sfmlState->selectedText = &text;
+			return true;
+		}
+		return false;
 	}
 };

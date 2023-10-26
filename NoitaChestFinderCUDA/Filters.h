@@ -211,8 +211,8 @@ _compute bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 		{
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			//if (!dat.shuffle) return true;
-			if (dat.capacity >= howBig) return true;
+			if (dat.capacity >= howBig)
+				return true;
 			n += 36 + dat.spellCount * 3;
 			continue;
 		}

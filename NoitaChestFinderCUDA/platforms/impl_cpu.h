@@ -19,7 +19,7 @@ struct HostPointers
 struct Worker
 {
 	int memIdx;
-	std::thread* thread;
+	std::thread thread;
 	bool returned;
 	SpanRet ret;
 };
@@ -92,7 +92,7 @@ Worker CreateWorker()
 }
 void DestroyWorker(Worker& worker)
 {
-
+	if (worker.thread.joinable()) worker.thread.join();
 }
 
 void ThreadMain(SpanParams params, Worker* worker)
@@ -105,8 +105,7 @@ void ThreadMain(SpanParams params, Worker* worker)
 void DispatchJob(Worker& worker, SpanParams* spans)
 {
 	std::thread t = std::thread(ThreadMain, spans[0], &worker);
-	worker.thread = &t;
-	t.detach();
+	worker.thread = std::move(t);
 }
 bool QueryWorker(Worker& worker)
 {
@@ -115,7 +114,12 @@ bool QueryWorker(Worker& worker)
 SpanRet* SubmitJob(Worker& worker)
 {
 	worker.returned = false;
+	worker.thread.join();
 	return &worker.ret;
+}
+void AbortJob(Worker& worker)
+{
+	worker.thread.join();
 }
 
 uint8_t* BuildTileset(uint8_t* data, int w, int h)

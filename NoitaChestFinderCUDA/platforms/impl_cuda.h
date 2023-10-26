@@ -186,12 +186,12 @@ Worker CreateWorker()
 }
 void DestroyWorker(Worker& worker)
 {
-	checkCudaErrors(cudaStreamDestroy(worker.stream));
+	if(worker.stream != NULL) checkCudaErrors(cudaStreamDestroy(worker.stream));
 }
 
 __global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig config, int memIdx)
 {
-	dAtomicAdd((int*)dPointers.numActiveThreads, 1);
+	//dAtomicAdd((int*)dPointers.numActiveThreads, 1);
 	uint32_t hwIdx = blockIdx.x * blockDim.x + threadIdx.x;
 	KernelIO* ioPtr = dPointers.uIO + memIdx;
 	uint8_t* threadMemBlock = dPointers.dArena + arenaPitch * (memIdx * BLOCKSIZE + hwIdx);
@@ -199,7 +199,7 @@ __global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, Sear
 	SpanRet ret = EvaluateSpan(config, ioPtr->params[hwIdx], threadMemBlock, outputPtr);
 	memcpy(&ioPtr->ret[hwIdx], &ret, sizeof(SpanRet));
 	dAtomicAdd(&ioPtr->returned, 1);
-	dAtomicAdd((int*)dPointers.numActiveThreads, -1);
+	//dAtomicAdd((int*)dPointers.numActiveThreads, -1);
 }
 
 void DispatchJob(Worker& worker, SpanParams* spans)
@@ -216,12 +216,18 @@ bool QueryWorker(Worker& worker)
 }
 SpanRet* SubmitJob(Worker& worker)
 {
+	cudaStreamSynchronize(worker.stream);
 	hostPtrs.hIO[worker.memIdx].returned = 0;
 	for (int i = 0; i < BLOCKSIZE; i++)
 	{
 		hostPtrs.hIO[worker.memIdx].ret[i].outputPtr = hostPtrs.uOutput + (worker.memIdx * BLOCKSIZE + i) * GetMinimumOutputMemory();
 	}
 	return hostPtrs.hIO[worker.memIdx].ret;
+}
+void AbortJob(Worker& worker)
+{
+	checkCudaErrors(cudaStreamDestroy(worker.stream));
+	worker.stream = NULL;
 }
 
 __global__ void buildTS(uint8_t* dTileData, uint8_t* dTileSet, int tiles_w, int tiles_h)

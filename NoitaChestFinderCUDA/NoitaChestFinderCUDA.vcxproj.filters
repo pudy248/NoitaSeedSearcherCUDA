@@ -138,6 +138,13 @@
     <ClInclude Include="platforms\impl_cpu_defines.h">
       <Filter>platforms</Filter>
     </ClInclude>
+    <ClInclude Include="gui\guiInterop.h">
+      <Filter>gui</Filter>
+    </ClInclude>
+    <ClInclude Include="Compute.h" />
+    <ClInclude Include="data\guiData.h">
+      <Filter>data</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="data">

@@ -21,21 +21,26 @@ _compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables
 		writeInt(output, offset, s.y);
 		writeByte(output, offset, s.sType);
 		writeInt(output, offset, s.count);
-		cMemcpy(output + offset, &sPtr->contents, s.count);
+		memcpy(output + offset, &sPtr->contents, s.count);
 		offset += s.count;
 	}
 }
 
-void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg)
+void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*))
 //write output
 {
-#ifdef IMAGE_OUTPUT
+	char* seedNum = (char*)malloc(12);
+	char* seedInfo = (char*)malloc(4096);
 	int memOffset = 0;
+	int bufOffset = 0;
 	int seed = readInt(output, memOffset);
+	_itoa_offset(seed, 10, seedNum, bufOffset);
+	seedNum[bufOffset++] = '\0';
+	bufOffset = 0;
+#ifdef IMAGE_OUTPUT
 	int w = readInt(output, memOffset);
 	int h = readInt(output, memOffset);
 	char buffer[30];
-	int bufOffset = 0;
 	_putstr_offset("outputs/", buffer, bufOffset);
 	_itoa_offset(seed, 10, buffer, bufOffset);
 	_putstr_offset(".png", buffer, bufOffset);
@@ -43,21 +48,18 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg)
 	WriteImage(buffer, output + memOffset, w, h);
 #else
 #ifdef SPAWNABLE_OUTPUT
-	char buffer[4096];
-	int bufOffset = 0;
-	int memOffset = 0;
-	int seed = readInt(output, memOffset);
-	int sCount = readInt(output, memOffset);
-	if (seed == 0) return;
+	constexpr int NEWLINE_CHAR_LIMIT = 100;
+	int lineCtr = 1;
 
+	int sCount = readInt(output, memOffset);
 #ifdef REALTIME_SEEDS
-	_itoa_offset(time, 10, buffer, bufOffset);
-	_putstr_offset(" secs, seed ", buffer, bufOffset);
+	_itoa_offset(time, 10, seedInfo, bufOffset);
+	_putstr_offset(" secs, seed ", seedInfo, bufOffset);
 #endif
-	_itoa_offset(seed, 10, buffer, bufOffset);
+	_itoa_offset(seed, 10, seedInfo, bufOffset);
 	if (sCount > 0)
 	{
-		_putstr_offset(": ", buffer, bufOffset);
+		_putstr_offset(": ", seedInfo, bufOffset);
 		Spawnable* sPtr;
 		for (int i = 0; i < sCount; i++)
 		{
@@ -65,29 +67,29 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg)
 			Spawnable s = readMisalignedSpawnable(sPtr);
 			Vec2i chunkCoords = GetLocalPos(s.x, s.y);
 
-			_putstr_offset(" ", buffer, bufOffset);
-			_putstr_offset(SpawnableTypeNames[s.sType - TYPE_CHEST], buffer, bufOffset);
-			_putstr_offset("(", buffer, bufOffset);
-			_itoa_offset(s.x, 10, buffer, bufOffset);
+			_putstr_offset(" ", seedInfo, bufOffset);
+			_putstr_offset(SpawnableTypeNames[s.sType - TYPE_CHEST], seedInfo, bufOffset);
+			_putstr_offset("(", seedInfo, bufOffset);
+			_itoa_offset(s.x, 10, seedInfo, bufOffset);
 			if (abs(chunkCoords.x - 35) > 35)
 			{
-				_putstr_offset("[", buffer, bufOffset);
-				_putstr_offset(s.x > 0 ? "E" : "W", buffer, bufOffset);
+				_putstr_offset("[", seedInfo, bufOffset);
+				_putstr_offset(s.x > 0 ? "E" : "W", seedInfo, bufOffset);
 				int pwPos = abs((int)rintf((chunkCoords.x - 35) / 70.0f));
-				_itoa_offset(pwPos, 10, buffer, bufOffset);
-				_putstr_offset("]", buffer, bufOffset);
+				_itoa_offset(pwPos, 10, seedInfo, bufOffset);
+				_putstr_offset("]", seedInfo, bufOffset);
 			}
-			_putstr_offset(", ", buffer, bufOffset);
-			_itoa_offset(s.y, 10, buffer, bufOffset);
+			_putstr_offset(", ", seedInfo, bufOffset);
+			_itoa_offset(s.y, 10, seedInfo, bufOffset);
 			if (abs(chunkCoords.y - 24) > 24)
 			{
-				_putstr_offset("[", buffer, bufOffset);
-				_putstr_offset(s.y > 0 ? "H" : "S", buffer, bufOffset);
+				_putstr_offset("[", seedInfo, bufOffset);
+				_putstr_offset(s.y > 0 ? "H" : "S", seedInfo, bufOffset);
 				int pwPos = abs((int)rintf((chunkCoords.y - 24) / 48.0f));
-				_itoa_offset(pwPos, 10, buffer, bufOffset);
-				_putstr_offset("]", buffer, bufOffset);
+				_itoa_offset(pwPos, 10, seedInfo, bufOffset);
+				_putstr_offset("]", seedInfo, bufOffset);
 			}
-			_putstr_offset("){", buffer, bufOffset);
+			_putstr_offset(") - [", seedInfo, bufOffset);
 
 			for (int n = 0; n < s.count; n++)
 			{
@@ -96,16 +98,16 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg)
 				{
 					int offset2 = n + 1;
 					short m = readShort((uint8_t*)(&sPtr->contents), offset2);
-					_putstr_offset("POTION_", buffer, bufOffset);
-					_putstr_offset(MaterialNames[m], buffer, bufOffset);
+					_putstr_offset("Potion (", seedInfo, bufOffset);
+					_putstr_offset(MaterialNames[m], seedInfo, bufOffset);
+					_putstr_offset(")", seedInfo, bufOffset);
 					n += 2;
 				}
 				else if (item == DATA_SPELL)
 				{
 					int offset2 = n + 1;
 					short m = readShort((uint8_t*)(&sPtr->contents), offset2);
-					_putstr_offset("SPELL_", buffer, bufOffset);
-					_putstr_offset(SpellNames[m], buffer, bufOffset);
+					_putstr_offset(SpellNames[m], seedInfo, bufOffset);
 					n += 2;
 				}
 				else if (item == DATA_PIXEL_SCENE)
@@ -113,12 +115,12 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg)
 					int offset2 = n + 1;
 					short ps = readShort((uint8_t*)(&sPtr->contents), offset2);
 					short m = readShort((uint8_t*)(&sPtr->contents), offset2);
-					_putstr_offset(PixelSceneNames[ps], buffer, bufOffset);
+					_putstr_offset(PixelSceneNames[ps], seedInfo, bufOffset);
 					if (m != MATERIAL_NONE)
 					{
-						_putstr_offset("[", buffer, bufOffset);
-						_putstr_offset(MaterialNames[m], buffer, bufOffset);
-						_putstr_offset("]", buffer, bufOffset);
+						_putstr_offset("[", seedInfo, bufOffset);
+						_putstr_offset(MaterialNames[m], seedInfo, bufOffset);
+						_putstr_offset("]", seedInfo, bufOffset);
 					}
 					n += 4;
 				}
@@ -126,70 +128,114 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg)
 				{
 					n++;
 					WandData dat = readMisalignedWand((WandData*)(&sPtr->contents + n));
-					_putstr_offset("[", buffer, bufOffset);
+					_putstr_offset("[", seedInfo, bufOffset);
 
-					_itoa_offset_decimal((int)(dat.capacity * 100), 10, 2, buffer, bufOffset);
-					_putstr_offset(" CAPACITY, ", buffer, bufOffset);
+					_itoa_offset(dat.capacity, 10, seedInfo, bufOffset);
+					_putstr_offset(" Capacity, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_itoa_offset(dat.multicast, 10, buffer, bufOffset);
-					_putstr_offset(" MULTI, ", buffer, bufOffset);
+					_itoa_offset(dat.multicast, 10, seedInfo, bufOffset);
+					_putstr_offset(" Spells/Cast, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_itoa_offset(dat.delay, 10, buffer, bufOffset);
-					_putstr_offset(" DELAY, ", buffer, bufOffset);
+					_itoa_offset_decimal((int)rintf(dat.delay * 100 / 60.0f), 10, 2, seedInfo, bufOffset);
+					_putstr_offset("sec Cast Delay, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_itoa_offset(dat.reload, 10, buffer, bufOffset);
-					_putstr_offset(" RELOAD, ", buffer, bufOffset);
+					_itoa_offset_decimal((int)rintf(dat.reload * 100 / 60.0f), 10, 2, seedInfo, bufOffset);
+					_putstr_offset("sec Reload Time, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_itoa_offset(dat.mana, 10, buffer, bufOffset);
-					_putstr_offset(" MANA, ", buffer, bufOffset);
+					_itoa_offset(dat.mana, 10, seedInfo, bufOffset);
+					_putstr_offset(" Max Mana, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_itoa_offset(dat.regen, 10, buffer, bufOffset);
-					_putstr_offset(" REGEN, ", buffer, bufOffset);
+					_itoa_offset(dat.regen, 10, seedInfo, bufOffset);
+					_putstr_offset(" Mana Regen, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					//speed... float?
+					_itoa_offset_decimal((int)(dat.speed * 100), 10, 2, seedInfo, bufOffset);
+					_putstr_offset("x Speed, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_itoa_offset(dat.spread, 10, buffer, bufOffset);
-					_putstr_offset(" SPREAD, ", buffer, bufOffset);
+					_itoa_offset(dat.spread, 10, seedInfo, bufOffset);
+					_putstr_offset(" Spread, ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
 
-					_putstr_offset(dat.shuffle ? "SHUFFLE] AC_" : "NON-SHUFFLE] AC_", buffer, bufOffset);
+					_putstr_offset(dat.shuffle ? "Shuffle] AC: " : "Non-shuffle] AC: ", seedInfo, bufOffset);
 					n += 33;
 					continue;
 				}
 				else if (GOLD_NUGGETS > item || item > TRUE_ORB)
 				{
-					_putstr_offset("0x", buffer, bufOffset);
-					_itoa_offset_zeroes(item, 16, 2, buffer, bufOffset);
+					_putstr_offset("0x", seedInfo, bufOffset);
+					_itoa_offset_zeroes(item, 16, 2, seedInfo, bufOffset);
 				}
 				else
 				{
 					int idx = item - GOLD_NUGGETS;
-					_putstr_offset(ItemNames[idx], buffer, bufOffset);
+					_putstr_offset(ItemNames[idx], seedInfo, bufOffset);
 				}
 
 				if (n < s.count - 1)
-					_putstr_offset(" ", buffer, bufOffset);
+				{
+					_putstr_offset(", ", seedInfo, bufOffset);
+					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
+					{
+						lineCtr++;
+						_putstr_offset("\n", seedInfo, bufOffset);
+					}
+				}
 			}
-			_putstr_offset("}", buffer, bufOffset);
+			_putstr_offset("]\n\n", seedInfo, bufOffset);
 			memOffset += s.count + 13;
 		}
 	}
-	buffer[bufOffset++] = '\n';
-	buffer[bufOffset++] = '\0';
-	fprintf(outputFile, "%s", buffer);
-	if(outputCfg.printOutputToConsole) printf("%s", buffer);
+	seedInfo[bufOffset++] = '\0';
+	fprintf(outputFile, "%s", seedInfo);
+	if(outputCfg.printOutputToConsole) printf("%s", seedInfo);
 #else
 #ifdef REALTIME_SEEDS
 	printf("in %i seconds [UNIX %i]: seed %i\n", times[i], (int)(startTime + times[i]), GenerateSeed(startTime + times[i]));
 #else
-	char buffer[12];
-	int bufOffset = 0;
-	int seed = *(int*)output;
-	_itoa_offset(seed, 10, buffer, bufOffset);
-	buffer[bufOffset++] = '\n';
-	buffer[bufOffset++] = '\0';
-	fprintf(outputFile, "%s", buffer);
-	if (outputCfg.printOutputToConsole) printf("%s", buffer);
+	strcpy(seedInfo, seedNum);
+	fprintf(outputFile, "%s\n", seedInfo);
+	if (outputCfg.printOutputToConsole) printf("%s\n", seedInfo);
 #endif
 #endif
 #endif
+	if (appendOutput != NULL) appendOutput(seedNum, seedInfo);
+	else { free(seedNum); free(seedInfo); }
 }

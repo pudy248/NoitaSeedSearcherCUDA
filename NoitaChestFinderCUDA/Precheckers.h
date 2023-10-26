@@ -230,11 +230,11 @@ _compute bool CheckStartingWands(NollaPRNG& random, StartingWandConfig c)
 		int rnd = random.Random(1, 100);
 		if (rnd < 50)
 		{
-			const Spell spells[] = { SPELL_LIGHT_BULLET, SPELL_SPITTER, SPELL_RUBBER_BALL, SPELL_BOUNCY_ORB };
-			int idx = random.Random(0, 3);
+			const Spell spells[] = { SPELL_SPITTER, SPELL_RUBBER_BALL, SPELL_BOUNCY_ORB };
+			int idx = random.Random(0, 2);
 			selectedProj = spells[idx];
 		}
-		else selectedProj = SPELL_BOMB;
+		else selectedProj = SPELL_LIGHT_BULLET;
 		if (selectedProj != c.projectile) return false;
 	}
 
@@ -483,47 +483,3 @@ _compute bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c)
 
 	return true;
 }
-
-
-/*
-bool ValidateBiomeModifierConfig(PrecheckConfig c)
-{
-	const BiomeBlacklist biomeBlacklists[] = {
-		{}, //BM_NONE
-		{}, //BM_MOIST
-		{}, //BM_FOG_OF_WAR_REAPPEARS
-		{}, //BM_HIGH_GRAVITY
-		{}, //BM_LOW_GRAVITY
-		{}, //BM_CONDUCTIVE
-		{}, //BM_HOT
-		{B_SNOWCASTLE}, //BM_GOLD_VEIN
-		{B_FUNGICAVE, B_SNOWCASTLE, B_RAINFOREST, B_VAULT, B_CRYPT}, //BM_GOLD_VEIN_SUPER
-		{B_SNOWCAVE, B_SNOWCASTLE, B_RAINFOREST}, //BM_PLANT_INFESTED
-		{}, //BM_FURNISHED
-		{}, //BM_BOOBY_TRAPPED
-		{B_SNOWCAVE, B_VAULT, B_CRYPT}, //BM_PERFORATED
-		{}, //BM_SPOOKY
-		{}, //BM_GRAVITY_FIELDS
-		{B_SNOWCASTLE, B_SNOWCAVE, B_FUNGICAVE}, //BM_FUNGAL
-		{B_SNOWCAVE, B_RAINFOREST, B_VAULT}, ///BM_FLOODED
-		{B_EXCAVATIONSITE, B_SNOWCAVE, B_SNOWCASTLE, B_VAULT, B_CRYPT}, //BM_GAS_FLOODED
-		{B_EXCAVATIONSITE, B_SNOWCAVE}, //BM_SHIELDED
-		{}, //BM_PROTECTION_FIELDS
-		{B_COALMINE, B_EXCAVATIONSITE}, //BM_OMINOUS
-		{B_COALMINE}, //BM_INVISIBILITY
-		{B_COALMINE} //BM_WORMY
-	};
-	bool passed = true;
-	for (int i = 0; i < 9; i++)
-	{
-		for (int j = 0; j < 5; j++)
-		{
-			if (biomeBlacklists[c.biomeModifiers[i]].blacklist[j] == (Biome)(i + 1))
-			{
-				printf("Invalid biome modifier: %s cannot occur in biome %s\n", biomeModifierNames[c.biomeModifiers[i]], biomeNames[i + 1]);
-				passed = false;
-			}
-		}
-	}
-	return passed;
-}*/

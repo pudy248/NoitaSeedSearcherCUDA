@@ -6,7 +6,7 @@
 
 struct AlchemyRecipe
 {
-	Material mats[4];
+	Material mats[4] = { MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE };
 
 	_universal AlchemyRecipe() {}
 	_universal AlchemyRecipe(Material mat1, Material mat2, Material mat3)

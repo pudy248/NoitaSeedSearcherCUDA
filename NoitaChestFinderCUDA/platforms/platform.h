@@ -49,3 +49,6 @@ bool QueryWorker(Worker& worker);
 
 //This is called when a batch is finished computing, and should collect the return values from the job and pass them back to the API.
 SpanRet* SubmitJob(Worker& worker);
+
+//This is called when a job is cancelled early, and should safely end any ongoing work. DestroyWorker() will be called on the worker immediately after evaluation finishes.
+void AbortJob(Worker& worker);
