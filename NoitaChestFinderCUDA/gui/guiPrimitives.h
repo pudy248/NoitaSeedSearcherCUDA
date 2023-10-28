@@ -37,7 +37,7 @@ struct TextInput
 		CHARSET_Full = 8
 	} allowedChars;
 	int maxLen;
-	sf::String str = sf::String();
+	sf::String str = sf::String("");
 
 	void HandleEvent(sf::Event e)
 	{
@@ -338,14 +338,14 @@ struct InputRect : GuiPrimitive
 	InputRect(sf::FloatRect _rect, uint8_t charset, int maxLen, const char* defaultText)
 	{
 		mRect.rect = _rect;
-		display = AlignedTextRect("", _rect, 24, sf::Color::White, 0, 1, 1);
+		display = AlignedTextRect("", _rect, 24, sf::Color::White, 0, 1, 0);
 		text = { (TextInput::Charset)charset, maxLen, sf::String(defaultText) };
 		bg = OutlinedRect(mRect.rect, 0, sf::Color::White, sf::Color(20, 20, 20));
 	}
 	InputRect(sf::FloatRect _rect, uint8_t charset, int maxLen, const char* defaultText, sf::Color bgCol)
 	{
 		mRect.rect = _rect;
-		display = AlignedTextRect("", _rect, 24, sf::Color::White, 0, 1, 1);
+		display = AlignedTextRect("", _rect, 24, sf::Color::White, 0, 1, 0);
 		text = { (TextInput::Charset)charset, maxLen, sf::String(defaultText) };
 		bg = OutlinedRect(mRect.rect, 0, sf::Color::White, bgCol);
 	}
@@ -368,7 +368,8 @@ struct InputRect : GuiPrimitive
 	{
 		if (sfmlState->selectedText == &text) bg.outlineThickness = 1; else bg.outlineThickness = 0;
 		bg.Render();
-		display.text = text.str.toAnsiString().c_str();
+		std::string tmp = text.str.toAnsiString();
+		display.text = tmp.c_str();
 		display.Render();
 	}
 

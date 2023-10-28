@@ -440,7 +440,7 @@ const ShiftDest _fungalMaterialsTo[_fungalMaterialsToCount] = {
 
 constexpr int _perkCount = 107;
 
-constexpr int _itemCount = 55;
+constexpr int _itemCount = 61;
 const Item _items[_itemCount] = {
 	GOLD_NUGGETS,
 	CHEST_TO_GOLD,
@@ -502,4 +502,5 @@ const Item _items[_itemCount] = {
 	MIMIC_SIGN,
 	SAMPO,
 	TRUE_ORB,
+	ITEM_NONE,
 };

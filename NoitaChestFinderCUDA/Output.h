@@ -205,8 +205,7 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 				}
 				else
 				{
-					int idx = item - GOLD_NUGGETS;
-					_putstr_offset(ItemNames[idx], seedInfo, bufOffset);
+					_putstr_offset(ItemNames[item], seedInfo, bufOffset);
 				}
 
 				if (n < s.count - 1)
@@ -223,6 +222,7 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 			memOffset += s.count + 13;
 		}
 	}
+	else seedInfo[bufOffset++] = '\n';
 	seedInfo[bufOffset++] = '\0';
 	fprintf(outputFile, "%s", seedInfo);
 	if(outputCfg.printOutputToConsole) printf("%s", seedInfo);

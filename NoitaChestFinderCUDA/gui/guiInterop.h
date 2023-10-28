@@ -168,13 +168,18 @@ void CreateConfigsAndDispatch()
 		for (int i = gui->staticConfig.rightPanel.perkRowCount; i < maxPerkFilters; i++) config.precheckCfg.perks.perks[i] = { PERK_NONE, false, 0, 0 };
 	}
 
-	SearchMain(gui->searchConfig.progressFraction, gui->searchConfig.elapsedMillis, gui->searchConfig.abortToggle, AppendOutput);
+	gui->searchConfig.progDat.progressPercent = 0;
+	gui->searchConfig.progDat.elapsedMillis = 0;
+	gui->searchConfig.progDat.searchedSeeds = 0;
+	gui->searchConfig.progDat.validSeeds = 0;
 
-	gui->searchConfig.progressFraction = 1;
-	gui->searchConfig.elapsedMillis = 0;
+	SearchMain((OutputProgressData&)gui->searchConfig.progDat, AppendOutput);
+
+	gui->searchConfig.progDat.progressPercent = 1;
+	gui->searchConfig.progDat.elapsedMillis = 0;
+	gui->searchConfig.progDat.abort = false;
 	gui->searchConfig.updateCtr = 0;
 	gui->tabs.selectedTab = 3;
-	gui->searchConfig.abortToggle = false;
 	gui->searchConfig.searchDone = true;
 	return;
 }

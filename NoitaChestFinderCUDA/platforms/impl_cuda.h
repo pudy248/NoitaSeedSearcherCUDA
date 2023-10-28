@@ -141,7 +141,7 @@ void AllocateComputeMemory()
 	
 	SetWorkerCount(NumBlocks);
 	SetWorkerAppetite(BLOCKSIZE);
-	SetTargetDispatchRate(200);
+	SetTargetDispatchRate(20);
 	printf("Creating %ix%i threads\n", NumBlocks, BLOCKSIZE);
 
 	//Do the actual allocation.

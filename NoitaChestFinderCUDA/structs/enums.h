@@ -478,8 +478,7 @@ enum Material : short
 enum Item : uint8_t
 {
 	ITEM_NONE,
-
-	GOLD_NUGGETS = 32,
+	GOLD_NUGGETS,
 	CHEST_TO_GOLD,
 	RAIN_GOLD,
 	BOMB,

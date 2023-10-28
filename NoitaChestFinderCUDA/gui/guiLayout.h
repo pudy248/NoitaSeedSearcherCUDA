@@ -596,24 +596,27 @@ struct WorldConfigTab : GuiObject
 		{
 			OutlinedRect bg;
 			InputRect count;
-			GuiDropdown perk;
+			AlignedTextRect text;
+			GuiDropdown item;
 			ItemRow() = default;
-			ItemRow(float top, const char** perkNames)
+			ItemRow(float top, const char** itemNames)
 			{
 				bg = OutlinedRect(sf::FloatRect(1290, top, 600, 50), 1, sf::Color(30, 30, 30), sf::Color(20, 20, 20));
-				count = InputRect(sf::FloatRect(1300, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "0", sf::Color(30, 30, 30));
-				perk = GuiDropdown(_perkCount, perkNames, sf::FloatRect(1565, top + 5, 320, 600), _perkCount - 1);
+				count = InputRect(sf::FloatRect(1300, top + 8, 60, 34), TextInput::CHARSET_Numeric, 3, "1", sf::Color(30, 30, 30));
+				text = AlignedTextRect("duplicates", sf::FloatRect(1370, top + 8, 80, 0), 30, sf::Color::White, 0, 1, 1);
+				item = GuiDropdown(_itemCount, itemNames, sf::FloatRect(1460, top + 5, 425, 600), _itemCount - 1);
 			}
 			void Render()
 			{
 				bg.Render();
 				count.Render();
-				perk.Render();
+				text.Render();
+				item.Render();
 			}
 			bool HandleClick(sf::Vector2f position)
 			{
 				if (count.HandleClick(position)) return true;
-				if (perk.HandleClick(position)) return true;
+				if (item.HandleClick(position)) return true;
 				return false;
 			}
 			void HandleMouse(sf::Vector2f position)
@@ -641,9 +644,9 @@ struct WorldConfigTab : GuiObject
 			addFilter = BGTextRect("Add Filter", sf::FloatRect(1290, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
 			removeFilter = BGTextRect("Remove Filter", sf::FloatRect(1690, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
 
-			perkNames = (const char**)malloc(sizeof(const char*) * _perkCount);
-			for (int i = 0; i < _perkCount; i++)
-				perkNames[i] = PerkNames[(i + _perkCount + 1) % _perkCount];
+			perkNames = (const char**)malloc(sizeof(const char*) * _itemCount);
+			for (int i = 0; i < _itemCount; i++)
+				perkNames[i] = ItemNames[_items[i]];
 		}
 
 		void Render()
@@ -1184,8 +1187,17 @@ struct SearchConfigTab : GuiObject
 	BGTextRect searchButton;
 	BGTextRect abortButton;
 	std::thread* searchThread = NULL;
-	float progressFraction = 0;
-	int elapsedMillis = 0;
+
+	struct OutputProgressData2
+	{
+		float progressPercent;
+		int elapsedMillis;
+		int searchedSeeds;
+		int validSeeds;
+
+		bool abort;
+	} progDat = { 1, 0, 0, 0 };
+
 	int updateCtr = 0;
 	int updateInterval = 1000;
 
@@ -1193,8 +1205,12 @@ struct SearchConfigTab : GuiObject
 	int cachedMinutes = 0;
 	int cachedSeconds = 0;
 
+	float cachedRate = 0;
+	float cachedChanceP = 100;
+	float cachedChanceR = 1;
+
+
 	bool searchDone = false;
-	bool abortToggle = false;
 
 	ColorRect progressBarBG;
 
@@ -1222,22 +1238,29 @@ struct SearchConfigTab : GuiObject
 		searchButton.Render();
 		abortButton.Render();
 		progressBarBG.Render();
-		ColorRect(sf::FloatRect(progressBarBG.mRect.rect.left, progressBarBG.mRect.rect.top, progressBarBG.mRect.rect.width * progressFraction, progressBarBG.mRect.rect.height), 
+		ColorRect(sf::FloatRect(progressBarBG.mRect.rect.left, progressBarBG.mRect.rect.top, progressBarBG.mRect.rect.width * progDat.progressPercent, progressBarBG.mRect.rect.height),
 			sf::Color(20, 20, 200)).Render();
-		if (elapsedMillis > updateCtr * updateInterval)
+		if (progDat.elapsedMillis > updateCtr * updateInterval)
 		{
 			updateCtr++;
-			int predictedDurationMillis = (double)elapsedMillis * (double)(1 - progressFraction) / (double)progressFraction;
+			int predictedDurationMillis = (double)progDat.elapsedMillis * (double)(1 - progDat.progressPercent) / (double)progDat.progressPercent;
 			int predictedSeconds = predictedDurationMillis / 1000ULL;
 			int predictedMinutes = predictedSeconds / 60U;
 			int predictedHours = predictedMinutes / 60;
 			cachedHours = predictedHours;
 			cachedMinutes = predictedMinutes % 60;
 			cachedSeconds = predictedSeconds % 60;
+
+			cachedRate = (float)((double)progDat.searchedSeeds / (double)progDat.elapsedMillis * 1000.);
+			double chance = (double)progDat.validSeeds / (double)progDat.searchedSeeds;
+			cachedChanceP = (float)(chance * 100.);
+			cachedChanceR = (float)(1. / chance);
 		}
-		char buffer[50];
-		if(elapsedMillis > 0) sprintf(buffer, "%2.3f%% (%02ih %02im %02is remaining)", progressFraction * 100, cachedHours, cachedMinutes, cachedSeconds);
-		else sprintf(buffer, "%2.3f%%", progressFraction * 100);
+		char buffer[200];
+		if(progDat.elapsedMillis > 0) sprintf(buffer, "%.2f%% complete, searched %i seeds (%02ih %02im %02is remaining, %.0f/s). Found %i valid seeds (%.2g%%, 1/%.1f).",
+			progDat.progressPercent * 100, progDat.searchedSeeds, cachedHours, cachedMinutes, cachedSeconds, cachedRate, progDat.validSeeds, cachedChanceP, cachedChanceR);
+		else sprintf(buffer, "%.2f%% complete, searched %i seeds. Found %i valid (%.2g%%, 1/%.1f).", 
+			progDat.progressPercent * 100, progDat.searchedSeeds, progDat.validSeeds, cachedChanceP, cachedChanceR);
 		AlignedTextRect(buffer, progressBarBG.mRect.rect, 36, sf::Color::White, 0, 1, 1).Render();
 	}
 
@@ -1252,7 +1275,7 @@ struct SearchConfigTab : GuiObject
 		}
 		if (abortButton.mRect.rect.contains(position) && searchThread != NULL)
 		{
-			abortToggle = true;
+			progDat.abort = true;
 			return true;
 		}
 		if (cpuPanel.HandleClick(position)) return true;
@@ -1266,7 +1289,7 @@ struct SearchConfigTab : GuiObject
 	}
 };
 
-constexpr int MAX_OUTPUT_SEEDS = 10000;
+constexpr int MAX_OUTPUT_SEEDS = 1000;
 struct OutputTab : GuiObject
 {
 	ColorRect listBG;
@@ -1424,6 +1447,8 @@ void AppendOutput(char* seedNum, char* seedInfo)
 	if (sfmlState->gui->output.seedList.numElements == MAX_OUTPUT_SEEDS)
 	{
 		sfmlState->gui->output.vectorLock->unlock();
+		free(seedNum);
+		free(seedInfo);
 		return;
 	}
 	sfmlState->gui->output.seeds[sfmlState->gui->output.seedList.numElements] = seedNum;

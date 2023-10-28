@@ -15,6 +15,16 @@
 #include "misc/pngutils.h"
 #include "biomes/allBiomes.h"
 
+struct OutputProgressData
+{
+	float progressPercent;
+	int elapsedMillis;
+	int searchedSeeds;
+	int validSeeds;
+
+	volatile bool abort;
+};
+
 _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span, void* threadMemBlock, void* outputPtr)
 {
 	if (span.seedCount == 0) return {0, 0, false, 0 };
@@ -86,7 +96,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 }
 
 using namespace API_INTERNAL;
-Vec2i OutputLoop(FILE* outputFile, time_t startTime, float& progressPercent, int& elapsedMillis, bool& abort, void(*appendOutput)(char*, char*))
+Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progress, void(*appendOutput)(char*, char*))
 {
 	int displayIntervals = 0;
 	int recountIntervals = 0;
@@ -146,7 +156,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, float& progressPercent, int
 	//loop
 	while (stoppedBlocks < NumWorkers)
 	{
-		if (abort)
+		if (progress.abort)
 		{
 			for (int i = 0; i < NumWorkers; i++)
 				AbortJob(workers[i]);
@@ -158,7 +168,9 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, float& progressPercent, int
 			std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 			std::chrono::nanoseconds duration = time2 - time1;
 			uint64_t milliseconds = (uint64_t)(duration.count() / 1000000);
-			elapsedMillis = milliseconds;
+			progress.elapsedMillis = milliseconds;
+			progress.searchedSeeds = checkedSeeds;
+			progress.validSeeds = passedSeeds;
 			if (recountIntervals * 50 < milliseconds)
 			{
 				recountIntervals++;
@@ -176,7 +188,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, float& progressPercent, int
 				lastSeed = checkedSeeds;
 				displayIntervals++;
 				float percentComplete = ((float)(checkedSeeds) / (config.generalCfg.endSeed - config.generalCfg.seedStart));
-				progressPercent = percentComplete;
+				progress.progressPercent = percentComplete;
 				int seconds = (displayIntervals - 1) * config.outputCfg.printInterval;
 				int minutes = seconds / 60;
 				int hours = minutes / 60;
@@ -360,7 +372,7 @@ void InstantiateBiome(const char* path, BiomeWangScope* ss, int& bC, int& mA)
 	}
 }
 
-void SearchMain(float& progressPercent, int& elapsedMillis, bool& abort, void(*appendOutput)(char*, char*))
+void SearchMain(OutputProgressData& progress, void(*appendOutput)(char*, char*))
 {
 	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 
@@ -369,7 +381,7 @@ void SearchMain(float& progressPercent, int& elapsedMillis, bool& abort, void(*a
 	FILE* f = fopen("output.txt", "wb");
 
 	time_t startTime = _time64(NULL);
-	Vec2i seedCounts = OutputLoop(f, startTime, progressPercent, elapsedMillis, abort, appendOutput);
+	Vec2i seedCounts = OutputLoop(f, startTime, progress, appendOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 	std::chrono::nanoseconds duration = time2 - time1;

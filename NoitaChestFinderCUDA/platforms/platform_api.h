@@ -64,6 +64,7 @@ namespace PLATFORM_API
 	{
 		API_INTERNAL::NumWorkers = count;
 	}
+	//Sets how many worker jobs should be dispatched per second, on average.
 	void SetTargetDispatchRate(int dispatchesPerSecond)
 	{
 		API_INTERNAL::DispatchRate = max(1, dispatchesPerSecond / 20);

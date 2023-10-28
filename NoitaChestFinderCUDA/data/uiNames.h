@@ -16,6 +16,7 @@ const char* SpawnableTypeNames[] = {
 };
 
 const char* ItemNames[] = {
+	"Any Item",
 	"Gold Nuggets",
 	"Gold Powder",
 	"Gold Rain",
