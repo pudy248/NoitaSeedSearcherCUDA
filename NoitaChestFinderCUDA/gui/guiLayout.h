@@ -18,6 +18,7 @@ struct TabSelector : GuiObject
 	int selectedTab;
 	BGTextRect staticConfig;
 	BGTextRect worldConfig;
+	BGTextRect filterConfig;
 	BGTextRect searchConfig;
 	BGTextRect output;
 
@@ -28,14 +29,16 @@ struct TabSelector : GuiObject
 		selectedTab = 0;
 		staticConfig = BGTextRect("static tab", sf::FloatRect(20, 20, 110, 50), 36, textCol, bgCol);
 		worldConfig = BGTextRect("world tab", sf::FloatRect(140, 20, 110, 50), 36, textCol, bgCol);
-		searchConfig = BGTextRect("search tab", sf::FloatRect(260, 20, 110, 50), 36, textCol, bgCol);
-		output = BGTextRect("output tab", sf::FloatRect(380, 20, 110, 50), 36, textCol, bgCol);
+		filterConfig = BGTextRect("filter tab", sf::FloatRect(260, 20, 110, 50), 36, textCol, bgCol);
+		searchConfig = BGTextRect("search tab", sf::FloatRect(380, 20, 110, 50), 36, textCol, bgCol);
+		output = BGTextRect("output tab", sf::FloatRect(500, 20, 110, 50), 36, textCol, bgCol);
 	}
 
 	void Render()
 	{
 		staticConfig.Render();
 		worldConfig.Render();
+		filterConfig.Render();
 		searchConfig.Render();
 		output.Render();
 	}
@@ -54,8 +57,9 @@ struct TabSelector : GuiObject
 
 		setColor(staticConfig, selectedTab == 0, staticConfig.mRect.containedMouseLastFrame);
 		setColor(worldConfig, selectedTab == 1, worldConfig.mRect.containedMouseLastFrame);
-		setColor(searchConfig, selectedTab == 2, searchConfig.mRect.containedMouseLastFrame);
-		setColor(output, selectedTab == 3, output.mRect.containedMouseLastFrame);
+		setColor(filterConfig, selectedTab == 2, filterConfig.mRect.containedMouseLastFrame);
+		setColor(searchConfig, selectedTab == 3, searchConfig.mRect.containedMouseLastFrame);
+		setColor(output, selectedTab == 4, output.mRect.containedMouseLastFrame);
 
 	}
 
@@ -63,8 +67,9 @@ struct TabSelector : GuiObject
 	{
 		if (staticConfig.mRect.rect.contains(position)) { selectedTab = 0; CalculateColors(); return true; }
 		if (worldConfig.mRect.rect.contains(position)) { selectedTab = 1; CalculateColors(); return true; }
-		if (searchConfig.mRect.rect.contains(position)) { selectedTab = 2; CalculateColors(); return true; }
-		if (output.mRect.rect.contains(position)) { selectedTab = 3; CalculateColors(); return true; }
+		if (filterConfig.mRect.rect.contains(position)) { selectedTab = 2; CalculateColors(); return true; }
+		if (searchConfig.mRect.rect.contains(position)) { selectedTab = 3; CalculateColors(); return true; }
+		if (output.mRect.rect.contains(position)) { selectedTab = 4; CalculateColors(); return true; }
 
 		return false;
 	}
@@ -73,6 +78,7 @@ struct TabSelector : GuiObject
 	{
 		staticConfig.mRect.HandleMouse(position);
 		worldConfig.mRect.HandleMouse(position);
+		filterConfig.mRect.HandleMouse(position);
 		searchConfig.mRect.HandleMouse(position);
 		output.mRect.HandleMouse(position);
 
@@ -303,8 +309,7 @@ struct StaticConfigTab : GuiObject
 			InputRect lowerBound;
 			InputRect upperBound;
 			BGTextRect lotteryLabel;
-			ColorRect lotteryBox;
-			bool lottery = false;
+			GuiCheckbox lotteryBox;
 			GuiDropdown perk;
 			PerkRow() = default;
 			PerkRow(float top, const char** perkNames)
@@ -313,7 +318,7 @@ struct StaticConfigTab : GuiObject
 				lowerBound = InputRect(sf::FloatRect(1300, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "0", sf::Color(30, 30, 30));
 				upperBound = InputRect(sf::FloatRect(1450, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "100", sf::Color(30, 30, 30));
 				lotteryLabel = BGTextRect("Lottery", sf::FloatRect(1515, top + 3, 50, 20), 18);
-				lotteryBox = ColorRect(sf::FloatRect(1530, top + 20, 20, 20), sf::Color(40, 40, 40));
+				lotteryBox = GuiCheckbox(sf::FloatRect(1530, top + 20, 20, 20), sf::Color(40, 40, 40), false);
 				perk = GuiDropdown(_perkCount, perkNames, sf::FloatRect(1565, top + 5, 320, 600), _perkCount - 1);
 			}
 			void Render()
@@ -324,8 +329,6 @@ struct StaticConfigTab : GuiObject
 				DrawTextCentered("< Perk # <", sf::Vector2f(1405, bg.mRect.rect.top + 25), 24, sf::Color::White, 0);
 				lotteryLabel.Render();
 				lotteryBox.Render();
-				if (lottery)
-					BGTextRect("X", lotteryBox.mRect.rect).Render();
 				perk.Render();
 			}
 			bool HandleClick(sf::Vector2f position)
@@ -333,11 +336,7 @@ struct StaticConfigTab : GuiObject
 				if (lowerBound.HandleClick(position)) return true;
 				if (upperBound.HandleClick(position)) return true;
 				if (perk.HandleClick(position)) return true;
-				if (lotteryBox.mRect.rect.contains(position))
-				{
-					lottery = !lottery;
-					return true;
-				}
+				if (lotteryBox.HandleClick(position)) return true;
 				return false;
 			}
 			void HandleMouse(sf::Vector2f position)
@@ -434,23 +433,584 @@ struct StaticConfigTab : GuiObject
 
 struct WorldConfigTab : GuiObject
 {
-	AlignedTextRect bg;
-	//InputRect inputText;
+	struct WorldConfigLeftPanel : GuiObject
+	{
+		sf::FloatRect rect = sf::FloatRect(20, 180, 620, 880);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+
+#define textCount 13
+#define checkboxCount 12
+#define dropdownCount 1
+		BGTextRect texts[textCount];
+		GuiCheckbox checkboxes[checkboxCount];
+		GuiDropdown dropdowns[dropdownCount];
+
+		WorldConfigLeftPanel()
+		{
+			int textIdx = 0;
+			int chkboxIdx = 0;
+			int ddIdx = 0;
+
+			texts[textIdx++] = BGTextRect("Search Scope", sf::FloatRect(330, 125, 0, 0), 64);
+			texts[0].fontIdx = 1;
+			texts[textIdx++] = BGTextRect("Shop Spells", sf::FloatRect(125, 205, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Shop Wands", sf::FloatRect(330, 205, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Pacifist Chest", sf::FloatRect(535, 205, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 220, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 220, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 220, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Chests", sf::FloatRect(125, 275, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Item Pedestals", sf::FloatRect(330, 275, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Wand Altars", sf::FloatRect(535, 275, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 290, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Pixel Scenes", sf::FloatRect(125, 345, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Enemies", sf::FloatRect(330, 345, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Eye Rooms", sf::FloatRect(535, 345, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 360, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 360, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 360, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Wand Stats", sf::FloatRect(125, 415, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Spells", sf::FloatRect(330, 415, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Flask Contents", sf::FloatRect(535, 415, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 430, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 430, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 430, 30, 30), sf::Color(40, 40, 40), false);
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			for (int i = 0; i < textCount; i++) texts[i].Render();
+			for (int i = 0; i < checkboxCount; i++) checkboxes[i].Render();
+			//for (int i = 0; i < 9; i++)
+			//	AlignedTextRect(BiomeNames[_allBMBiomes[i]], sf::FloatRect(30, 605 + 50 * i, 182.5f, 40), 24, sf::Color::White, 0, 2, 0).Render();
+
+			//for (int i = 0; i < dropdownCount; i++) dropdowns[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			for (int i = 0; i < checkboxCount; i++) if (checkboxes[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+#undef dropdownCount
+#undef checkboxCount
+#undef textCount
+	};
+	struct WorldConfigCenterPanel : GuiObject
+	{
+		sf::FloatRect rect = sf::FloatRect(650, 180, 620, 880);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+
+#define textCount 22
+#define checkboxCount 21
+#define dropdownCount 1
+		BGTextRect texts[textCount];
+		GuiCheckbox checkboxes[checkboxCount];
+		GuiDropdown dropdowns[dropdownCount];
+
+		WorldConfigCenterPanel()
+		{
+			int textIdx = 0;
+			int chkboxIdx = 0;
+			int ddIdx = 0;
+
+			texts[textIdx++] = BGTextRect("Biomes", sf::FloatRect(960, 125, 0, 0), 64);
+			texts[0].fontIdx = 1;
+			texts[textIdx++] = BGTextRect("Abandoned Lab", sf::FloatRect(755, 205, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Mines", sf::FloatRect(960, 205, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Sky", sf::FloatRect(1165, 205, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 220, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 220, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 220, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Fungal Caverns", sf::FloatRect(755, 275, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Coal Pits", sf::FloatRect(960, 275, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Pyramid", sf::FloatRect(1165, 275, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 290, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Magical Temple", sf::FloatRect(755, 345, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Snowy Depths", sf::FloatRect(960, 345, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Wandmart", sf::FloatRect(1165, 345, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 360, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 360, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 360, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Frozen Vault", sf::FloatRect(755, 415, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Hiisi Base", sf::FloatRect(960, 415, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Sandcave", sf::FloatRect(1165, 415, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 430, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 430, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 430, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Lukki Lair", sf::FloatRect(755, 485, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Jungle", sf::FloatRect(960, 485, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Tower", sf::FloatRect(1165, 485, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 500, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 500, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 500, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Snow Chasm", sf::FloatRect(755, 555, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Vault", sf::FloatRect(960, 555, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Power Plant", sf::FloatRect(1165, 555, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 570, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 570, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 570, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Hell", sf::FloatRect(755, 625, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Temple", sf::FloatRect(960, 625, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Wizard's Den", sf::FloatRect(1165, 625, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 640, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 640, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 640, 30, 30), sf::Color(40, 40, 40), false);
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			for (int i = 0; i < textCount; i++) texts[i].Render();
+			for (int i = 0; i < checkboxCount; i++) checkboxes[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			for (int i = 0; i < checkboxCount; i++) if (checkboxes[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+#undef dropdownCount
+#undef checkboxCount
+#undef textCount
+	};
+	struct WorldConfigRightPanel : GuiObject
+	{
+		struct ItemRow : GuiObject
+		{
+			OutlinedRect bg;
+			InputRect count;
+			GuiDropdown perk;
+			ItemRow() = default;
+			ItemRow(float top, const char** perkNames)
+			{
+				bg = OutlinedRect(sf::FloatRect(1290, top, 600, 50), 1, sf::Color(30, 30, 30), sf::Color(20, 20, 20));
+				count = InputRect(sf::FloatRect(1300, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "0", sf::Color(30, 30, 30));
+				perk = GuiDropdown(_perkCount, perkNames, sf::FloatRect(1565, top + 5, 320, 600), _perkCount - 1);
+			}
+			void Render()
+			{
+				bg.Render();
+				count.Render();
+				perk.Render();
+			}
+			bool HandleClick(sf::Vector2f position)
+			{
+				if (count.HandleClick(position)) return true;
+				if (perk.HandleClick(position)) return true;
+				return false;
+			}
+			void HandleMouse(sf::Vector2f position)
+			{
+
+			}
+		};
+
+		sf::FloatRect rect = sf::FloatRect(1280, 180, 620, 880);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+		BGTextRect title;
+		BGTextRect addFilter;
+		BGTextRect removeFilter;
+
+		int perkRowCount = 0;
+		ItemRow rows[12];
+
+		const char** perkNames;
+
+		WorldConfigRightPanel()
+		{
+			title = BGTextRect("Item Filters", sf::FloatRect(1590, 125, 0, 0), 64);
+			title.fontIdx = 1;
+
+			addFilter = BGTextRect("Add Filter", sf::FloatRect(1290, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
+			removeFilter = BGTextRect("Remove Filter", sf::FloatRect(1690, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
+
+			perkNames = (const char**)malloc(sizeof(const char*) * _perkCount);
+			for (int i = 0; i < _perkCount; i++)
+				perkNames[i] = PerkNames[(i + _perkCount + 1) % _perkCount];
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			title.Render();
+			addFilter.Render();
+			removeFilter.Render();
+			for (int i = 0; i < perkRowCount; i++) rows[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			if (addFilter.mRect.rect.contains(position))
+			{
+				if (perkRowCount < 12)
+				{
+					rows[perkRowCount] = ItemRow(250 + 60 * perkRowCount, perkNames);
+					perkRowCount++;
+				}
+				return true;
+			}
+			if (removeFilter.mRect.rect.contains(position))
+			{
+				if (perkRowCount > 0) perkRowCount--;
+				return true;
+			}
+			for (int i = 0; i < perkRowCount; i++)
+				if (rows[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+	};
+
+	WorldConfigLeftPanel leftPanel;
+	WorldConfigCenterPanel centerPanel;
+	WorldConfigRightPanel rightPanel;
 
 	WorldConfigTab()
 	{
-		bg = AlignedTextRect("NOT YET IMPLEMENTED!", sf::FloatRect(100, 100, 500, 200), 128, sf::Color::White, 1, 0, 0);
+
 	}
 
 	void Render()
 	{
-		bg.Render();
-		//inputText.Render();
+		leftPanel.Render();
+		centerPanel.Render();
+		rightPanel.Render();
 	}
 
 	bool HandleClick(sf::Vector2f position)
 	{
-		//if (inputText.HandleClick(position)) return true;
+		if (leftPanel.HandleClick(position)) return true;
+		if (centerPanel.HandleClick(position)) return true;
+		if (rightPanel.HandleClick(position)) return true;
+		return false;
+	}
+
+	void HandleMouse(sf::Vector2f position)
+	{
+
+	}
+};
+
+struct FilterConfigTab : GuiObject
+{
+	struct FilterConfigLeftPanel : GuiObject
+	{
+		sf::FloatRect rect = sf::FloatRect(20, 180, 620, 880);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+
+#define textCount 13
+#define checkboxCount 12
+#define dropdownCount 1
+		BGTextRect texts[textCount];
+		GuiCheckbox checkboxes[checkboxCount];
+		GuiDropdown dropdowns[dropdownCount];
+
+		FilterConfigLeftPanel()
+		{
+			int textIdx = 0;
+			int chkboxIdx = 0;
+			int ddIdx = 0;
+
+			texts[textIdx++] = BGTextRect("Search Scope", sf::FloatRect(330, 125, 0, 0), 64);
+			texts[0].fontIdx = 1;
+			texts[textIdx++] = BGTextRect("Shop Spells", sf::FloatRect(125, 205, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Shop Wands", sf::FloatRect(330, 205, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Pacifist Chest", sf::FloatRect(535, 205, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 220, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 220, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 220, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Chests", sf::FloatRect(125, 275, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Item Pedestals", sf::FloatRect(330, 275, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Wand Altars", sf::FloatRect(535, 275, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 290, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Pixel Scenes", sf::FloatRect(125, 345, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Enemies", sf::FloatRect(330, 345, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Eye Rooms", sf::FloatRect(535, 345, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 360, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 360, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 360, 30, 30), sf::Color(40, 40, 40), false);
+
+			texts[textIdx++] = BGTextRect("Wand Stats", sf::FloatRect(125, 415, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Spells", sf::FloatRect(330, 415, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Flask Contents", sf::FloatRect(535, 415, 0, 0), 36);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 430, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 430, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 430, 30, 30), sf::Color(40, 40, 40), false);
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			for (int i = 0; i < textCount; i++) texts[i].Render();
+			for (int i = 0; i < checkboxCount; i++) checkboxes[i].Render();
+			//for (int i = 0; i < 9; i++)
+			//	AlignedTextRect(BiomeNames[_allBMBiomes[i]], sf::FloatRect(30, 605 + 50 * i, 182.5f, 40), 24, sf::Color::White, 0, 2, 0).Render();
+
+			//for (int i = 0; i < dropdownCount; i++) dropdowns[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			for (int i = 0; i < checkboxCount; i++) if (checkboxes[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+#undef dropdownCount
+#undef textCount
+	};
+	struct FilterConfigCenterPanel : GuiObject
+	{
+		struct FungalShiftRow : GuiObject
+		{
+			OutlinedRect bg;
+			InputRect lowerBound;
+			InputRect upperBound;
+			GuiDropdown source;
+			GuiDropdown dest;
+			FungalShiftRow() = default;
+			FungalShiftRow(float top, const char** sourceNames, const char** destNames)
+			{
+				bg = OutlinedRect(sf::FloatRect(660, top, 600, 50), 1, sf::Color(30, 30, 30), sf::Color(20, 20, 20));
+				lowerBound = InputRect(sf::FloatRect(670, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "0", sf::Color(30, 30, 30));
+				upperBound = InputRect(sf::FloatRect(820, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "20", sf::Color(30, 30, 30));
+				source = GuiDropdown((int)_fungalMaterialsFromCount, sourceNames, sf::FloatRect(895, top + 5, 160, 600), _fungalMaterialsFromCount - 1);
+				dest = GuiDropdown((int)_fungalMaterialsToCount, destNames, sf::FloatRect(1095, top + 5, 160, 600), _fungalMaterialsToCount - 1);
+			}
+			void Render()
+			{
+				bg.Render();
+				lowerBound.Render();
+				upperBound.Render();
+				DrawTextCentered("< Shift # <", sf::Vector2f(775, bg.mRect.rect.top + 25), 24, sf::Color::White, 0);
+				source.Render();
+				dest.Render();
+				DrawTextCentered("=>", sf::Vector2f(1075, bg.mRect.rect.top + 25), 36, sf::Color::White, 0);
+			}
+			bool HandleClick(sf::Vector2f position)
+			{
+				if (lowerBound.HandleClick(position)) return true;
+				if (upperBound.HandleClick(position)) return true;
+				if (source.HandleClick(position)) return true;
+				if (dest.HandleClick(position)) return true;
+				return false;
+			}
+			void HandleMouse(sf::Vector2f position)
+			{
+
+			}
+		};
+
+		sf::FloatRect rect = sf::FloatRect(650, 180, 620, 880);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+		BGTextRect title;
+		BGTextRect addFilter;
+		BGTextRect removeFilter;
+
+		int fungalShiftRowCount = 0;
+		FungalShiftRow rows[12];
+
+		const char** sourceNames;
+		const char** destNames;
+
+		FilterConfigCenterPanel()
+		{
+			title = BGTextRect("Fungal Shifts", sf::FloatRect(960, 125, 0, 0), 64);
+			title.fontIdx = 1;
+
+			addFilter = BGTextRect("Add Filter", sf::FloatRect(660, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
+			removeFilter = BGTextRect("Remove Filter", sf::FloatRect(1060, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
+
+			sourceNames = (const char**)malloc(sizeof(const char*) * _fungalMaterialsFromCount);
+			for (int i = 0; i < _fungalMaterialsFromCount; i++)
+				if (_fungalMaterialsFrom[i] == SS_FLASK) sourceNames[i] = "Flask";
+				else sourceNames[i] = MaterialNames[_fungalMaterialsFrom[i]];
+
+			destNames = (const char**)malloc(sizeof(const char*) * _fungalMaterialsToCount);
+			for (int i = 0; i < _fungalMaterialsToCount; i++)
+				if (_fungalMaterialsTo[i] == SD_FLASK) destNames[i] = "Flask";
+				else destNames[i] = MaterialNames[_fungalMaterialsTo[i]];
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			title.Render();
+			addFilter.Render();
+			removeFilter.Render();
+			for (int i = 0; i < fungalShiftRowCount; i++) rows[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			if (addFilter.mRect.rect.contains(position))
+			{
+				if (fungalShiftRowCount < 12)
+				{
+					rows[fungalShiftRowCount] = FungalShiftRow(250 + 60 * fungalShiftRowCount, sourceNames, destNames);
+					fungalShiftRowCount++;
+				}
+				return true;
+			}
+			if (removeFilter.mRect.rect.contains(position))
+			{
+				if (fungalShiftRowCount > 0) fungalShiftRowCount--;
+				return true;
+			}
+			for (int i = 0; i < fungalShiftRowCount; i++)
+				if (rows[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+	};
+	struct FilterConfigRightPanel : GuiObject
+	{
+		struct PerkRow : GuiObject
+		{
+			OutlinedRect bg;
+			InputRect lowerBound;
+			InputRect upperBound;
+			BGTextRect lotteryLabel;
+			ColorRect lotteryBox;
+			bool lottery = false;
+			GuiDropdown perk;
+			PerkRow() = default;
+			PerkRow(float top, const char** perkNames)
+			{
+				bg = OutlinedRect(sf::FloatRect(1290, top, 600, 50), 1, sf::Color(30, 30, 30), sf::Color(20, 20, 20));
+				lowerBound = InputRect(sf::FloatRect(1300, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "0", sf::Color(30, 30, 30));
+				upperBound = InputRect(sf::FloatRect(1450, top + 8, 60, 34), TextInput::CHARSET_Numeric, 2, "100", sf::Color(30, 30, 30));
+				lotteryLabel = BGTextRect("Lottery", sf::FloatRect(1515, top + 3, 50, 20), 18);
+				lotteryBox = ColorRect(sf::FloatRect(1530, top + 20, 20, 20), sf::Color(40, 40, 40));
+				perk = GuiDropdown(_perkCount, perkNames, sf::FloatRect(1565, top + 5, 320, 600), _perkCount - 1);
+			}
+			void Render()
+			{
+				bg.Render();
+				lowerBound.Render();
+				upperBound.Render();
+				DrawTextCentered("< Perk # <", sf::Vector2f(1405, bg.mRect.rect.top + 25), 24, sf::Color::White, 0);
+				lotteryLabel.Render();
+				lotteryBox.Render();
+				if (lottery)
+					BGTextRect("X", lotteryBox.mRect.rect).Render();
+				perk.Render();
+			}
+			bool HandleClick(sf::Vector2f position)
+			{
+				if (lowerBound.HandleClick(position)) return true;
+				if (upperBound.HandleClick(position)) return true;
+				if (perk.HandleClick(position)) return true;
+				if (lotteryBox.mRect.rect.contains(position))
+				{
+					lottery = !lottery;
+					return true;
+				}
+				return false;
+			}
+			void HandleMouse(sf::Vector2f position)
+			{
+
+			}
+		};
+
+		sf::FloatRect rect = sf::FloatRect(1280, 180, 620, 880);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+		BGTextRect title;
+		BGTextRect addFilter;
+		BGTextRect removeFilter;
+
+		int perkRowCount = 0;
+		PerkRow rows[12];
+
+		const char** perkNames;
+
+		FilterConfigRightPanel()
+		{
+			title = BGTextRect("Perks", sf::FloatRect(1590, 125, 0, 0), 64);
+			title.fontIdx = 1;
+
+			addFilter = BGTextRect("Add Filter", sf::FloatRect(1290, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
+			removeFilter = BGTextRect("Remove Filter", sf::FloatRect(1690, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
+
+			perkNames = (const char**)malloc(sizeof(const char*) * _perkCount);
+			for (int i = 0; i < _perkCount; i++)
+				perkNames[i] = PerkNames[(i + _perkCount + 1) % _perkCount];
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			title.Render();
+			addFilter.Render();
+			removeFilter.Render();
+			for (int i = 0; i < perkRowCount; i++) rows[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			if (addFilter.mRect.rect.contains(position))
+			{
+				if (perkRowCount < 12)
+				{
+					rows[perkRowCount] = PerkRow(250 + 60 * perkRowCount, perkNames);
+					perkRowCount++;
+				}
+				return true;
+			}
+			if (removeFilter.mRect.rect.contains(position))
+			{
+				if (perkRowCount > 0) perkRowCount--;
+				return true;
+			}
+			for (int i = 0; i < perkRowCount; i++)
+				if (rows[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+	};
+
+	FilterConfigLeftPanel leftPanel;
+	FilterConfigCenterPanel centerPanel;
+	FilterConfigRightPanel rightPanel;
+
+	FilterConfigTab()
+	{
+
+	}
+
+	void Render()
+	{
+		leftPanel.Render();
+		centerPanel.Render();
+		rightPanel.Render();
+	}
+
+	bool HandleClick(sf::Vector2f position)
+	{
+		if (leftPanel.HandleClick(position)) return true;
+		if (centerPanel.HandleClick(position)) return true;
+		if (rightPanel.HandleClick(position)) return true;
 		return false;
 	}
 
@@ -553,7 +1113,7 @@ struct SearchConfigTab : GuiObject
 
 		void GetProcessorName(char* buffer)
 		{
-
+			#ifdef BACKEND_CUDA
 			int devCount;
 			cudaGetDeviceCount(&devCount);
 			if (devCount == 0)
@@ -568,6 +1128,9 @@ struct SearchConfigTab : GuiObject
 			checkCudaErrors(cudaGetDeviceProperties_v2(&properties, 0));
 
 			sprintf(buffer, "GPU %i: %s", device, properties.name);
+			#else
+			sprintf(buffer, "CUDA driver disabled.");
+			#endif
 		}
 
 		GPUPanel()
@@ -787,6 +1350,7 @@ struct SearchGui : GuiObject
 	TabSelector tabs;
 	StaticConfigTab staticConfig;
 	WorldConfigTab worldConfig;
+	FilterConfigTab filterConfig;
 	SearchConfigTab searchConfig;
 	OutputTab output;
 
@@ -797,6 +1361,7 @@ struct SearchGui : GuiObject
 		tabs = TabSelector();
 		staticConfig = StaticConfigTab();
 		worldConfig = WorldConfigTab();
+		filterConfig = FilterConfigTab();
 		searchConfig = SearchConfigTab();
 		output = OutputTab();
 	}
@@ -811,6 +1376,8 @@ struct SearchGui : GuiObject
 		else if (tabs.selectedTab == 1)
 			worldConfig.Render();
 		else if (tabs.selectedTab == 2)
+			filterConfig.Render();
+		else if (tabs.selectedTab == 3)
 			searchConfig.Render();
 		else
 			output.Render();
@@ -826,8 +1393,10 @@ struct SearchGui : GuiObject
 		if (tabs.selectedTab == 1)
 			if (worldConfig.HandleClick(clickPos)) return true;
 		if (tabs.selectedTab == 2)
-			if (searchConfig.HandleClick(clickPos)) return true;
+			if (filterConfig.HandleClick(clickPos)) return true;
 		if (tabs.selectedTab == 3)
+			if (searchConfig.HandleClick(clickPos)) return true;
+		if (tabs.selectedTab == 4)
 			if (output.HandleClick(clickPos)) return true;
 
 		return false;
@@ -841,6 +1410,8 @@ struct SearchGui : GuiObject
 		else if (tabs.selectedTab == 1)
 			worldConfig.HandleMouse(clickPos);
 		else if (tabs.selectedTab == 2)
+			filterConfig.HandleMouse(clickPos);
+		else if (tabs.selectedTab == 3)
 			searchConfig.HandleMouse(clickPos);
 		else
 			output.HandleMouse(clickPos);

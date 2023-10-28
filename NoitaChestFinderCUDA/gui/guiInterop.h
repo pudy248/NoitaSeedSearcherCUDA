@@ -64,13 +64,10 @@ void CreateConfigsAndDispatch()
 
 	ItemFilter iFilters[] = { ItemFilter({SAMPO}, 1), ItemFilter({MIMIC_SIGN}) };
 	MaterialFilter mFilters[] = { MaterialFilter({WATER}, 5) };
-	SpellFilter sFilters[] = {
-		SpellFilter({SPELL_LUMINOUS_DRILL, SPELL_LASER_LUMINOUS_DRILL, SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER}, 1),
-		SpellFilter({SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER, SPELL_SPITTER}),
-		SpellFilter({SPELL_CURSE_WITHER_PROJECTILE}) };
+	SpellFilter sFilters[] = {SpellFilter({SPELL_LUMINOUS_DRILL, SPELL_LASER_LUMINOUS_DRILL, SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER}, 1)};
 	PixelSceneFilter psFilters[] = { PixelSceneFilter({PS_NONE}, {MAGIC_LIQUID_HP_REGENERATION}) };
 
-	config.filterCfg = FilterConfig(false, 0, iFilters, 0, mFilters, 0, sFilters, 0, psFilters, false, 5);
+	config.filterCfg = FilterConfig(false, 1, iFilters, 0, mFilters, 0, sFilters, 0, psFilters, false, 5);
 
 	config.precheckCfg = {
 		{false, CART_NONE},
@@ -88,9 +85,6 @@ void CreateConfigsAndDispatch()
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
 	config.memSizes.spawnableMemSize *= max(1, biomeCount);
-
-
-
 
 	SearchGui* gui = sfmlState->gui;
 	GuiDropdown* dd = &gui->staticConfig.leftPanel.dropdowns[0];
@@ -167,7 +161,7 @@ void CreateConfigsAndDispatch()
 		{
 			config.precheckCfg.perks.perks[i] = {
 				(Perk)((gui->staticConfig.rightPanel.rows[i].perk.list.selectedElement + 1) % _perkCount),
-				gui->staticConfig.rightPanel.rows[i].lottery,
+				gui->staticConfig.rightPanel.rows[i].lotteryBox.enabled,
 				atoi(gui->staticConfig.rightPanel.rows[i].lowerBound.text.str.toAnsiString().c_str()),
 				atoi(gui->staticConfig.rightPanel.rows[i].upperBound.text.str.toAnsiString().c_str()) };
 		}

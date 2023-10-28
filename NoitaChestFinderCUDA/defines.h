@@ -1,8 +1,8 @@
 #pragma once
 
 //Define exactly one of these!
-//#define BACKEND_CPU
-#define BACKEND_CUDA
+#define BACKEND_CPU
+//#define BACKEND_CUDA
 
 
 //#define IMAGE_OUTPUT

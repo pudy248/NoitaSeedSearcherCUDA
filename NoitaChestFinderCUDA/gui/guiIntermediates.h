@@ -32,6 +32,7 @@ struct GuiCheckbox : GuiObject
 
 	bool HandleClick(sf::Vector2f position)
 	{
+		if (!box.mRect.rect.contains(position)) return false;
 		enabled = !enabled;
 		if (enabled) box.text = "X"; else box.text = "";
 		return true;
