@@ -63,7 +63,7 @@ void SfmlMain()
 			{
 				sf::Vector2f mPos = TransformMouse(sf::Vector2f(sf::Mouse::getPosition()));
 				refs.selectedText = NULL;
-				if (refs.selectedScrollList != NULL && !refs.selectedScrollList->rect.contains(mPos))
+				if (refs.selectedScrollList != NULL && !refs.selectedScrollList->mRect.Captures(mPos))
 					refs.selectedScrollList = NULL;
 
 				gui.HandleClick(mPos);
@@ -75,7 +75,7 @@ void SfmlMain()
 			}
 			if (event.type == sf::Event::MouseWheelScrolled && refs.selectedScrollList != NULL)
 			{
-				float scrollLength = fmaxf(refs.selectedScrollList->entryHeight * refs.selectedScrollList->numElements - refs.selectedScrollList->rect.height, 0);
+				float scrollLength = fmaxf(refs.selectedScrollList->entryHeight * refs.selectedScrollList->numElements - refs.selectedScrollList->mRect.rect.height, 0);
 				refs.selectedScrollList->scrollDistance = fminf(fmaxf(refs.selectedScrollList->scrollDistance - 200 * event.mouseWheelScroll.delta, 0), scrollLength);
 			}
 			if (refs.selectedScrollList != NULL && event.type == sf::Event::KeyPressed && (event.key.code == sf::Keyboard::Up || event.key.code == sf::Keyboard::Down))
@@ -85,7 +85,7 @@ void SfmlMain()
 					refs.selectedScrollList->selectedElement++;
 				refs.selectedScrollList->scrollDistance = fmaxf(fminf(refs.selectedScrollList->scrollDistance,
 					refs.selectedScrollList->selectedElement * refs.selectedScrollList->entryHeight),
-					(refs.selectedScrollList->selectedElement + 1) * refs.selectedScrollList->entryHeight - refs.selectedScrollList->rect.height);
+					(refs.selectedScrollList->selectedElement + 1) * refs.selectedScrollList->entryHeight - refs.selectedScrollList->mRect.rect.height);
 			}
 		}
 

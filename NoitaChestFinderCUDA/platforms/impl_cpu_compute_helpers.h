@@ -11,6 +11,10 @@ _compute void cMemcpy(void* dest, void* source, size_t size)
 {
 	memcpy(dest, source, size);
 };
+_compute void cMemcpyU(void* dest, void* source, size_t size)
+{
+	memcpy(dest, source, size);
+};
 _compute void cMemset(void* dest, int val, size_t size)
 {
 	memset(dest, val, size);

@@ -30,7 +30,7 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 //write output
 {
 	char* seedNum = (char*)malloc(12);
-	char* seedInfo = (char*)malloc(4096);
+	char* seedInfo = (char*)malloc(8192);
 	int memOffset = 0;
 	int bufOffset = 0;
 	int seed = readInt(output, memOffset);
@@ -236,6 +236,7 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 #endif
 #endif
 #endif
+	if (bufOffset > 8192) printf("ERR! Buffer overflow in output with size %i\n", bufOffset);
 	if (appendOutput != NULL) appendOutput(seedNum, seedInfo);
 	else { free(seedNum); free(seedInfo); }
 }

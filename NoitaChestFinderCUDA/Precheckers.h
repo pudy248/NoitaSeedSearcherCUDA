@@ -220,13 +220,7 @@ _compute bool CheckStartingWands(NollaPRNG& random, StartingWandConfig c)
 	{
 		Spell selectedProj = SPELL_NONE;
 		random.SetRandomSeedInt(0, -11);
-		random.Next();
-		random.Next();
-		random.Next();
-		random.Next();
-		random.Next();
-		random.Next();
-		random.Next();
+		for (int i = 0; i < 7; i++) random.Next();
 		int rnd = random.Random(1, 100);
 		if (rnd < 50)
 		{
@@ -242,11 +236,7 @@ _compute bool CheckStartingWands(NollaPRNG& random, StartingWandConfig c)
 	{
 		Spell selectedBomb = SPELL_NONE;
 		random.SetRandomSeedInt(-1, 0);
-		random.Next();
-		random.Next();
-		random.Next();
-		random.Next();
-		random.Next();
+		for (int i = 0; i < 5; i++) random.Next();
 		int rnd = random.Random(1, 100);
 		if (rnd < 50)
 		{

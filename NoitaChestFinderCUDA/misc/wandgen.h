@@ -727,7 +727,7 @@ _compute void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, double y,
 	}
 }
 
-_compute Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle)
+_compute _noinline Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
@@ -737,7 +737,7 @@ _compute Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bo
 	AddRandomCards(&wand, seed, x, y, level, &random);
 	return wand;
 }
-_compute Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level)
+_compute _noinline Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level)
 {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);

@@ -47,9 +47,6 @@ struct stbhw_config
 	int num_vary_x;     // additional number of variations along x axis in the template
 	int num_vary_y;     // additional number of variations along y axis in the template
 	int corner_type_color_template[4][4];
-	// if corner_type_color_template[s][t] is non-zero, then any
-	// corner of type s generated as color t will get a little
-	// corner sample markup in the template image data
 };
 
 // map size

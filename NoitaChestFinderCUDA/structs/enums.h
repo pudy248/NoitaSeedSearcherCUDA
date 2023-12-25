@@ -546,7 +546,7 @@ enum Item : uint8_t
 };
 enum SpawnableMetadata : uint8_t
 {
-	BYTE_NONE,
+	BYTE_NONE = 128,
 	TYPE_CHEST,
 	TYPE_CHEST_GREATER,
 	TYPE_ITEM_PEDESTAL,

@@ -42,6 +42,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		if (config.spawnableCfg.staticUpwarps)
 		{
 			uint8_t* upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
+			uint8_t* miscMem2 = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
 			int offset = 0;
 			int _ = 0;
 			spawnChest(315, 17, { currentSeed, {}, config.spawnableCfg, upwarps, offset, _ });
@@ -50,27 +51,29 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 			Spawnable* spawnables[] = { (Spawnable*)upwarps, (Spawnable*)ptr1 };
 			SpawnableBlock b = { currentSeed, 2, spawnables };
 
-			seedPassed &= SpawnablesPassed(b, config.filterCfg, NULL, false);
+			seedPassed &= SpawnablesPassed(b, config.filterCfg, NULL, miscMem2, false);
 			ArenaSetOffset(arena, upwarps);
 			if (!seedPassed) continue;
 		}
 
 		int spawnableCount = 0;
 		int spawnableOffset = 8;
-	#ifdef DO_WORLDGEN
-		uint8_t* mapMem = ArenaAlloc(arena, config.memSizes.mapDataSize, 8); //Pointers are 8 bytes (which I regularly forget)
-		uint8_t* miscMem = ArenaAlloc(arena, config.memSizes.miscMemSize, 4);
-		uint8_t* visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
+		uint8_t* mapMem = ArenaAlloc(arena, config.memSizes.mapDataSize, 8);
 		uint8_t* spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
+		uint8_t* visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
+		uint8_t* miscMem = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
+
 		*(int*)spawnables = currentSeed;
+	#ifdef DO_WORLDGEN
 		for (int biomeNum = 0; biomeNum < config.biomeCount; biomeNum++)
 		{
 			GenerateMap(currentSeed, config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			threadSync();
-			SetSpawnFuncsFromGlobals();
-			CheckSpawnables(mapMem, { currentSeed, config.biomeScopes[biomeNum].bSec, config.spawnableCfg, spawnables, spawnableOffset, spawnableCount }, config.memSizes.spawnableMemSize);
-			threadSync();
+			//SetSpawnFuncsFromGlobals();
+			//CheckSpawnables(mapMem, { currentSeed, config.biomeScopes[biomeNum].bSec, config.spawnableCfg, spawnables, spawnableOffset, spawnableCount }, config.memSizes.spawnableMemSize);
+			//threadSync();
 		}
+#endif
 
 		CheckMountains(currentSeed, config.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
 		CheckEyeRooms(currentSeed, config.spawnableCfg, spawnables, spawnableOffset, spawnableCount);
@@ -78,13 +81,12 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 
 		((int*)spawnables)[1] = spawnableCount;
 		SpawnableBlock result = ParseSpawnableBlock(spawnables, mapMem, config.spawnableCfg, config.memSizes.mapDataSize);
-		seedPassed &= SpawnablesPassed(result, config.filterCfg, output, true);
+		seedPassed &= SpawnablesPassed(result, config.filterCfg, output, miscMem, true);
 
 		if (!seedPassed)
 		{
 			continue;
 		}
-	#endif
 
 		memcpy(output, &currentSeed, 4);
 		memcpy((uint8_t*)outputPtr, output, config.memSizes.outputSize);
@@ -266,6 +268,14 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	workers.clear();
 	free(params);
 	free(hOutput);
+
+	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
+	std::chrono::nanoseconds duration = time2 - time1;
+	uint64_t milliseconds = (uint64_t)(duration.count() / 1000000);
+	progress.elapsedMillis = milliseconds;
+	progress.searchedSeeds = checkedSeeds;
+	progress.validSeeds = passedSeeds;
+
 	return { (int)checkedSeeds, (int)passedSeeds };
 }
 

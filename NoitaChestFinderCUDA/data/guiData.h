@@ -504,3 +504,7 @@ const Item _items[_itemCount] = {
 	TRUE_ORB,
 	ITEM_NONE,
 };
+
+constexpr int _materialCount = SPARK_TEAL + 1;
+
+constexpr int _spellCount = SPELL_RAINBOW_TRAIL + 1;

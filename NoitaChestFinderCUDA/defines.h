@@ -1,14 +1,18 @@
 #pragma once
 
 //Define exactly one of these!
-#define BACKEND_CPU
-//#define BACKEND_CUDA
+//#define BACKEND_CPU
+#define BACKEND_CUDA
+//Future implementations?
+//#define BACKEND_ROCm
+//#define BACKEND_OPENCL
+//#define BACKEND_OPENMP
 
 
 //#define IMAGE_OUTPUT
-//#define SPAWNABLE_OUTPUT
+#define SPAWNABLE_OUTPUT
 //#define SQL_OUTPUT
-//#define DO_WORLDGEN
-//#define DO_WANDGEN
+#define DO_WORLDGEN
+#define DO_WANDGEN
 //#define REALTIME_SEEDS
 #define SFML

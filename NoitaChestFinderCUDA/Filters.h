@@ -264,18 +264,18 @@ _compute void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& fo
 	}
 }
 
-_compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, bool write)
+_compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* tmp, bool write)
 {
 	int relevantSpawnableCount = 0;
-	Spawnable* relevantSpawnables[50];
+	MemoryArena localArena = { tmp, 0 };
+	int* itemsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
+	int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
+	int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
+	int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
+	Spawnable** relevantSpawnables = (Spawnable**)ArenaAlloc(localArena, 0);
 
 	if (fCfg.aggregate)
 	{
-		int itemsPassed[TOTAL_FILTER_COUNT];
-		int materialsPassed[TOTAL_FILTER_COUNT];
-		int spellsPassed[TOTAL_FILTER_COUNT];
-		int pixelScenesPassed[TOTAL_FILTER_COUNT];
-
 		for (int i = 0; i < fCfg.itemFilterCount; i++) itemsPassed[i] = 0;
 		for (int i = 0; i < fCfg.materialFilterCount; i++) materialsPassed[i] = 0;
 		for (int i = 0; i < fCfg.spellFilterCount; i++) spellsPassed[i] = 0;
@@ -419,7 +419,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
-		if (relevantSpawnableCount == 0)
+		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount) > 0)
 		{
 			return false;
 		}

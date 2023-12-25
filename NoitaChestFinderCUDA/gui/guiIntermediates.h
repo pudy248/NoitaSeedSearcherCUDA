@@ -32,7 +32,8 @@ struct GuiCheckbox : GuiObject
 
 	bool HandleClick(sf::Vector2f position)
 	{
-		if (!box.mRect.rect.contains(position)) return false;
+		if (!box.mRect.interactable) return false;
+		if (!box.mRect.Captures(position)) return false;
 		enabled = !enabled;
 		if (enabled) box.text = "X"; else box.text = "";
 		return true;
@@ -43,10 +44,10 @@ struct GuiCheckbox : GuiObject
 
 struct GuiScrollList : GuiObject
 {
-	sf::FloatRect rect;
+	MouseRect mRect;
 	float entryHeight = 40;
 	float scrollbarWidth = 5;
-	float textSize = 24;
+	float textSize = 30;
 
 	sf::Color backgroundColor = sf::Color(30, 30, 30);
 
@@ -58,7 +59,7 @@ struct GuiScrollList : GuiObject
 	GuiScrollList() = default;
 	GuiScrollList(int _numElements, const char** _elements, sf::FloatRect _rect, int _selected)
 	{
-		rect = _rect;
+		mRect.rect = _rect;
 		numElements = _numElements;
 		elements = _elements;
 		selectedElement = _selected;
@@ -67,34 +68,34 @@ struct GuiScrollList : GuiObject
 	void Render()
 	{
 		sf::View dropdownView;
-		dropdownView.reset(sf::FloatRect(sf::Vector2f(), sf::Vector2f(rect.width, rect.height)));
-		dropdownView.setViewport(sf::FloatRect(rect.left / 1920, rect.top / 1080,
-			rect.width / 1920, rect.height / 1080));
+		dropdownView.reset(sf::FloatRect(sf::Vector2f(), sf::Vector2f(mRect.rect.width, mRect.rect.height)));
+		dropdownView.setViewport(sf::FloatRect(mRect.rect.left / 1920, mRect.rect.top / 1080,
+			mRect.rect.width / 1920, mRect.rect.height / 1080));
 		sfmlState->window.setView(dropdownView);
 
-		float heightDiff = fmaxf(0, numElements * entryHeight - rect.height);
+		float heightDiff = fmaxf(0, numElements * entryHeight - mRect.rect.height);
 		float top = 0;
 		for (int i = 0; i < numElements; i++)
 		{
-			BGTextRect element(elements[i], sf::FloatRect(0, top - scrollDistance, rect.width, entryHeight), 24, sf::Color::White, backgroundColor);
+			BGTextRect element(elements[i], sf::FloatRect(0, top - scrollDistance, mRect.rect.width, entryHeight), 24, sf::Color::White, backgroundColor);
 			element.Render();
 			top += entryHeight;
 		}
 
 		//Scrollbar
-		if (rect.height < numElements * entryHeight)
+		if (mRect.rect.height < numElements * entryHeight)
 		{
-			float scrollbarHeight = rect.height * (rect.height / (numElements * entryHeight));
-			ColorRect(sf::FloatRect(rect.width - scrollbarWidth, (rect.height - scrollbarHeight) * scrollDistance / heightDiff, scrollbarWidth, scrollbarHeight), sf::Color(255, 255, 255, 40)).Render();
+			float scrollbarHeight = mRect.rect.height * (mRect.rect.height / (numElements * entryHeight));
+			ColorRect(sf::FloatRect(mRect.rect.width - scrollbarWidth, (mRect.rect.height - scrollbarHeight) * scrollDistance / heightDiff, scrollbarWidth, scrollbarHeight), sf::Color(255, 255, 255, 40)).Render();
 		}
 
 		//Outlines
-		OutlinedRect(sf::FloatRect(0, 0, rect.width, rect.height), 1, sf::Color(60, 60, 60)).Render();
+		OutlinedRect(sf::FloatRect(0, 0, mRect.rect.width, mRect.rect.height), 1, sf::Color(60, 60, 60)).Render();
 		top = 0;
 		for (int i = 0; i < numElements; i++)
 		{
 			if (i == selectedElement)
-				OutlinedRect(sf::FloatRect(0, top - scrollDistance, rect.width, entryHeight), 1, sf::Color::White).Render();
+				OutlinedRect(sf::FloatRect(0, top - scrollDistance, mRect.rect.width, entryHeight), 1, sf::Color::White).Render();
 			top += entryHeight;
 		}
 
@@ -103,13 +104,14 @@ struct GuiScrollList : GuiObject
 
 	bool HandleClick(sf::Vector2f position)
 	{
-		if (rect.contains(position))
+		if (!mRect.interactable) return false;
+		if (mRect.Captures(position))
 		{
-			float heightDiff = fmaxf(0, numElements * entryHeight - rect.height);
+			float heightDiff = fmaxf(0, numElements * entryHeight - mRect.rect.height);
 			float top = 0;
 			for (int i = 0; i < numElements; i++)
 			{
-				if (sf::FloatRect(rect.left, rect.top + top - scrollDistance, rect.width, entryHeight).contains(position))
+				if (sf::FloatRect(mRect.rect.left, mRect.rect.top + top - scrollDistance, mRect.rect.width, entryHeight).contains(position))
 				{
 					sfmlState->selectedScrollList = NULL;
 					selectedElement = i;
@@ -123,7 +125,8 @@ struct GuiScrollList : GuiObject
 
 	void HandleMouse(sf::Vector2f position)
 	{
-		if (rect.contains(position)) sfmlState->selectedScrollList = this;
+		if (!mRect.interactable) return;
+		if (mRect.Captures(position)) sfmlState->selectedScrollList = this;
 	}
 };
 
@@ -154,25 +157,26 @@ struct GuiDropdown : GuiObject
 		{
 			clippedOpenRect.top -= openRect.top + openRect.height - 1080;
 		}
-		list.rect = clippedOpenRect;
+		list.mRect.rect = clippedOpenRect;
 	}
 
 	void Render()
 	{
 		if (sfmlState->selectedScrollList != &list)
 		{
-			BGTextRect bg(list.elements[list.selectedElement], sf::FloatRect(openRect.left, openRect.top, openRect.width, list.entryHeight), 24, sf::Color::White, list.backgroundColor);
+			BGTextRect bg(list.elements[list.selectedElement], sf::FloatRect(openRect.left, openRect.top, openRect.width, list.entryHeight), list.textSize, sf::Color::White, list.backgroundColor);
 			bg.Render();
 		}
 	}
 
 	bool HandleClick(sf::Vector2f position)
 	{
+		if (!list.mRect.interactable) return false;
 		if (sf::FloatRect(openRect.left, openRect.top, openRect.width, list.entryHeight).contains(position))
 		{
 			if (sfmlState->selectedScrollList != NULL)
 			{
-				if (!sfmlState->selectedScrollList->rect.contains(position))
+				if (!sfmlState->selectedScrollList->mRect.Captures(position))
 				{
 					sfmlState->selectedScrollList = &list;
 					return true;

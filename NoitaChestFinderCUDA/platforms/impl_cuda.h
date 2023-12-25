@@ -58,11 +58,12 @@ inline void __printLastCudaError(const char* errorMessage, const char* file,
 }
 
 //CUDA-specific kernel config structs
-constexpr int MAXBLOCKS = 16;
-constexpr int BLOCKDIV = 16;
-constexpr int BLOCKSIZE = 64 * BLOCKDIV;
+constexpr int MAXBLOCKS = 8;
+constexpr int BLOCKDIV = 32;
+constexpr int BLOCKSIZE = 32 * BLOCKDIV;
 int NumBlocks;
 int memIdxCtr = 0;
+
 struct KernelIO
 {
 	SpanParams params[BLOCKSIZE];
@@ -175,6 +176,7 @@ void AllocateComputeMemory()
 void FreeComputeMemory()
 {
 	//TODO fix the fact that we leak literally everything, I don't want to write this function right now.
+	//Device reset fixes all woes.
 }
 
 Worker CreateWorker()

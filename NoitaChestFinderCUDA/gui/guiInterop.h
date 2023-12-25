@@ -6,10 +6,13 @@
 
 void CreateConfigsAndDispatch()
 {
+	SearchGui* gui = sfmlState->gui;
+	
+	
 	BiomeWangScope biomes[20];
 	int biomeCount = 0;
 	int maxMapArea = 0;
-	//InstantiateBiome("wang_tiles/coalmine.png", biomes, biomeCount, maxMapArea);
+	if (gui->worldConfig.centerPanel.checkboxes[1].enabled) InstantiateBiome("wang_tiles/coalmine.png", biomes, biomeCount, maxMapArea);
 	//InstantiateBiome("wang_tiles/coalmine_alt.png", biomes, biomeCount, maxMapArea);
 	//InstantiateBiome("wang_tiles/excavationsite.png", biomes, biomeCount, maxMapArea);
 	//InstantiateBiome("wang_tiles/fungicave.png", biomes, biomeCount, maxMapArea);
@@ -44,30 +47,36 @@ void CreateConfigsAndDispatch()
 #ifdef REALTIME_SEEDS
 	generalCfg.seedBlockSize = 1;
 #endif
-	config.spawnableCfg = { {0, 0}, {0, 0}, 0, 7,
-		false, //greed
-		false, //pacifist
-		false, //shop spells
-		false, //shop wands
-		false, //eye rooms
-		false, //upwarp check
-		false, //biome chests
-		false, //biome pedestals
-		false, //biome altars
-		false, //biome pixelscenes
+	config.spawnableCfg = { 
+		{
+			atoi(gui->worldConfig.leftPanel.inputs[0].text.str.toAnsiString().c_str()),
+			atoi(gui->worldConfig.leftPanel.inputs[2].text.str.toAnsiString().c_str()),
+		},
+		{
+			atoi(gui->worldConfig.leftPanel.inputs[1].text.str.toAnsiString().c_str()),
+			atoi(gui->worldConfig.leftPanel.inputs[3].text.str.toAnsiString().c_str()),
+		},
+		gui->worldConfig.leftPanel.dropdowns[0].list.selectedElement,
+		gui->worldConfig.leftPanel.dropdowns[1].list.selectedElement,
+
+		gui->worldConfig.leftPanel.checkboxes[12].enabled, //greed
+		gui->worldConfig.leftPanel.checkboxes[2].enabled, //pacifist
+		gui->worldConfig.leftPanel.checkboxes[0].enabled, //shop spells
+		gui->worldConfig.leftPanel.checkboxes[1].enabled, //shop wands
+		gui->worldConfig.leftPanel.checkboxes[8].enabled, //eye rooms
+		gui->worldConfig.leftPanel.checkboxes[13].enabled, //upwarp check
+		gui->worldConfig.leftPanel.checkboxes[3].enabled, //biome chests
+		gui->worldConfig.leftPanel.checkboxes[4].enabled, //biome pedestals
+		gui->worldConfig.leftPanel.checkboxes[5].enabled, //biome altars
+		gui->worldConfig.leftPanel.checkboxes[6].enabled, //biome pixelscenes
 		false, //enemies
 		false, //hell shops
-		false, //potion contents
-		false, //chest spells
-		false, //wand contents
+		gui->worldConfig.leftPanel.checkboxes[11].enabled, //potion contents
+		gui->worldConfig.leftPanel.checkboxes[10].enabled, //chest spells
+		gui->worldConfig.leftPanel.checkboxes[9].enabled, //wand stats
 	};
 
-	ItemFilter iFilters[] = { ItemFilter({SAMPO}, 1), ItemFilter({MIMIC_SIGN}) };
-	MaterialFilter mFilters[] = { MaterialFilter({WATER}, 5) };
-	SpellFilter sFilters[] = {SpellFilter({SPELL_LUMINOUS_DRILL, SPELL_LASER_LUMINOUS_DRILL, SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER}, 1)};
-	PixelSceneFilter psFilters[] = { PixelSceneFilter({PS_NONE}, {MAGIC_LIQUID_HP_REGENERATION}) };
-
-	config.filterCfg = FilterConfig(false, 1, iFilters, 0, mFilters, 0, sFilters, 0, psFilters, false, 5);
+	config.filterCfg = FilterConfig(gui->worldConfig.leftPanel.checkboxes[14].enabled, 0, {}, 0, {}, 0, {}, 0, {}, false, 5);
 
 	config.precheckCfg = {
 		{false, CART_NONE},
@@ -86,9 +95,8 @@ void CreateConfigsAndDispatch()
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
 	config.memSizes.spawnableMemSize *= max(1, biomeCount);
 
-	SearchGui* gui = sfmlState->gui;
 	GuiDropdown* dd = &gui->staticConfig.leftPanel.dropdowns[0];
-
+	
 	if (dd->list.selectedElement < dd->list.numElements - 1) config.precheckCfg.cart = { true, (CartType)(dd->list.selectedElement + 1) };
 
 	dd = &gui->staticConfig.leftPanel.dropdowns[1];
@@ -167,6 +175,46 @@ void CreateConfigsAndDispatch()
 		}
 		for (int i = gui->staticConfig.rightPanel.perkRowCount; i < maxPerkFilters; i++) config.precheckCfg.perks.perks[i] = { PERK_NONE, false, 0, 0 };
 	}
+
+	if (gui->worldConfig.rightPanel.itemRowCount > 0)
+	{
+		config.filterCfg.itemFilterCount = gui->worldConfig.rightPanel.itemRowCount;
+		for (int i = 0; i < gui->worldConfig.rightPanel.itemRowCount; i++)
+		{
+			config.filterCfg.itemFilters[i] = {
+				{_items[gui->worldConfig.rightPanel.rows[i].item.list.selectedElement]},
+				atoi(gui->worldConfig.rightPanel.rows[i].count.text.str.toAnsiString().c_str())
+			};
+		}
+		for (int i = gui->worldConfig.rightPanel.itemRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.itemFilters[i] = { {}, 0 };
+	}
+
+	if (gui->filterConfig.leftPanel.matRowCount > 0)
+	{
+		config.filterCfg.materialFilterCount = gui->filterConfig.leftPanel.matRowCount;
+		for (int i = 0; i < gui->filterConfig.leftPanel.matRowCount; i++)
+		{
+			config.filterCfg.materialFilters[i] = {
+				{(Material)((gui->filterConfig.leftPanel.rows[i].material.list.selectedElement - 1 + _materialCount) % _materialCount)},
+				atoi(gui->filterConfig.leftPanel.rows[i].count.text.str.toAnsiString().c_str())
+			};
+		}
+		for (int i = gui->filterConfig.leftPanel.matRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.materialFilters[i] = { {}, 0 };
+	}
+
+	if (gui->filterConfig.centerPanel.spellRowCount > 0)
+	{
+		config.filterCfg.spellFilterCount = gui->filterConfig.centerPanel.spellRowCount;
+		for (int i = 0; i < gui->filterConfig.centerPanel.spellRowCount; i++)
+		{
+			config.filterCfg.spellFilters[i] = {
+				{(Spell)((gui->filterConfig.centerPanel.rows[i].spell.list.selectedElement - 1 + _spellCount) % _spellCount)},
+				atoi(gui->filterConfig.centerPanel.rows[i].count.text.str.toAnsiString().c_str())
+			};
+		}
+		for (int i = gui->filterConfig.centerPanel.spellRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.spellFilters[i] = { {}, 0 };
+	}
+
 
 	gui->searchConfig.progDat.progressPercent = 0;
 	gui->searchConfig.progDat.elapsedMillis = 0;

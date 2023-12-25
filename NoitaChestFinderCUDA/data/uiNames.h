@@ -1210,3 +1210,14 @@ const char* PixelSceneNames[] = {
 
 	"PS_LIQUIDCAVE_CONTAINER_01",
 };
+
+const char* HMNames[] = {
+	"Mines",
+	"Coal Pits",
+	"Snowy Depths",
+	"Hiisi Base",
+	"Jungle",
+	"Vault",
+	"Temple of the Art",
+	"Laboratory",
+};

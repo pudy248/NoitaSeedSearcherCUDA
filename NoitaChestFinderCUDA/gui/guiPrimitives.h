@@ -9,6 +9,7 @@
 struct MouseRect
 {
 	sf::FloatRect rect;
+	bool interactable = true;
 	bool containedMouseLastFrame = false;
 
 	int HandleMouse(sf::Vector2f mPos)
@@ -24,6 +25,10 @@ struct MouseRect
 		else if (contains) //mouse in
 			return 1;
 		else return 0; //mouse out
+	}
+	bool Captures(sf::Vector2f mPos)
+	{
+		return interactable && rect.contains(mPos);
 	}
 };
 struct TextInput
@@ -198,7 +203,7 @@ struct ColorRect : GuiPrimitive
 	ColorRect() = default;
 	ColorRect(sf::FloatRect _rect, sf::Color _color)
 	{
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		color = _color;
 	}
 
@@ -216,14 +221,14 @@ struct OutlinedRect : GuiPrimitive
 	OutlinedRect() = default;
 	OutlinedRect(sf::FloatRect _rect, float _thickness, sf::Color _outlineColor)
 	{
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		outlineThickness = _thickness;
 		outlineColor = _outlineColor;
 		fill = false;
 	}
 	OutlinedRect(sf::FloatRect _rect, float _thickness, sf::Color _outlineColor, sf::Color _fillColor)
 	{
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		outlineThickness = _thickness;
 		outlineColor = _outlineColor;
 		color = _fillColor;
@@ -248,7 +253,7 @@ struct BGTextRect : GuiPrimitive
 	BGTextRect(const char* _text, sf::FloatRect _rect)
 	{
 		text = _text;
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		textSize = 24;
 		textColor = sf::Color::White;
 		bgColor = sf::Color::Transparent;
@@ -257,7 +262,7 @@ struct BGTextRect : GuiPrimitive
 	BGTextRect(const char* _text, sf::FloatRect _rect, uint32_t size)
 	{
 		text = _text;
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		textSize = size;
 		textColor = sf::Color::White;
 		bgColor = sf::Color::Transparent;
@@ -266,7 +271,7 @@ struct BGTextRect : GuiPrimitive
 	BGTextRect(const char* _text, sf::FloatRect _rect, uint32_t size, sf::Color textCol, sf::Color bgCol)
 	{
 		text = _text;
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		textSize = size;
 		textColor = textCol;
 		bgColor = bgCol;
@@ -293,7 +298,7 @@ struct AlignedTextRect : GuiPrimitive
 	AlignedTextRect(const char* _text, sf::FloatRect _rect, uint32_t size, sf::Color textCol, int _fontIdx, int hAlign, int vAlign)
 	{
 		text = _text;
-		mRect = { _rect, false };
+		mRect.rect = _rect;
 		textSize = size;
 		textColor = textCol;
 		fontIdx = _fontIdx;
@@ -375,7 +380,7 @@ struct InputRect : GuiPrimitive
 
 	bool HandleClick(sf::Vector2f pos)
 	{
-		if (mRect.rect.contains(pos))
+		if (mRect.Captures(pos) && mRect.interactable)
 		{
 			sfmlState->selectedText = &text;
 			return true;

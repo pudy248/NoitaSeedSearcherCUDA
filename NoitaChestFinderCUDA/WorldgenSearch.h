@@ -80,9 +80,9 @@ _compute void createWand(double x, double y, Item type, bool addOffset, SpawnPar
 
 		Wand w = GetWandWithLevel(params.seed, rand_x, rand_y, tier, nonshuffle, better);
 		writeByte(params.bytes, params.offset, DATA_WAND); //-1
-		cMemcpy(params.bytes + params.offset, &w.capacity, 37);
+		cMemcpyU(params.bytes + params.offset, &w.capacity, 37);
 		params.offset += 37;
-		cMemcpy(params.bytes + params.offset, w.spells, w.spellCount * 3);
+		cMemcpyU(params.bytes + params.offset, w.spells, w.spellCount * 3);
 		params.offset += w.spellCount * 3;
 	}
 #endif
@@ -777,9 +777,9 @@ _compute void CheckMountains(int seed, SpawnableConfig sCfg, uint8_t* bytes, int
 					{
 						Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier));
 						writeByte(bytes, offset, DATA_WAND);
-						cMemcpy(bytes + offset, &w.capacity, 37);
+						cMemcpyU(bytes + offset, &w.capacity, 37);
 						offset += 37;
-						cMemcpy(bytes + offset, w.spells, w.spellCount * 3);
+						cMemcpyU(bytes + offset, w.spells, w.spellCount * 3);
 						offset += w.spellCount * 3;
 					}
 					writeInt(bytes, countOffset, offset - countOffset - 4);
