@@ -419,7 +419,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
-		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount) > 0)
+		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount + fCfg.checkBigWands) > 0)
 		{
 			return false;
 		}

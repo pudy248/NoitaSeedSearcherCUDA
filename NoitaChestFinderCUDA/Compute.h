@@ -69,9 +69,9 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		{
 			GenerateMap(currentSeed, config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			threadSync();
-			//SetSpawnFuncsFromGlobals();
-			//CheckSpawnables(mapMem, { currentSeed, config.biomeScopes[biomeNum].bSec, config.spawnableCfg, spawnables, spawnableOffset, spawnableCount }, config.memSizes.spawnableMemSize);
-			//threadSync();
+			SetSpawnFuncsFromGlobals();
+			CheckSpawnables(mapMem, { currentSeed, config.biomeScopes[biomeNum].bSec, config.spawnableCfg, spawnables, spawnableOffset, spawnableCount }, config.memSizes.spawnableMemSize);
+			threadSync();
 		}
 #endif
 

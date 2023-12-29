@@ -4,9 +4,9 @@
 //#define BACKEND_CPU
 #define BACKEND_CUDA
 //Future implementations?
-//#define BACKEND_ROCm
-//#define BACKEND_OPENCL
-//#define BACKEND_OPENMP
+//#define BACKEND_ROCm?
+//#define BACKEND_OPENCL?
+//#define BACKEND_OPENMP??
 
 
 //#define IMAGE_OUTPUT
@@ -14,5 +14,6 @@
 //#define SQL_OUTPUT
 #define DO_WORLDGEN
 #define DO_WANDGEN
+//#define DO_SPELLGEN
 //#define REALTIME_SEEDS
 #define SFML

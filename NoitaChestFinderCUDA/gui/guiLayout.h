@@ -439,7 +439,7 @@ struct WorldConfigTab : GuiObject
 		sf::Color bgColor = sf::Color(20, 20, 20);
 
 #define textCount 22
-#define checkboxCount 15
+#define checkboxCount 16
 #define dropdownCount 2
 #define inputCount 4
 		BGTextRect texts[textCount];
@@ -490,6 +490,8 @@ struct WorldConfigTab : GuiObject
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(110, 500, 30, 30), sf::Color(40, 40, 40), false);
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 500, 30, 30), sf::Color(40, 40, 40), false);
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(520, 500, 30, 30), sf::Color(40, 40, 40), false);
+
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(315, 800, 30, 30), sf::Color(40, 40, 40), false);
 
 			texts[textIdx++] = BGTextRect("First HM", sf::FloatRect(175, 555, 0, 0), 36);
 			texts[textIdx++] = BGTextRect("Last HM", sf::FloatRect(475, 555, 0, 0), 36);

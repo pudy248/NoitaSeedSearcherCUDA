@@ -295,7 +295,7 @@ _compute _noinline void CheckGreatChestLoot(int x, int y, bool hasMimicSign, Spa
 		count--;
 		int rnd = random.Random(1, 100);
 
-		if (rnd <= 30)
+		if (rnd <= 10)
 		{
 			rnd = random.Random(0, 100);
 			if (rnd <= 30)
@@ -311,11 +311,11 @@ _compute _noinline void CheckGreatChestLoot(int x, int y, bool hasMimicSign, Spa
 				createPotion(x, y, POTION_RANDOM_MATERIAL, params);
 			}
 		}
-		else if (rnd <= 33)
+		else if (rnd <= 15)
 		{
 			writeByte(params.bytes, params.offset, RAIN_GOLD);
 		}
-		else if (rnd <= 38)
+		else if (rnd <= 18)
 		{
 			rnd = random.Random(1, 30);
 			if (rnd == 30)
@@ -325,14 +325,14 @@ _compute _noinline void CheckGreatChestLoot(int x, int y, bool hasMimicSign, Spa
 		else if (rnd <= 39)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd <= 25) createWand(x, y, WAND_T3, false, params);
-			else if (rnd <= 50) createWand(x, y, WAND_T3NS, false, params);
-			else if (rnd <= 75) createWand(x, y, WAND_T4, false, params);
-			else if (rnd <= 90) createWand(x, y, WAND_T4NS, false, params);
-			else if (rnd <= 96) createWand(x, y, WAND_T5, false, params);
-			else if (rnd <= 98) createWand(x, y, WAND_T5NS, false, params);
-			else if (rnd <= 99)createWand(x, y, WAND_T6, false, params);
-			else createWand(x, y, WAND_T6NS, false, params);
+			if      (rnd <= 25) createWand(x, y, WAND_T4, false, params);
+			else if (rnd <= 50) createWand(x, y, WAND_T4NS, false, params);
+			else if (rnd <= 75) createWand(x, y, WAND_T5, false, params);
+			else if (rnd <= 90) createWand(x, y, WAND_T5NS, false, params);
+			else if (rnd <= 96) createWand(x, y, WAND_T6, false, params);
+			else if (rnd <= 98) createWand(x, y, WAND_T6NS, false, params);
+			else if (rnd <= 99) createWand(x, y, WAND_T6, false, params);
+			else                createWand(x, y, WAND_T10, false, params);
 		}
 		else if (rnd <= 60)
 		{
@@ -341,7 +341,7 @@ _compute _noinline void CheckGreatChestLoot(int x, int y, bool hasMimicSign, Spa
 			else if (rnd <= 99) writeByte(params.bytes, params.offset, HEART_BIGGER);
 			else writeByte(params.bytes, params.offset, FULL_HEAL);
 		}
-		else if (rnd <= 99)
+		else if (rnd <= 98)
 			count += 2;
 		else
 			count += 3;

@@ -734,7 +734,9 @@ _compute _noinline Wand GetWand(uint32_t seed, double x, double y, int cost, int
 	Wand wand = GetWandStats(cost, level, force_unshuffle, &random);
 	GetBestSprite(&random, wand);
 	wand.spellCount = 0;
+#ifdef DO_SPELLGEN
 	AddRandomCards(&wand, seed, x, y, level, &random);
+#endif
 	return wand;
 }
 _compute _noinline Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level)
@@ -744,7 +746,9 @@ _compute _noinline Wand GetWandBetter(uint32_t seed, double x, double y, int cos
 	Wand wand = GetWandStatsBetter(cost, level, &random);
 	GetBestSprite(&random, wand);
 	wand.spellCount = 0;
+#ifdef DO_SPELLGEN
 	AddRandomCardsBetter(&wand, seed, x, y, level, &random);
+#endif
 	return wand;
 }
 

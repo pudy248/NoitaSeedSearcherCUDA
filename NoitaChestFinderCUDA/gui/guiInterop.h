@@ -76,7 +76,8 @@ void CreateConfigsAndDispatch()
 		gui->worldConfig.leftPanel.checkboxes[9].enabled, //wand stats
 	};
 
-	config.filterCfg = FilterConfig(gui->worldConfig.leftPanel.checkboxes[14].enabled, 0, {}, 0, {}, 0, {}, 0, {}, false, 5);
+	config.filterCfg = FilterConfig(gui->worldConfig.leftPanel.checkboxes[14].enabled, 0, {}, 0, {}, 0, {}, 0, {}, 
+		gui->worldConfig.leftPanel.checkboxes[15].enabled, 27);
 
 	config.precheckCfg = {
 		{false, CART_NONE},
