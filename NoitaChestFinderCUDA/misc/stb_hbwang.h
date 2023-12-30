@@ -333,6 +333,7 @@ static stbhw_tile* stbhw__choose_tile(stbhw_tile** list, int numlist,
 	signed char* d, signed char* e, signed char* f,
 	uint32_t(*getRandom)(WorldgenPRNG*), WorldgenPRNG* prng)
 {
+	//printf("%i %i %i %i %i %i %i\n", numlist, *a, *b, *c, *d, *e, *f);
 	int i, n, m = 1 << 30, pass;
 	for (pass = 0; pass < 2; ++pass)
 	{
@@ -362,6 +363,7 @@ static stbhw_tile* stbhw__choose_tile(stbhw_tile** list, int numlist,
 					*d = h->d;
 					*e = h->e;
 					*f = h->f;
+					printf("%i ", i);
 					return h;
 				}
 			}
@@ -626,7 +628,9 @@ int stbhw_build_tileset_from_image(uint8_t* data, MemoryArena& arena, int stride
 	p.c = &c;
 
 	// load all the tiles out of the image
-	return stbhw__process_template(&p, tileSet, arena);
+	int ret = stbhw__process_template(&p, tileSet, arena);
+	printf("%i %i %i %i\n", tileSet->num_h_tiles, tileSet->num_v_tiles, tileSet->short_side_len, tileSet->is_corner);
+	return ret;
 }
 
 /*
