@@ -60,27 +60,18 @@ public:
 		uint64_t SetRandomSeedHelper(double r)
 	{
 		uint64_t e = *(uint64_t*)&r;
+		e &= 0x7fffffffffffffff;
 
-		if (((e >> 0x20 & 0x7fffffff) < 0x7ff00000) && (-9.223372036854776e+18 <= r) && (r < 9.223372036854776e+18))
-		{
-			e <<= 1;
-			e >>= 1;
-			double s = *(double*)&e;
-			uint64_t i = 0;
-			if (s != 0.0)
-			{
-				uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
-				uint64_t g = 0x433 - (e >> 0x34);
-				uint64_t h = f >> (int)g;
+		int64_t c = (r < 0) ? -1 : 1;
 
-				uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
-				i = (uint64_t)j << 0x20 | j;
-				i = ~i & h | f << (((int)s >> 0x34) - 0x433) & i;
-				i = ~(~(uint32_t)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint32_t)(r == s ? 1 : 0) + 1);
-			}
-			return i & 0xffffffff;
-		}
-		return 0;
+		uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
+		uint64_t g = 0x433 - (e >> 0x34);
+		uint64_t h = f >> (int)g;
+
+		uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
+		uint64_t a = (uint64_t)j << 0x20 | j;
+		int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
+		return b & 0xffffffff;
 	}
 
 	_universal
@@ -162,27 +153,22 @@ public:
 	}
 
 	_universal
-		uint64_t SetRandomSeedHelperInt(long long r)
+		uint64_t SetRandomSeedHelperInt(int64_t r)
 	{
 		double dr = r;
 		uint64_t e = *(uint64_t*)&dr;
+		e &= 0x7fffffffffffffff;
 
-		e <<= 1;
-		e >>= 1;
-		double s = *(double*)&e;
-		uint64_t i = 0;
-		if (e != 0)
-		{
-			uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
-			uint64_t g = 0x433 - (e >> 0x34);
-			uint64_t h = f >> (int)g;
+		int64_t c = (r < 0) ? -1 : 1;
 
-			uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
-			i = (uint64_t)j << 0x20 | j;
-			i = ~i & h | f << (((int)s >> 0x34) - 0x433) & i;
-			i = ~(~(uint32_t)(r == s ? 1 : 0) + 1) & (~i + 1) | i & (~(uint32_t)(r == s ? 1 : 0) + 1);
-		}
-		return i & 0xffffffff;
+		uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
+		uint64_t g = 0x433 - (e >> 0x34);
+		uint64_t h = f >> (int)g;
+
+		uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
+		uint64_t a = (uint64_t)j << 0x20 | j;
+		int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
+		return b & 0xffffffff;
 	}
 
 	_universal _noinline
