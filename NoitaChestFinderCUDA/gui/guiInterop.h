@@ -43,7 +43,8 @@ void CreateConfigsAndDispatch()
 			(size_t)4096,
 	};
 
-	config.generalCfg = { 123, 124, 1, false };
+	config.generalCfg = { 1, INT_MAX, 1, false };
+	//config.generalCfg = { 123, 124, 1, false };
 #ifdef REALTIME_SEEDS
 	generalCfg.seedBlockSize = 1;
 #endif

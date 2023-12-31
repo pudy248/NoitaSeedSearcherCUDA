@@ -363,7 +363,7 @@ static stbhw_tile* stbhw__choose_tile(stbhw_tile** list, int numlist,
 					*d = h->d;
 					*e = h->e;
 					*f = h->f;
-					printf("%i ", i);
+					//printf("%i ", i);
 					return h;
 				}
 			}
