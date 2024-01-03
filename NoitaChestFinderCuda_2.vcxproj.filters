@@ -1,0 +1,155 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="main.cu" />
+    <CudaCompile Include="src\structs.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\misc.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\filter.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\search.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\worldgen.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\precheck.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\wandgen.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\hbwang.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+    <CudaCompile Include="src\output.cu">
+      <Filter>src</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{8f424ce5-c526-4116-ac5c-cbc22c66a3b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="platforms">
+      <UniqueIdentifier>{e535e143-708c-4c91-b70b-93c67d64eeac}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="data">
+      <UniqueIdentifier>{88a49e4d-a7b9-4e38-91a0-f04c0641b74b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{75e2cbe3-ac4b-4b53-a640-80b75b8e6912}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="platforms\impl_cpu.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cpu_compute_helpers.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\cpu_defines.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cuda.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\impl_cuda_compute_helpers.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\cuda_defines.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform_api.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform_compute_helpers.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="platforms\platform_implementation.h">
+      <Filter>platforms</Filter>
+    </ClInclude>
+    <ClInclude Include="data\alchemy.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\biomeMap.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\fungal.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\guiData.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\modifiers.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\perks.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\potions.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\rains.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\spells.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\temples.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\uiNames.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\wand_levels.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\wand_sprites.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="include\enums.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\misc_funcs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\primitives.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\search_structs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\worldgen_structs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\noita_random.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\configuration.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\compute.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\pngutils.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\compute.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\platform_implementation_src.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\biome_impl.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{320629F2-852B-47C2-B272-2B2CAD622E68}</ProjectGuid>
+    <RootNamespace>NoitaChestFinderCuda_2</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
+      <GenerateLineInfo>true</GenerateLineInfo>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+    <CudaCompile>
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_75,sm_75</CodeGeneration>
+      <GenerateLineInfo>true</GenerateLineInfo>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CudaCompile Include="main.cu" />
+    <ClInclude Include="src\compute.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\filter.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\hbwang.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\misc.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\output.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\precheck.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\search.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\structs.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\wandgen.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\worldgen.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\platform_implementation_src.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+    <ClInclude Include="src\biome_impl.cu">
+      <FileType>Document</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="data\alchemy.h" />
+    <ClInclude Include="data\biomeMap.h" />
+    <ClInclude Include="data\fungal.h" />
+    <ClInclude Include="data\guiData.h" />
+    <ClInclude Include="data\modifiers.h" />
+    <ClInclude Include="data\perks.h" />
+    <ClInclude Include="data\potions.h" />
+    <ClInclude Include="data\rains.h" />
+    <ClInclude Include="data\spells.h" />
+    <ClInclude Include="data\temples.h" />
+    <ClInclude Include="data\uiNames.h" />
+    <ClInclude Include="data\wand_levels.h" />
+    <ClInclude Include="data\wand_sprites.h" />
+    <ClInclude Include="defines.h" />
+    <ClInclude Include="include\compute.h" />
+    <ClInclude Include="include\configuration.h" />
+    <ClInclude Include="include\enums.h" />
+    <ClInclude Include="include\misc_funcs.h" />
+    <ClInclude Include="include\noita_random.h" />
+    <ClInclude Include="include\pngutils.h" />
+    <ClInclude Include="include\primitives.h" />
+    <ClInclude Include="include\search_structs.h" />
+    <ClInclude Include="include\worldgen_structs.h" />
+    <ClInclude Include="platforms\impl_cpu.h" />
+    <ClInclude Include="platforms\impl_cpu_compute_helpers.h" />
+    <ClInclude Include="platforms\cpu_defines.h" />
+    <ClInclude Include="platforms\impl_cuda.h" />
+    <ClInclude Include="platforms\impl_cuda_compute_helpers.h" />
+    <ClInclude Include="platforms\cuda_defines.h" />
+    <ClInclude Include="platforms\platform.h" />
+    <ClInclude Include="platforms\platform_api.h" />
+    <ClInclude Include="platforms\platform_compute_helpers.h" />
+    <ClInclude Include="platforms\platform_implementation.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.targets" />
+  </ImportGroup>
+</Project>
