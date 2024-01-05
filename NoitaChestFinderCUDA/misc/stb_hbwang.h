@@ -629,7 +629,7 @@ int stbhw_build_tileset_from_image(uint8_t* data, MemoryArena& arena, int stride
 
 	// load all the tiles out of the image
 	int ret = stbhw__process_template(&p, tileSet, arena);
-	printf("%i %i %i %i\n", tileSet->num_h_tiles, tileSet->num_v_tiles, tileSet->short_side_len, tileSet->is_corner);
+	//printf("%i %i %i %i\n", tileSet->num_h_tiles, tileSet->num_v_tiles, tileSet->short_side_len, tileSet->is_corner);
 	return ret;
 }
 

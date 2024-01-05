@@ -517,7 +517,7 @@ struct WorldConfigTab : GuiObject
 		{
 			ColorRect(rect, bgColor).Render();
 			for (int i = 0; i < textCount; i++) texts[i].Render();
-			for (int i = 0; i < checkboxCount; i++) checkboxes[i].Render();
+			for (int i = 0; i < checkboxCount - 1; i++) checkboxes[i].Render();
 			for (int i = 0; i < dropdownCount; i++) dropdowns[i].Render();
 			for (int i = 0; i < inputCount; i++) inputs[i].Render();
 		}
@@ -567,7 +567,7 @@ struct WorldConfigTab : GuiObject
 			texts[textIdx++] = BGTextRect("Coal Pits", sf::FloatRect(960, 275, 0, 0), 36);
 			texts[textIdx++] = BGTextRect("Pyramid", sf::FloatRect(1165, 275, 0, 0), 36);
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 290, 30, 30), sf::Color(40, 40, 40), false); disable();
-			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 290, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 290, 30, 30), sf::Color(40, 40, 40), false); disable();
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 290, 30, 30), sf::Color(40, 40, 40), false); disable();
 
 			texts[textIdx++] = BGTextRect("Magical Temple", sf::FloatRect(755, 345, 0, 0), 36);
@@ -602,7 +602,7 @@ struct WorldConfigTab : GuiObject
 			texts[textIdx++] = BGTextRect("Temple", sf::FloatRect(960, 625, 0, 0), 36);
 			texts[textIdx++] = BGTextRect("Wizard's Den", sf::FloatRect(1165, 625, 0, 0), 36);
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(740, 640, 30, 30), sf::Color(40, 40, 40), false); disable();
-			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 640, 30, 30), sf::Color(40, 40, 40), false);
+			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(945, 640, 30, 30), sf::Color(40, 40, 40), false); disable();
 			checkboxes[chkboxIdx++] = GuiCheckbox(sf::FloatRect(1150, 640, 30, 30), sf::Color(40, 40, 40), false); disable();
 		}
 
