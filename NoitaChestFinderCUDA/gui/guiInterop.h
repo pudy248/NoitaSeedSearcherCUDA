@@ -77,7 +77,10 @@ void CreateConfigsAndDispatch()
 		gui->worldConfig.leftPanel.checkboxes[9].enabled, //wand stats
 	};
 
-	config.filterCfg = FilterConfig(gui->worldConfig.leftPanel.checkboxes[14].enabled, 0, {}, 0, {}, 0, {}, 0, {}, 
+	config.filterCfg = FilterConfig(
+		gui->worldConfig.leftPanel.checkboxes[14].enabled,
+		gui->worldConfig.leftPanel.checkboxes[13].enabled,
+		0, {}, 0, {}, 0, {}, 0, {},
 		gui->worldConfig.leftPanel.checkboxes[15].enabled, 27);
 
 	config.precheckCfg = {
@@ -187,6 +190,7 @@ void CreateConfigsAndDispatch()
 				{_items[gui->worldConfig.rightPanel.rows[i].item.list.selectedElement]},
 				atoi(gui->worldConfig.rightPanel.rows[i].count.text.str.toAnsiString().c_str())
 			};
+			printf("%i\n", _items[gui->worldConfig.rightPanel.rows[i].item.list.selectedElement]);
 		}
 		for (int i = gui->worldConfig.rightPanel.itemRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.itemFilters[i] = { {}, 0 };
 	}

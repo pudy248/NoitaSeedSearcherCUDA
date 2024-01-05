@@ -121,6 +121,7 @@ struct SpawnableConfig
 struct FilterConfig
 {
 	bool aggregate;
+	bool upwarp;
 	int itemFilterCount;
 	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
 	int materialFilterCount;
@@ -131,9 +132,10 @@ struct FilterConfig
 	PixelSceneFilter pixelSceneFilters[TOTAL_FILTER_COUNT];
 	bool checkBigWands;
 	int howBig;
-	FilterConfig(bool _aggregate, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, MaterialFilter* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, int _pixelSceneFilterCount, PixelSceneFilter* _pixelSceneFilters, bool _checkBigWands, int _howBig)
+	FilterConfig(bool _aggregate, bool _upwarp, int _itemFilterCount, ItemFilter* _itemFilters, int _materialFilterCount, MaterialFilter* _materialFilters, int _spellFilterCount, SpellFilter* _spellFilters, int _pixelSceneFilterCount, PixelSceneFilter* _pixelSceneFilters, bool _checkBigWands, int _howBig)
 	{
 		aggregate = _aggregate;
+		upwarp = _upwarp;
 		itemFilterCount = _itemFilterCount;
 		materialFilterCount = _materialFilterCount;
 		spellFilterCount = _spellFilterCount;
