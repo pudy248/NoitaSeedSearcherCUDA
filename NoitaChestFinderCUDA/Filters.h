@@ -362,8 +362,15 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			if (s == NULL) continue;
 
 			Spawnable sDat = readMisalignedSpawnable(s);
+			
+			bool failed = fCfg.upwarp;
+			if (fCfg.upwarp)
+			{
+				if (sDat.x == 315 && sDat.y == 17) failed = false;
+				if (sDat.x == 75 && sDat.y == 117) failed = false;
+			}
+			if (failed) continue;
 
-			bool failed = false;
 			for (int i = 0; i < fCfg.itemFilterCount; i++)
 			{
 				int passCount = 0;
