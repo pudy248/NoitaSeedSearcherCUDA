@@ -361,6 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
-out.ncu-rep
-output.txt
-outputs/*
+/NoitaChestFinderCUDA/out.ncu-rep
+NoitaChestFinderCUDA/output.txt
+NoitaChestFinderCUDA/outputs/*
+NoitaChestFinderCUDA/coalmine/*
