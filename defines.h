@@ -18,4 +18,4 @@
 //#define REALTIME_SEEDS
 //#define SFML
 
-#define SINGLE_THREAD
+//#define SINGLE_THREAD

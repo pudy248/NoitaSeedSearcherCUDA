@@ -33,20 +33,22 @@ struct WangSpawn
 constexpr int _WangTileMaxSpawns = 6;
 struct WangTile
 {
-	char s[6];
+	char colors[6];
+	char edges[8];
 	WangSpawn spawns[_WangTileMaxSpawns];
 };
 
 struct WangTileset
 {
 	char is_corner;
+	int num_vary[2];
 	int num_color[6];
 	int short_side_len;
 	int numH, maxH, numV, maxV;
 	WangTile hTiles[72];
 	WangTile vTiles[72];
-	uint8_t hIndices[72 * 2];
-	uint8_t vIndices[72 * 2];
+	uint16_t hIndices[64];
+	uint16_t vIndices[64];
 };
 
 struct WangConfig

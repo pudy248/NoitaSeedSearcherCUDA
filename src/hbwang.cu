@@ -282,6 +282,51 @@ static int stbhw__process_template(WangProcess* p, WangTileset* tileSet)
 	return 0;
 }
 
+static Vec2i stbhw_get_index_stride(WangTile* list, int numlist, char a, char b, char c, char d, char e, char f)
+{
+	//printf("%i %i %i %i %i %i:\n", a, b, c, d, e, f);
+	int first = -1;
+	int second = -1;
+	for (int i = 0; i < numlist; ++i)
+	{
+		WangTile* h = &list[i];
+		if ((a < 0 || a == h->s[0]) &&
+			(b < 0 || b == h->s[1]) &&
+			(c < 0 || c == h->s[2]) &&
+			(d < 0 || d == h->s[3]) &&
+			(e < 0 || e == h->s[4]) &&
+			(f < 0 || f == h->s[5]))
+		{
+			//printf("%i ", i);
+			if (first < 0) first = i;
+			else if (second < 0) second = i;
+		}
+	}
+	//printf("\n");
+	if (second < 0)
+	{
+		//printf("NO TILE\n");
+		return { 0, 0 };
+	}
+	return { first, second - first };
+}
+
+static void stbhw_get_all_indices(WangTileset* tileSet)
+{
+	for (char a = 0; a < 2; a++)
+		for (char b = 0; b < 2; b++)
+			for (char c = 0; c < 2; c++)
+				for (char d = 0; d < 2; d++)
+					for (char e = 0; e < 2; e++)
+						for (char f = 0; f < 2; f++)
+						{
+							Vec2i h = stbhw_get_index_stride(tileSet->hTiles, tileSet->numH, a, b, c, d, e, f);
+							Vec2i v = stbhw_get_index_stride(tileSet->vTiles, tileSet->numV, a, b, c, d, e, f);
+							tileSet->hIndices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f] = ((h.x & 0xff) << 8 | (h.y & 0xff));
+							tileSet->vIndices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f] = ((v.x & 0xff) << 8 | (v.y & 0xff));
+						}
+}
+
 int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpawnFunctions** funcs, int stride, int w, int h)
 {
 	uint8_t header[9];
@@ -326,6 +371,8 @@ int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpa
 
 	stbhw__get_template_info(&p, tileSet);
 
+	tileSet->num_vary[0] = p.c.num_vary_x;
+	tileSet->num_vary[1] = p.c.num_vary_y;
 	for (int i = 0; i < 6; i++) tileSet->num_color[i] = p.c.num_color[i];
 	tileSet->numH = tileSet->numV = 0;
 	tileSet->short_side_len = p.c.short_side_len;
@@ -337,17 +384,38 @@ int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpa
 	p.h = h;
 
 	int ret = stbhw__process_template(&p, tileSet);
-	//printf("%i %i %i %i\n", tileSet->numH, tileSet->numV, tileSet->short_side_len, tileSet->is_corner);
+	stbhw_get_all_indices(tileSet);
 	return ret;
 }
 
+
+#if 1
+_compute static int stbhw__choose_tile(WangTile* list, uint16_t* indices, int numVary, WorldgenPRNG* prng,
+	signed char* a, signed char* b, signed char* c, signed char* d, signed char* e, signed char* f)
+{
+	uint16_t index = indices[32 * *a + 16 * *b + 8 * *c + 4 * *d + 2 * *e + *f];
+	uint8_t start = index >> 8;
+	uint8_t stride = index & 0xff;
+
+	int m = prng->NextU() % numVary;
+	int i = start + m * stride;
+	WangTile* h = &list[i];
+	*a = h->s[0];
+	*b = h->s[1];
+	*c = h->s[2];
+	*d = h->s[3];
+	*e = h->s[4];
+	*f = h->s[5];
+	return i;
+}
+#else
 // randomly choose a tile that fits constraints for a given spot, and update the constraints
-_compute
-static int stbhw__choose_tile(WangTile* list, int numlist,
+_compute static int stbhw__choose_tile(WangTile* list, int numlist,
 	signed char* a, signed char* b, signed char* c,
 	signed char* d, signed char* e, signed char* f,
 	WorldgenPRNG* prng)
 {
+	printf("%i %i %i %i %i %i:\n", *a, *b, *c, *d, *e, *f);
 	int i, n, m = 1 << 30, pass;
 	for (pass = 0; pass < 2; ++pass)
 	{
@@ -393,7 +461,7 @@ static int stbhw__choose_tile(WangTile* list, int numlist,
 	}
 	return -1;
 }
-
+#endif
 
 _compute
 static int stbhw__match(int x, int y, signed char c_color[64][64])
@@ -489,10 +557,9 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 				if (xpos + sidelen * 2 >= 0 && ypos >= 0)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->hTiles, tileSet->numH,
+						tileSet->hTiles, tileSet->hIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
 						&c_color[j + 2][i + 2], &c_color[j + 2][i + 3], &c_color[j + 2][i + 4],
-						&c_color[j + 3][i + 2], &c_color[j + 3][i + 3], &c_color[j + 3][i + 4],
-						prng);
+						&c_color[j + 3][i + 2], &c_color[j + 3][i + 3], &c_color[j + 3][i + 4]);
 					if (ti == -1)
 						return 0;
 					output[yIdx * yWidth + xIdx] = ti;
@@ -507,10 +574,9 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 				if (xpos < w)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->vTiles, tileSet->numV,
+						tileSet->vTiles, tileSet->vIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
 						&c_color[j + 2][i + 5], &c_color[j + 3][i + 5], &c_color[j + 4][i + 5],
-						&c_color[j + 2][i + 6], &c_color[j + 3][i + 6], &c_color[j + 4][i + 6],
-						prng);
+						&c_color[j + 2][i + 6], &c_color[j + 3][i + 6], &c_color[j + 4][i + 6]);
 					if (ti == -1)
 						return 0;
 					output[yIdx * yWidth + xIdx] = ti | 0x4000;
@@ -553,11 +619,10 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 				if (xpos + sidelen * 2 >= 0 && ypos >= 0)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->hTiles, tileSet->numH,
+						tileSet->hTiles, tileSet->hIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
 						&h_color[j + 2][i + 2], &h_color[j + 2][i + 3],
 						&v_color[j + 2][i + 2], &v_color[j + 2][i + 4],
-						&h_color[j + 3][i + 2], &h_color[j + 3][i + 3],
-						prng);
+						&h_color[j + 3][i + 2], &h_color[j + 3][i + 3]);
 					if (ti == -1)
 						return 0;
 					output[yIdx * yWidth + xIdx] = ti;
@@ -572,12 +637,11 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 				if (xpos < w)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->vTiles, tileSet->numV,
+						tileSet->vTiles, tileSet->vIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
 						&h_color[j + 2][i + 5],
 						&v_color[j + 2][i + 5], &v_color[j + 2][i + 6],
 						&v_color[j + 3][i + 5], &v_color[j + 3][i + 6],
-						&h_color[j + 4][i + 5],
-						prng);
+						&h_color[j + 4][i + 5]);
 					if (ti == -1)
 						return 0;
 					output[yIdx * yWidth + xIdx] = ti | 0x4000;

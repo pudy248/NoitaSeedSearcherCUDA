@@ -129,4 +129,5 @@ _compute void CopySpawnFuncs()
 {
 	AllSpawnFunctions[0] = &_DefaultFunctions;
 	AllSpawnFunctions[B_COALMINE] = &FUNCS_COALMINE::_CoalmineFuncs;
+	AllSpawnFunctions[B_EXCAVATIONSITE] = &FUNCS_COALMINE::_CoalmineFuncs;
 }
