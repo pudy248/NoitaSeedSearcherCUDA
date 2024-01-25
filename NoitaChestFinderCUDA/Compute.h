@@ -119,6 +119,8 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 
 	std::vector<Worker> workers(NumWorkers);
 	SpanParams* params = (SpanParams*)malloc(WorkerAppetite * sizeof(SpanParams));
+	bool* stopped = (bool*)malloc(NumWorkers);
+	memset(stopped, false, NumWorkers);
 	uint8_t* hOutput = (uint8_t*)malloc(NumWorkers * WorkerAppetite * config.memSizes.outputSize);
 
 	//initial dispatch
@@ -150,7 +152,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			}
 			DispatchJob(workers[i], params);
 		}
-		else stoppedBlocks++;
+		else {
+			stoppedBlocks++;
+			stopped[i] = true;
+		}
 	}
 
 	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
@@ -160,6 +165,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	{
 		if (progress.abort)
 		{
+			printf("Aborting!!!\n");
 			for (int i = 0; i < NumWorkers; i++)
 				AbortJob(workers[i]);
 			break;
@@ -200,7 +206,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			}
 		}
 
-		if (QueryWorker(workers[index]))
+		if (!stopped[index] && QueryWorker(workers[index]))
 		{
 			SpanRet* returns = SubmitJob(workers[index]);
 
@@ -248,8 +254,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				}
 				DispatchJob(workers[index], params);
 			}
-			else
+			else {
 				stoppedBlocks++;
+				stopped[index] = true;
+			}
 
 			for (int i = 0; i < WorkerAppetite; i++)
 			{
@@ -267,6 +275,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	for (int i = 0; i < NumWorkers; i++) DestroyWorker(workers[i]);
 	workers.clear();
 	free(params);
+	free(stopped);
 	free(hOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();

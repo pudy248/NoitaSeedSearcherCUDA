@@ -59,8 +59,8 @@ inline void __printLastCudaError(const char* errorMessage, const char* file,
 
 //CUDA-specific kernel config structs
 constexpr int MAXBLOCKS = 8;
-constexpr int BLOCKDIV = 32;
-constexpr int BLOCKSIZE = 32 * BLOCKDIV;
+constexpr int BLOCKDIV = 60;
+constexpr int BLOCKSIZE = 64 * BLOCKDIV;
 int NumBlocks;
 int memIdxCtr = 0;
 
@@ -68,7 +68,7 @@ struct KernelIO
 {
 	SpanParams params[BLOCKSIZE];
 	SpanRet ret[BLOCKSIZE];
-	int returned;
+	cudaEvent_t terminated;
 };
 struct ComputePointers
 {
@@ -200,7 +200,6 @@ __global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, Sear
 	uint8_t* outputPtr = dPointers.uOutput + config.memSizes.outputSize * (memIdx * BLOCKSIZE + hwIdx);
 	SpanRet ret = EvaluateSpan(config, ioPtr->params[hwIdx], threadMemBlock, outputPtr);
 	memcpy(&ioPtr->ret[hwIdx], &ret, sizeof(SpanRet));
-	dAtomicAdd(&ioPtr->returned, 1);
 	//dAtomicAdd((int*)dPointers.numActiveThreads, -1);
 }
 
@@ -210,16 +209,20 @@ void DispatchJob(Worker& worker, SpanParams* spans)
 	{
 		hostPtrs.hIO[worker.memIdx].params[i] = spans[i];
 	}
+	cudaEventCreateWithFlags(&hostPtrs.hIO[worker.memIdx].terminated, cudaEventDisableTiming);
 	DispatchBlock<<<BLOCKDIV, BLOCKSIZE/BLOCKDIV, 0, worker.stream>>>(computePtrs, GetMinimumSpanMemory(), GetSearchConfig(), worker.memIdx);
+	cudaEventRecord(hostPtrs.hIO[worker.memIdx].terminated, worker.stream);
 }
 bool QueryWorker(Worker& worker)
 {
-	return hostPtrs.hIO[worker.memIdx].returned == BLOCKSIZE;
+	cudaError e = cudaEventQuery(hostPtrs.hIO[worker.memIdx].terminated);
+	if (e == cudaSuccess) return true;
+	else if (e == cudaErrorNotReady) return false;
+	else checkCudaErrors(e);
 }
 SpanRet* SubmitJob(Worker& worker)
 {
-	cudaStreamSynchronize(worker.stream);
-	hostPtrs.hIO[worker.memIdx].returned = 0;
+	checkCudaErrors(cudaStreamSynchronize(worker.stream));
 	for (int i = 0; i < BLOCKSIZE; i++)
 	{
 		hostPtrs.hIO[worker.memIdx].ret[i].outputPtr = hostPtrs.uOutput + (worker.memIdx * BLOCKSIZE + i) * GetMinimumOutputMemory();
