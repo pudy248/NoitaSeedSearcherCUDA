@@ -217,6 +217,7 @@ void DispatchJob(Worker& worker, SpanParams* spans)
 	cudaEventCreateWithFlags(&worker.event, cudaEventDisableTiming);
 	DispatchBlock<<<BLOCKDIV, BLOCKSIZE/BLOCKDIV, 0, worker.stream>>>(computePtrs, GetMinimumSpanMemory(), GetSearchConfig(), worker.memIdx, BLOCKSIZE);
 	cudaEventRecord(worker.event, worker.stream);
+	cudaEventRecord(hostPtrs.hIO[worker.memIdx].terminated, worker.stream);
 }
 bool QueryWorker(Worker& worker)
 {
