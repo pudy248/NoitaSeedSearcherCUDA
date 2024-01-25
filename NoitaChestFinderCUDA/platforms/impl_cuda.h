@@ -59,29 +59,34 @@ inline void __printLastCudaError(const char* errorMessage, const char* file,
 
 //CUDA-specific kernel config structs
 constexpr int MAXBLOCKS = 8;
-constexpr int BLOCKDIV = 32;
-constexpr int BLOCKSIZE = 32 * BLOCKDIV;
+int BLOCKDIV = 60;
+int BLOCKSIZE = 64 * BLOCKDIV;
 int NumBlocks;
 int memIdxCtr = 0;
 
-struct KernelIO
-{
-	SpanParams params[BLOCKSIZE];
-	SpanRet ret[BLOCKSIZE];
-	int returned;
-};
+//struct KernelIO
+//{
+//	cudaEvent_t terminated;
+//	SpanParams params[BLOCKSIZE];
+//	SpanRet ret[BLOCKSIZE];
+//};
+#define KIO_size BLOCKSIZE * (sizeof(SpanParams) + sizeof(SpanRet))
+#define KIO_idx(ptr, idx) ((uint8_t*)((uint64_t)ptr + KIO_size * idx))
+#define KIO_params(ptr) ((SpanParams*)((uint64_t)ptr + 0))
+#define KIO_ret(ptr) ((SpanRet*)((uint64_t)ptr + BLOCKSIZE * (sizeof(SpanParams))))
+
 struct ComputePointers
 {
 	volatile int* __restrict__ numActiveThreads;
 	uint8_t* __restrict__ dArena;
 	uint8_t* __restrict__ uOutput;
-	KernelIO* __restrict__ uIO;
+	uint8_t* __restrict__ uIO;
 } computePtrs;
 struct HostPointers
 {
 	volatile int* numActiveThreads;
 	uint8_t* uOutput;
-	KernelIO* hIO;
+	uint8_t* hIO;
 } hostPtrs;
 
 //platform.h impl
@@ -89,6 +94,7 @@ struct Worker
 {
 	int memIdx;
 	cudaStream_t stream;
+	cudaEvent_t event;
 };
 
 //CUDA doesn't actually require much instantiation. Most of this is just debug info and error handling.
@@ -107,6 +113,8 @@ void InitializePlatform()
 
 	cudaDeviceProp properties;
 	checkCudaErrors(cudaGetDeviceProperties_v2(&properties, 0));
+	BLOCKDIV = properties.multiProcessorCount;
+	BLOCKSIZE = 64 * BLOCKDIV;
 
 	printf("Running with CUDA backend using device %i: %s.\n", device, properties.name);
 	
@@ -152,7 +160,7 @@ void AllocateComputeMemory()
 	//Allocate all of the memories
 	checkCudaErrors(cudaHostAlloc(&hostPtrs.numActiveThreads, 4, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostAlloc(&hostPtrs.uOutput, outputSize, cudaHostAllocMapped));
-	checkCudaErrors(cudaHostAlloc(&hostPtrs.hIO, sizeof(KernelIO) * NumBlocks, cudaHostAllocMapped));
+	checkCudaErrors(cudaHostAlloc(&hostPtrs.hIO, KIO_size * NumBlocks, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.numActiveThreads, (void*)hostPtrs.numActiveThreads, 0));
 	checkCudaErrors(cudaMalloc(&computePtrs.dArena, totalMemory));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.uOutput, (void*)hostPtrs.uOutput, 0));
@@ -160,7 +168,7 @@ void AllocateComputeMemory()
 
 	//Initialize the ones that need initializing
 	*hostPtrs.numActiveThreads = 0;
-	memset(hostPtrs.hIO, 0, sizeof(KernelIO) * NumBlocks);
+	memset(hostPtrs.hIO, 0, KIO_size * NumBlocks);
 
 	//Generate coalmine overlay, which is entirely separate for some reason.
 	uint8_t* dOverlayMem; //It's probably fine to forget this pointer since we can copy it back from the coalmine_overlay global.
@@ -171,7 +179,7 @@ void AllocateComputeMemory()
 	checkCudaErrors(cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0));
 	free(hPtr);
 
-	printf("Allocated %lliMB of host and %lliMB of device memory\n", (2 * outputSize + sizeof(KernelIO) * NumBlocks) / 1_MB, (totalMemory + outputSize + sizeof(KernelIO) * NumBlocks) / 1_MB);
+	printf("Allocated %lliMB of host and %lliMB of device memory\n", (2 * outputSize + KIO_size * NumBlocks) / 1_MB, (totalMemory + outputSize + KIO_size * NumBlocks) / 1_MB);
 }
 void FreeComputeMemory()
 {
@@ -191,40 +199,38 @@ void DestroyWorker(Worker& worker)
 	if(worker.stream != NULL) checkCudaErrors(cudaStreamDestroy(worker.stream));
 }
 
-__global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig config, int memIdx)
+__global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig config, int memIdx, int BLOCKSIZE)
 {
 	//dAtomicAdd((int*)dPointers.numActiveThreads, 1);
 	uint32_t hwIdx = blockIdx.x * blockDim.x + threadIdx.x;
-	KernelIO* ioPtr = dPointers.uIO + memIdx;
+	uint8_t* ioPtr = KIO_idx(dPointers.uIO, memIdx);
 	uint8_t* threadMemBlock = dPointers.dArena + arenaPitch * (memIdx * BLOCKSIZE + hwIdx);
 	uint8_t* outputPtr = dPointers.uOutput + config.memSizes.outputSize * (memIdx * BLOCKSIZE + hwIdx);
-	SpanRet ret = EvaluateSpan(config, ioPtr->params[hwIdx], threadMemBlock, outputPtr);
-	memcpy(&ioPtr->ret[hwIdx], &ret, sizeof(SpanRet));
-	dAtomicAdd(&ioPtr->returned, 1);
+	SpanRet ret = EvaluateSpan(config, KIO_params(ioPtr)[hwIdx], threadMemBlock, outputPtr);
+	memcpy(&KIO_ret(ioPtr)[hwIdx], &ret, sizeof(SpanRet));
 	//dAtomicAdd((int*)dPointers.numActiveThreads, -1);
 }
 
 void DispatchJob(Worker& worker, SpanParams* spans)
 {
-	for (int i = 0; i < BLOCKSIZE; i++)
-	{
-		hostPtrs.hIO[worker.memIdx].params[i] = spans[i];
-	}
-	DispatchBlock<<<BLOCKDIV, BLOCKSIZE/BLOCKDIV, 0, worker.stream>>>(computePtrs, GetMinimumSpanMemory(), GetSearchConfig(), worker.memIdx);
+	memcpy(KIO_params(KIO_idx(hostPtrs.hIO, worker.memIdx)), spans, sizeof(SpanParams) * BLOCKSIZE);
+	cudaEventCreateWithFlags(&worker.event, cudaEventDisableTiming);
+	DispatchBlock<<<BLOCKDIV, BLOCKSIZE/BLOCKDIV, 0, worker.stream>>>(computePtrs, GetMinimumSpanMemory(), GetSearchConfig(), worker.memIdx, BLOCKSIZE);
+	cudaEventRecord(worker.event, worker.stream);
 }
 bool QueryWorker(Worker& worker)
 {
-	return hostPtrs.hIO[worker.memIdx].returned == BLOCKSIZE;
+	cudaError e = cudaEventQuery(worker.event);
+	if (e == cudaSuccess) return true;
+	else if (e == cudaErrorNotReady) return false;
+	else checkCudaErrors(e);
 }
 SpanRet* SubmitJob(Worker& worker)
 {
-	cudaStreamSynchronize(worker.stream);
-	hostPtrs.hIO[worker.memIdx].returned = 0;
+	checkCudaErrors(cudaStreamSynchronize(worker.stream));
 	for (int i = 0; i < BLOCKSIZE; i++)
-	{
-		hostPtrs.hIO[worker.memIdx].ret[i].outputPtr = hostPtrs.uOutput + (worker.memIdx * BLOCKSIZE + i) * GetMinimumOutputMemory();
-	}
-	return hostPtrs.hIO[worker.memIdx].ret;
+		KIO_ret(KIO_idx(hostPtrs.hIO, worker.memIdx))[i].outputPtr = hostPtrs.uOutput + (worker.memIdx * BLOCKSIZE + i) * GetMinimumOutputMemory();
+	return KIO_ret(KIO_idx(hostPtrs.hIO, worker.memIdx));
 }
 void AbortJob(Worker& worker)
 {

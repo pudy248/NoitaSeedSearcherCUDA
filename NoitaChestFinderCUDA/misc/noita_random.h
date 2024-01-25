@@ -266,15 +266,13 @@ public:
 		return a + (int)(((uint64_t)(b + 1 - a) * (uint64_t)Seed) >> 31);
 	}
 
-	_universal
-		float ProceduralRandomf(double x, double y, float a, float b)
+	_universal float ProceduralRandomf(double x, double y, float a, float b)
 	{
 		SetRandomSeed(x, y);
 		return a + ((b - a) * Next());
 	}
 
-	_universal
-		int ProceduralRandomi(double x, double y, int a, int b)
+	_universal int ProceduralRandomi(double x, double y, int a, int b)
 	{
 		SetRandomSeed(x, y);
 		return Random(a, b);

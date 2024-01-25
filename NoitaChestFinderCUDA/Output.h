@@ -89,7 +89,9 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 				_itoa_offset(pwPos, 10, seedInfo, bufOffset);
 				_putstr_offset("]", seedInfo, bufOffset);
 			}
-			_putstr_offset(") - [", seedInfo, bufOffset);
+			_putstr_offset(") - ", seedInfo, bufOffset);
+			_itoa_offset(s.count, 10, seedInfo, bufOffset);
+			_putstr_offset("b[", seedInfo, bufOffset);
 
 			for (int n = 0; n < s.count; n++)
 			{
@@ -214,7 +216,7 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 					if (bufOffset > lineCtr * NEWLINE_CHAR_LIMIT)
 					{
 						lineCtr++;
-						_putstr_offset("\n", seedInfo, bufOffset);
+						//_putstr_offset("\n", seedInfo, bufOffset);
 					}
 				}
 			}
