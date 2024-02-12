@@ -11,7 +11,6 @@
 #include <thread>
 #include <mutex>
 #include <vector>
-#include <intrin.h>
 
 struct TabSelector : GuiObject
 {
@@ -1053,6 +1052,44 @@ struct FilterConfigTab : GuiObject
 void CreateConfigsAndDispatch();
 struct SearchConfigTab : GuiObject
 {
+	struct ConfigPanel : GuiObject
+	{
+		sf::FloatRect rect = sf::FloatRect(20, 90, 930, 860);
+		sf::Color bgColor = sf::Color(20, 20, 20);
+
+#define textCount 3
+#define inputCount 3
+		BGTextRect texts[textCount];
+		InputRect inputs[inputCount];
+
+		ConfigPanel()
+		{
+			int textIdx = 0;
+			int inpIdx = 0;
+			texts[textIdx++] = BGTextRect("Seed Start", sf::FloatRect(175, 105, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Seed End", sf::FloatRect(485, 105, 0, 0), 36);
+			texts[textIdx++] = BGTextRect("Seed Block Tune", sf::FloatRect(795, 105, 0, 0), 36);
+			inputs[inpIdx++] = InputRect(sf::FloatRect(25, 135, 300, 40), TextInput::CHARSET_Numeric, 10, "1", sf::Color(30, 30, 30));
+			inputs[inpIdx++] = InputRect(sf::FloatRect(335, 135, 300, 40), TextInput::CHARSET_Numeric, 10, "2147483647", sf::Color(30, 30, 30));
+			inputs[inpIdx++] = InputRect(sf::FloatRect(645, 135, 300, 40), TextInput::CHARSET_Numeric, 8, "1", sf::Color(30, 30, 30));
+		}
+
+		void Render()
+		{
+			ColorRect(rect, bgColor).Render();
+			for (int i = 0; i < textCount; i++) texts[i].Render();
+			for (int i = 0; i < inputCount; i++) inputs[i].Render();
+		}
+
+		bool HandleClick(sf::Vector2f position)
+		{
+			for (int i = 0; i < inputCount; i++) if (inputs[i].HandleClick(position)) return true;
+			return false;
+		}
+		void HandleMouse(sf::Vector2f position) {}
+#undef dropdownCount
+#undef inputCount
+	};
 	struct CPUPanel : GuiObject
 	{
 		sf::FloatRect rect = sf::FloatRect(960, 90, 930, 390);
@@ -1067,36 +1104,13 @@ struct SearchConfigTab : GuiObject
 		BGTextRect _disabled;
 		#endif
 
-		void GetProcessorName(char* buffer)
-		{
-			int CPUInfo[4] = { -1 };
-			__cpuid(CPUInfo, 0x80000000);
-			unsigned int nExIds = CPUInfo[0];
-
-			memset(buffer, 0, sizeof(0x40));
-
-			// Get the information associated with each extended ID.
-			for (int i = 0x80000000; i <= nExIds; ++i)
-			{
-				__cpuid(CPUInfo, i);
-				// Interpret CPU brand string.
-				if (i == 0x80000002)
-					memcpy(buffer, CPUInfo, sizeof(CPUInfo));
-				else if (i == 0x80000003)
-					memcpy(buffer + 16, CPUInfo, sizeof(CPUInfo));
-				else if (i == 0x80000004)
-					memcpy(buffer + 32, CPUInfo, sizeof(CPUInfo));
-			}
-		}
-
 		CPUPanel()
 		{
 			bg = ColorRect(rect, sf::Color(20, 20, 20));
+			#ifdef BACKEND_CPU
 			char* cpuName = (char*)malloc(64);
 			GetProcessorName(cpuName);
 			deviceName = BGTextRect(cpuName, sf::FloatRect(960, 90, 930, 50), 48);
-			#ifdef BACKEND_CPU
-
 			#else
 			_disabled = BGTextRect("DISABLED", rect, 128);
 			#endif
@@ -1105,10 +1119,9 @@ struct SearchConfigTab : GuiObject
 		void Render()
 		{
 			bg.Render();
-			deviceName.Render();
 			
 			#ifdef BACKEND_CPU
-
+			deviceName.Render();
 			#else
 			_disabled.Render();
 			#endif
@@ -1127,7 +1140,6 @@ struct SearchConfigTab : GuiObject
 			return false;
 		}
 	};
-
 	struct GPUPanel : GuiObject
 	{
 		sf::FloatRect rect = sf::FloatRect(960, 490, 930, 460);
@@ -1208,7 +1220,7 @@ struct SearchConfigTab : GuiObject
 		}
 	};
 
-	ColorRect listBG;
+	ConfigPanel config;
 	CPUPanel cpuPanel;
 	GPUPanel gpuPanel;
 	BGTextRect searchButton;
@@ -1244,9 +1256,6 @@ struct SearchConfigTab : GuiObject
 
 	SearchConfigTab()
 	{
-		listBG = ColorRect(sf::FloatRect(20, 90, 930, 860), sf::Color(20, 20, 20));
-		cpuPanel = CPUPanel();
-		gpuPanel = GPUPanel();
 		searchButton = BGTextRect("Search!", sf::FloatRect(30, 860, 450, 80), 48, sf::Color::White, sf::Color(40, 40, 40));
 		abortButton = BGTextRect("Cancel", sf::FloatRect(490, 860, 450, 80), 48, sf::Color::White, sf::Color(180, 60, 60));
 		progressBarBG = ColorRect(sf::FloatRect(20, 960, 1870, 100), sf::Color(40, 40, 40));
@@ -1264,7 +1273,7 @@ struct SearchConfigTab : GuiObject
 			searchThread = NULL;
 		}
 
-		listBG.Render();
+		config.Render();
 		cpuPanel.Render();
 		gpuPanel.Render();
 		searchButton.Render();
@@ -1328,6 +1337,7 @@ struct SearchConfigTab : GuiObject
 			progDat.abort = true;
 			return true;
 		}
+		if (config.HandleClick(position)) return true;
 		if (cpuPanel.HandleClick(position)) return true;
 		if (gpuPanel.HandleClick(position)) return true;
 		return false;

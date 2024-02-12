@@ -1,8 +1,11 @@
 #pragma once
 #include "platform.h"
 #include <thread>
+#ifdef _MSC_VER
 #include <intrin.h>
-
+#else
+#include <cpuid.h>
+#endif
 #include "../misc/pngutils.h"
 
 #include <iostream>
@@ -26,24 +29,14 @@ struct Worker
 
 void GetProcessorName(char* buffer)
 {
-	int CPUInfo[4] = { -1 };
-	__cpuid(CPUInfo, 0x80000000);
-	unsigned int nExIds = CPUInfo[0];
-
 	memset(buffer, 0, sizeof(0x40));
-
-	// Get the information associated with each extended ID.
-	for (int i = 0x80000000; i <= nExIds; ++i)
-	{
-		__cpuid(CPUInfo, i);
-		// Interpret CPU brand string.
-		if (i == 0x80000002)
-			memcpy(buffer, CPUInfo, sizeof(CPUInfo));
-		else if (i == 0x80000003)
-			memcpy(buffer + 16, CPUInfo, sizeof(CPUInfo));
-		else if (i == 0x80000004)
-			memcpy(buffer + 32, CPUInfo, sizeof(CPUInfo));
-	}
+	int CPUInfo[4] = { -1 };
+	__cpuid(CPUInfo, 0x80000002);
+	memcpy(buffer, CPUInfo, sizeof(CPUInfo));
+	__cpuid(CPUInfo, 0x80000003);
+	memcpy(buffer + 16, CPUInfo, sizeof(CPUInfo));
+	__cpuid(CPUInfo, 0x80000004);
+	memcpy(buffer + 32, CPUInfo, sizeof(CPUInfo));
 }
 
 void InitializePlatform()

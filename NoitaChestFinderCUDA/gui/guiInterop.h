@@ -43,8 +43,12 @@ void CreateConfigsAndDispatch()
 			(size_t)4096,
 	};
 
-	config.generalCfg = { 1, INT_MAX, biomeCount ? 1U : 65536U, false };
-	//config.generalCfg = { 123, 124, 1, false };
+	config.generalCfg = {
+		(uint32_t)atoi(gui->searchConfig.config.inputs[0].text.str.toAnsiString().c_str()),
+		(uint32_t)atoi(gui->searchConfig.config.inputs[1].text.str.toAnsiString().c_str()),
+		(uint32_t)atoi(gui->searchConfig.config.inputs[2].text.str.toAnsiString().c_str()),
+		false
+	};
 #ifdef REALTIME_SEEDS
 	generalCfg.seedBlockSize = 1;
 #endif
@@ -232,7 +236,6 @@ void CreateConfigsAndDispatch()
 	gui->searchConfig.progDat.elapsedMillis = 0;
 	gui->searchConfig.progDat.abort = false;
 	gui->searchConfig.updateCtr = 0;
-	gui->tabs.selectedTab = 3;
 	gui->searchConfig.searchDone = true;
 	return;
 }
