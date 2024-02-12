@@ -399,7 +399,7 @@ void SearchMain(OutputProgressData& progress, void(*appendOutput)(char*, char*))
 	AllocateComputeMemory();
 	FILE* f = fopen("output.txt", "wb");
 
-	time_t startTime = _time64(NULL);
+	time_t startTime = time(NULL);
 	Vec2i seedCounts = OutputLoop(f, startTime, progress, appendOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();

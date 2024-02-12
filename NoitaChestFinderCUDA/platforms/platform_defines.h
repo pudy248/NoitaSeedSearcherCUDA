@@ -19,4 +19,4 @@
 //This can be ignored on platforms where inlining is more performant.
 //Performance should be tested with and without force-noinlining on a per-platform basis.
 #define _noinline
-#endif/
+#endif

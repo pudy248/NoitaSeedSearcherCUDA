@@ -162,7 +162,7 @@ void AllocateComputeMemory()
 	checkCudaErrors(cudaHostAlloc(&hostPtrs.uOutput, outputSize, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostAlloc(&hostPtrs.hIO, KIO_size * NumBlocks, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.numActiveThreads, (void*)hostPtrs.numActiveThreads, 0));
-	checkCudaErrors(cudaMalloc(&computePtrs.dArena, totalMemory));
+	checkCudaErrors(cudaMalloc((void**)&computePtrs.dArena, totalMemory));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.uOutput, (void*)hostPtrs.uOutput, 0));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.uIO, (void*)hostPtrs.hIO, 0));
 
@@ -172,7 +172,7 @@ void AllocateComputeMemory()
 
 	//Generate coalmine overlay, which is entirely separate for some reason.
 	uint8_t* dOverlayMem; //It's probably fine to forget this pointer since we can copy it back from the coalmine_overlay global.
-	checkCudaErrors(cudaMalloc(&dOverlayMem, 3 * 256 * 103));
+	checkCudaErrors(cudaMalloc((void**)&dOverlayMem, 3 * 256 * 103));
 	uint8_t* hPtr = (uint8_t*)malloc(3 * 256 * 103);
 	ReadImage("wang_tiles/coalmine_overlay.png", hPtr);
 	checkCudaErrors(cudaMemcpy(dOverlayMem, hPtr, 3 * 256 * 103, cudaMemcpyHostToDevice));
