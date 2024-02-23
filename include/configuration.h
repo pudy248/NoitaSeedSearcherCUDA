@@ -9,7 +9,7 @@
 struct GeneralConfig
 {
 	uint32_t seedStart;
-	uint32_t endSeed;
+	uint32_t seedEnd;
 	uint32_t seedBlockSize;
 	bool seedBlockOverride;
 };
@@ -116,6 +116,7 @@ struct SpawnableConfig
 struct FilterConfig
 {
 	bool aggregate;
+	bool upwarp;
 	int itemFilterCount;
 	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
 	int materialFilterCount;

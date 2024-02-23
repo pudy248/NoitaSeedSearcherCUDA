@@ -2,33 +2,6 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <CudaCompile Include="main.cu" />
-    <CudaCompile Include="src\structs.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\misc.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\filter.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\search.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\worldgen.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\precheck.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\wandgen.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\hbwang.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
-    <CudaCompile Include="src\output.cu">
-      <Filter>src</Filter>
-    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="src">
@@ -149,6 +122,33 @@
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="src\biome_impl.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\filter.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\hbwang.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\misc.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\output.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\precheck.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\search.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\structs.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wandgen.cu">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\worldgen.cu">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

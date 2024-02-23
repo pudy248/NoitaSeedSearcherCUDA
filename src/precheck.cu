@@ -54,6 +54,9 @@ _compute static AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed
 	for (int i = 3; i >= 0; i--)
 	{
 		int r = (int)(prng2.Next() * (i + 1));
+		if (r == 4) {
+			r = 3;
+		}
 		Material temp = result.mats[i];
 		result.mats[i] = result.mats[r];
 		result.mats[r] = temp;

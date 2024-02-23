@@ -3,6 +3,7 @@
 //Define exactly one of these!
 //#define BACKEND_CPU
 #define BACKEND_CUDA
+
 //Future implementations?
 //#define BACKEND_ROCm?
 //#define BACKEND_OPENCL?

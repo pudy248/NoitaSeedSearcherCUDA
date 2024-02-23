@@ -22,9 +22,6 @@ public:
 	int Seed;
 
 	_universal NollaPRNG(uint32_t worldSeed);
-	_universal uint64_t SetRandomSeedHelper(double r);
-	_universal uint64_t SetRandomSeedHelperInt(int64_t r);
-	_universal uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws);
 	_universal _noinline void SetRandomSeed(double x, double y);
 	_universal _noinline void SetRandomSeedInt(int x, int y);
 	_universal float Next();
@@ -42,3 +39,5 @@ _compute float random_next(float min, float max, NollaPRNG& random, Vec2i& rnd);
 _compute int random_nexti(float min, float max, NollaPRNG& random, Vec2i& rnd);
 _compute int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, Vec2i& rnd);
 _compute int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, Vec2i& rnd);
+
+int pick_world_seed(uint64_t time);

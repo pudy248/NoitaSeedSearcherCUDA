@@ -13,6 +13,7 @@ struct BiomeSector
 	int worldY;
 	int worldW;
 	int worldH;
+
 	uint32_t tiles_w;
 	uint32_t tiles_h;
 	uint32_t map_w;
@@ -30,11 +31,11 @@ struct WangSpawn
 	uint8_t y;
 	WangFuncIndex i;
 };
-constexpr int _WangTileMaxSpawns = 6;
+constexpr int _WangTileMaxSpawns = 4;
 struct WangTile
 {
 	char colors[6];
-	char edges[8];
+	char edges[16];
 	WangSpawn spawns[_WangTileMaxSpawns];
 };
 

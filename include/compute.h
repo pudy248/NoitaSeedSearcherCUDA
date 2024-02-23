@@ -7,8 +7,9 @@
 
 #include <vector>
 
-void CopySpawnFuncs();
+_compute void CopySpawnFuncs();
 int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpawnFunctions** funcs, int stride, int w, int h);
+void blockOutRooms(uint8_t* map, int map_w, int map_h, uint32_t targetColor);
 void InstantiateBiome(const char* path, BiomeWangScope* ss, int& bC, int& mA);
 
 _compute bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c);
@@ -32,7 +33,7 @@ _compute SpawnableBlock ParseSpawnableBlock(uint8_t* bytes, uint8_t* putSpawnabl
 _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* tmp, bool write);
 _compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount);
 
-void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*));
+void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*));
 
 struct OutputProgressData
 {

@@ -87,12 +87,7 @@ _universal double WorldgenPRNG::Next()
 	return Seed / 0x7fffffff;
 }
 
-_universal NollaPRNG::NollaPRNG(uint32_t worldSeed)
-{
-	world_seed = worldSeed;
-	Seed = worldSeed;
-}
-_universal uint64_t NollaPRNG::SetRandomSeedHelper(double r)
+_universal static uint64_t SetRandomSeedHelper(double r)
 {
 	uint64_t e = *(uint64_t*)&r;
 	e &= 0x7fffffffffffffff;
@@ -108,7 +103,7 @@ _universal uint64_t NollaPRNG::SetRandomSeedHelper(double r)
 	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
 	return b & 0xffffffff;
 }
-_universal uint64_t NollaPRNG::SetRandomSeedHelperInt(int64_t r)
+_universal static uint64_t SetRandomSeedHelperInt(int64_t r)
 {
 	double dr = r;
 	uint64_t e = *(uint64_t*)&dr;
@@ -125,7 +120,7 @@ _universal uint64_t NollaPRNG::SetRandomSeedHelperInt(int64_t r)
 	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
 	return b & 0xffffffff;
 }
-_universal uint32_t NollaPRNG::SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
+_universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
 {
 	uint32_t uVar1;
 	uint32_t uVar2;
@@ -140,6 +135,12 @@ _universal uint32_t NollaPRNG::SetRandomSeedHelper2(uint32_t a, uint32_t b, uint
 	uVar2 = (uVar2 - uVar1) - uVar3 ^ uVar3 >> 3;
 	uVar1 = (uVar1 - uVar2) - uVar3 ^ uVar2 << 10;
 	return (uVar3 - uVar2) - uVar1 ^ uVar1 >> 0xf;
+}
+
+_universal NollaPRNG::NollaPRNG(uint32_t worldSeed)
+{
+	world_seed = worldSeed;
+	Seed = worldSeed;
 }
 _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 {
@@ -380,6 +381,33 @@ _compute int pick_random_from_table_weighted(const float* probs, float sum, int 
 		val -= probs[i];
 	}
 	return 0;
+}
+
+int pick_world_seed(uint64_t time)
+{
+	if (time > 0x7fffffff)
+		time >>= 1;
+	double r = (double)time;
+	time >>= 0x1f;
+	r += time * 8;
+
+	if (r > 2147483647.0)
+		r *= 0.5;
+
+	int Seed = (int)r;
+	for (int i = 0; i < 2; i++)
+	{
+		Seed = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
+		if (Seed < 0)
+		{
+			Seed += 0x7fffffff;
+		}
+	}
+	r = Seed;
+	
+	r = ((r * 4.656612875e-10) * 2147483646.0);
+	int out = SetRandomSeedHelper(r);
+	return out;
 }
 
 _compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size)

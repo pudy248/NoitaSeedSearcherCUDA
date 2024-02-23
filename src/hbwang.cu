@@ -75,17 +75,24 @@ static void stbhw__parse_h_rect(WangProcess* p, WangTileset* tileSet, int xpos, 
 	WangTile* h = &tileSet->hTiles[idx];
 	for (int i = 0; i < _WangTileMaxSpawns; i++)
 		h->spawns[i] = { 0, 0, -1 };
-	h->s[0] = a;
-	h->s[1] = b;
-	h->s[2] = c;
-	h->s[3] = d;
-	h->s[4] = e;
-	h->s[5] = f;
+	h->colors[0] = a;
+	h->colors[1] = b;
+	h->colors[2] = c;
+	h->colors[3] = d;
+	h->colors[4] = e;
+	h->colors[5] = f;
 	//printf("H %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
+
+	int tw = 2 * p->c.short_side_len;
+	int th = p->c.short_side_len;
+	uint8_t* output = (uint8_t*)malloc(3 * tw * th);
+
 	for (uint8_t j = 0; j < len; ++j)
 		for (uint8_t i = 0; i < len * 2; ++i)
 		{
 			uint8_t* buf = (p->data + (ypos + j + 1) * p->stride + (xpos + i + 1) * 3);
+			memcpy(&output[3 * (j * tw + i)], buf, 3);
+
 			uint32_t color = (buf[0] << 16) | (buf[1] << 8) | buf[2];
 			for (int16_t z = 0; z < p->funcs[0]->count; z++)
 			{
@@ -103,6 +110,11 @@ static void stbhw__parse_h_rect(WangProcess* p, WangTileset* tileSet, int xpos, 
 		printf("H Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
 	}
 	tileSet->numH++;
+
+	char nameBuf[64];
+	sprintf(nameBuf, "tiles/H_%i.png", idx);
+	WriteImage(nameBuf, output, tw, th);
+	free(output);
 }
 
 static void stbhw__parse_v_rect(WangProcess* p, WangTileset* tileSet, int xpos, int ypos,
@@ -113,17 +125,24 @@ static void stbhw__parse_v_rect(WangProcess* p, WangTileset* tileSet, int xpos, 
 	WangTile* h = &tileSet->vTiles[idx];
 	for (int i = 0; i < _WangTileMaxSpawns; i++)
 		h->spawns[i] = { 0, 0, -1 };
-	h->s[0] = a;
-	h->s[1] = b;
-	h->s[2] = c;
-	h->s[3] = d;
-	h->s[4] = e;
-	h->s[5] = f;
+	h->colors[0] = a;
+	h->colors[1] = b;
+	h->colors[2] = c;
+	h->colors[3] = d;
+	h->colors[4] = e;
+	h->colors[5] = f;
 	//printf("V %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
+
+	int tw = p->c.short_side_len;
+	int th = 2 * p->c.short_side_len;
+	uint8_t* output = (uint8_t*)malloc(3 * tw * th);
+
 	for (uint8_t j = 0; j < len * 2; ++j)
 		for (uint8_t i = 0; i < len; ++i)
 		{
 			uint8_t* buf = (p->data + (ypos + j + 1) * p->stride + (xpos + i + 1) * 3);
+			memcpy(&output[3 * (j * tw + i)], buf, 3);
+
 			uint32_t color = (buf[0] << 16) | (buf[1] << 8) | buf[2];
 			for (int16_t z = 0; z < p->funcs[0]->count; z++)
 			{
@@ -141,6 +160,11 @@ static void stbhw__parse_v_rect(WangProcess* p, WangTileset* tileSet, int xpos, 
 		printf("V Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
 	}
 	tileSet->numV++;
+
+	char nameBuf[64];
+	sprintf(nameBuf, "tiles/V_%i.png", idx);
+	WriteImage(nameBuf, output, tw, th);
+	free(output);
 }
 
 static void stbhw__process_h_row(WangProcess* p, WangTileset* tileSet,
@@ -290,12 +314,12 @@ static Vec2i stbhw_get_index_stride(WangTile* list, int numlist, char a, char b,
 	for (int i = 0; i < numlist; ++i)
 	{
 		WangTile* h = &list[i];
-		if ((a < 0 || a == h->s[0]) &&
-			(b < 0 || b == h->s[1]) &&
-			(c < 0 || c == h->s[2]) &&
-			(d < 0 || d == h->s[3]) &&
-			(e < 0 || e == h->s[4]) &&
-			(f < 0 || f == h->s[5]))
+		if ((a < 0 || a == h->colors[0]) &&
+			(b < 0 || b == h->colors[1]) &&
+			(c < 0 || c == h->colors[2]) &&
+			(d < 0 || d == h->colors[3]) &&
+			(e < 0 || e == h->colors[4]) &&
+			(f < 0 || f == h->colors[5]))
 		{
 			//printf("%i ", i);
 			if (first < 0) first = i;
@@ -400,12 +424,12 @@ _compute static int stbhw__choose_tile(WangTile* list, uint16_t* indices, int nu
 	int m = prng->NextU() % numVary;
 	int i = start + m * stride;
 	WangTile* h = &list[i];
-	*a = h->s[0];
-	*b = h->s[1];
-	*c = h->s[2];
-	*d = h->s[3];
-	*e = h->s[4];
-	*f = h->s[5];
+	*a = h->colors[0];
+	*b = h->colors[1];
+	*c = h->colors[2];
+	*d = h->colors[3];
+	*e = h->colors[4];
+	*f = h->colors[5];
 	return i;
 }
 #else
@@ -427,12 +451,12 @@ _compute static int stbhw__choose_tile(WangTile* list, int numlist,
 		for (i = 0; i < numlist; ++i)
 		{
 			WangTile* h = &list[i];
-			if ((*a < 0 || *a == h->s[0]) &&
-				(*b < 0 || *b == h->s[1]) &&
-				(*c < 0 || *c == h->s[2]) &&
-				(*d < 0 || *d == h->s[3]) &&
-				(*e < 0 || *e == h->s[4]) &&
-				(*f < 0 || *f == h->s[5]))
+			if ((*a < 0 || *a == h->colors[0]) &&
+				(*b < 0 || *b == h->colors[1]) &&
+				(*c < 0 || *c == h->colors[2]) &&
+				(*d < 0 || *d == h->colors[3]) &&
+				(*e < 0 || *e == h->colors[4]) &&
+				(*f < 0 || *f == h->colors[5]))
 			{
 				n += 1;
 				printf("%i ", i);
@@ -441,12 +465,12 @@ _compute static int stbhw__choose_tile(WangTile* list, int numlist,
 					printf("\n");
 					// use list[i]
 					// update constraints to reflect what we placed
-					*a = h->s[0];
-					*b = h->s[1];
-					*c = h->s[2];
-					*d = h->s[3];
-					*e = h->s[4];
-					*f = h->s[5];
+					*a = h->colors[0];
+					*b = h->colors[1];
+					*c = h->colors[2];
+					*d = h->colors[3];
+					*e = h->colors[4];
+					*f = h->colors[5];
 					return i;
 				}
 			}

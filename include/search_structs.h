@@ -74,6 +74,7 @@ struct SpellData
 	Spell s;
 	ActionType type;
 	double spawn_probabilities[11];
+	const char* name;
 };
 
 struct SpellProb
