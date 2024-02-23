@@ -138,7 +138,7 @@ void GenerateSpellData()
 			{
 				counters2[t]++;
 				sums[t] += allSpells[j].spawn_probabilities[t];
-				printf("{%f,SPELL_%s},\n", sums[t], SpellNames[j + 1]);
+				printf("{%f,SPELL_%s},\n", sums[t], allSpells[j].name);
 			}
 		}
 		printf("};\n");
@@ -183,7 +183,7 @@ void GenerateSpellData()
 					if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[tier] > 0)
 					{
 						sum += allSpells[j].spawn_probabilities[tier];
-						printf("{%f,SPELL_%s},\n", sum, SpellNames[j + 1]);
+						printf("{%f,SPELL_%s},\n", sum, allSpells[j].name);
 					}
 				}
 				printf("};\n");

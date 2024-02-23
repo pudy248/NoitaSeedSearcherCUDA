@@ -736,7 +736,7 @@ _compute void CheckMountains(int seed, SpawnableConfig sCfg, uint8_t* bytes, int
 	{
 		for (int pw = sCfg.pwCenter.x - sCfg.pwWidth.x; pw <= sCfg.pwCenter.x + sCfg.pwWidth.x; pw++)
 		{
-			for (int hm_level = sCfg.minHMidx; hm_level < min(sCfg.maxHMidx, pw == 0 ? 7 : 6); hm_level++)
+			for (int hm_level = sCfg.minHMidx; hm_level <= min(sCfg.maxHMidx, pw == 0 ? 7 : 6); hm_level++)
 			{
 				int x = temple_x[hm_level] + chestOffsetX + 70 * 512 * pw;
 				int y = temple_y[hm_level] + chestOffsetY;

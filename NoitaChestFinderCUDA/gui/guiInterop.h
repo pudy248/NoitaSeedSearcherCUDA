@@ -37,7 +37,7 @@ void CreateConfigsAndDispatch()
 	#else
 			(size_t)512,
 	#endif
-			(size_t)3 * maxMapArea + 128,
+			(size_t)3 * maxMapArea + 256 * (1 + atoi(gui->worldConfig.leftPanel.inputs[1].text.str.toAnsiString().c_str())),
 			(size_t)4 * maxMapArea,
 			(size_t)maxMapArea,
 			(size_t)4096,
@@ -50,7 +50,7 @@ void CreateConfigsAndDispatch()
 		false
 	};
 #ifdef REALTIME_SEEDS
-	generalCfg.seedBlockSize = 1;
+	config.generalCfg.seedBlockSize = 1;
 #endif
 	config.spawnableCfg = { 
 		{

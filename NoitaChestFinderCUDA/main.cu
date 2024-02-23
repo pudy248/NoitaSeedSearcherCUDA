@@ -12,6 +12,7 @@
 #endif
 
 #include "gui/guiMain.h"
+#include "misc/data_generation.h"
 
 int main()
 {

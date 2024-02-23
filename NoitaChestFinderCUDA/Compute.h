@@ -14,6 +14,7 @@
 #include "misc/memory.h"
 #include "misc/pngutils.h"
 #include "biomes/allBiomes.h"
+#include "worldSeedGeneration.h"
 
 struct OutputProgressData
 {
@@ -140,10 +141,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					continue;
 				}
 				uint32_t nextSeed = currentSeed;
-#ifdef REALTIME_SEEDS
-				uint8_t* output = pointers.hPointers.hOutput + (index * BLOCKSIZE + inputIdx) * config.memSizes.outputSize;
+				uint8_t* output = hOutput + (i * WorkerAppetite + j) * config.memSizes.outputSize;
 				int _ = 0;
 				writeInt(output, _, currentSeed);
+#ifdef REALTIME_SEEDS
 				nextSeed = GenerateSeed(startTime + currentSeed);
 #endif
 				uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
@@ -242,10 +243,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					if (currentSeed >= config.generalCfg.endSeed || returns[i].seedFound)
 						continue;
 					uint32_t nextSeed = currentSeed;
-#ifdef REALTIME_SEEDS
-					uint8_t* output = pointers.hPointers.hOutput + (index * BLOCKSIZE + inputIdx) * config.memSizes.outputSize;
+					uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 					int _ = 0;
 					writeInt(output, _, currentSeed);
+#ifdef REALTIME_SEEDS
 					nextSeed = GenerateSeed(startTime + currentSeed);
 #endif
 					uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
@@ -264,7 +265,8 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				if (!hasOutput[i]) continue;
 				uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 
-				PrintOutputBlock(output, outputFile, config.outputCfg, appendOutput);
+				int time[2] = { times[i], startTime };
+				PrintOutputBlock(output, time, outputFile, config.outputCfg, appendOutput);
 			}
 			free(times);
 			free(hasOutput);

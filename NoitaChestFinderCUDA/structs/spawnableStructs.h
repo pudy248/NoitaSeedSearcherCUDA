@@ -37,6 +37,7 @@ struct SpellData
 	Spell s;
 	ActionType type;
 	double spawn_probabilities[11];
+	const char* name;
 };
 struct SpellProb
 {
@@ -239,15 +240,18 @@ _universal void writeByte(uint8_t* ptr, int& offset, uint8_t b)
 
 _universal int readInt(uint8_t* ptr, int& offset)
 {
-	int tmp;
-	memcpy(&tmp, ptr + offset, 4);
+	ptr += offset;
 	offset += 4;
-	return tmp;
+	return (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | (ptr[0]);
 }
 
 _universal void writeInt(uint8_t* ptr, int& offset, int val)
 {
-	memcpy(ptr + offset, &val, 4);
+	ptr += offset;
+	ptr[0] = val;
+	ptr[1] = val << 8;
+	ptr[2] = val << 16;
+	ptr[3] = val << 24;
 	offset += 4;
 }
 
