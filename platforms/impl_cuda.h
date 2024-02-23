@@ -226,7 +226,10 @@ bool QueryWorker(Worker& worker)
 	cudaError e = cudaEventQuery(worker.event);
 	if (e == cudaSuccess) return true;
 	else if (e == cudaErrorNotReady) return false;
-	else checkCudaErrors(e);
+	else {
+		checkCudaErrors(e);
+		return true;
+	}
 }
 SpanRet* SubmitJob(Worker& worker)
 {

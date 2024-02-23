@@ -170,9 +170,9 @@ int main()
 	#else
 			(size_t)512,
 	#endif
-			(size_t)maxMapArea * 4,
-			(size_t)maxMapArea * 4,
-			(size_t)maxMapArea * 4,
+			(size_t)maxMapArea * 4 + 512,
+			(size_t)maxMapArea * 4 + 128,
+			(size_t)maxMapArea * 4 + 128,
 			(size_t)512,
 	};
 
@@ -201,12 +201,16 @@ int main()
 	};
 
 	config.filterCfg = {
-		false, false, 0, { ItemFilter({SAMPO}) }, 0, {}, 0, {}, 0, {}, false, 27
+		false, false, 
+		0, { ItemFilter({HEART_MIMIC}) }, 
+		0, {}, 
+		0, { SpellFilter({SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER}, 8)},
+		0, {}, false, 27
 	};
 
 	config.precheckCfg = {
 		{false, CART_NONE},
-		{true, GOLD},
+		{false, GOLD},
 		{false, SPELL_NONE, SPELL_NONE},
 		{false, MATERIAL_NONE},
 		{false, AlchemyOrdering::UNORDERED, {}, {}},

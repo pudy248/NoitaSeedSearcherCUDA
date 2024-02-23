@@ -11,9 +11,9 @@ _universal void writeInt(uint8_t* ptr, int& offset, int val);
 _universal void incrInt(uint8_t* ptr);
 _universal short readShort(uint8_t* ptr, int& offset);
 _universal void writeShort(uint8_t* ptr, int& offset, short s);
-_universal int readMisaligned(int* ptr2);
-_universal Spawnable readMisalignedSpawnable(Spawnable* sPtr);
-_universal WandData readMisalignedWand(WandData* wPtr);
+_compute int readMisaligned(int* ptr2);
+_compute Spawnable readMisalignedSpawnable(Spawnable* sPtr);
+_compute WandData readMisalignedWand(WandData* wPtr);
 
 struct MemoryArena
 {

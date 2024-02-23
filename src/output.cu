@@ -4,6 +4,8 @@
 #include "../include/search_structs.h"
 #include "../include/misc_funcs.h"
 
+#include "../data/uiNames.h"
+
 #include <iostream>
 
 _compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount)
@@ -56,7 +58,7 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 		Spawnable* sPtr;
 		for (int i = 0; i < sCount; i++) {
 			sPtr = (Spawnable*)(output + memOffset);
-			Spawnable s = readMisalignedSpawnable(sPtr);
+			Spawnable s = *sPtr;
 			Vec2i chunkCoords = GetLocalPos(s.x, s.y);
 
 			sprintfc(seedInfo, "%s(%i", SpawnableTypeNames[s.sType - TYPE_CHEST], s.x);
@@ -97,16 +99,16 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 				}
 				else if (item == DATA_WAND) {
 					n++;
-					WandData dat = readMisalignedWand((WandData*)(&sPtr->contents + n));
+					WandData dat = *(WandData*)(&sPtr->contents + n);
 					sprintfc(seedInfo, "[%i capacity, %i S/C, %.2fsec CD, %.2fsec RT, %i Mana, %i Regen, %.3fx Speed, %ideg Spread, %s]",
-						dat.capacity, dat.multicast, dat.delay, dat.reload, dat.mana, dat.regen, dat.speed, dat.spread, dat.shuffle ? "Shuffle" : "Non-shuffle");
+						(int)dat.capacity, dat.multicast, dat.delay / 60.f, dat.reload / 60.f, dat.mana, dat.regen, dat.speed, dat.spread, dat.shuffle ? "Shuffle" : "Non-shuffle");
 					if (dat.alwaysCast.s) sprintfc(seedInfo, " AC: ");
 
 					n += 33;
 					continue;
 				}
 				else if (GOLD_NUGGETS > item || item > TRUE_ORB) {
-					sprintfc(seedInfo, "%p", item);
+					sprintfc(seedInfo, "0x%x", item);
 				}
 				else {
 					sprintfc(seedInfo, "%s", ItemNames[item]);

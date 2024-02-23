@@ -60,9 +60,9 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		}
 #endif
 
-		//CheckMountains(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
-		//CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
-		//threadSync();
+		CheckMountains(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		threadSync();
 
 		((int*)spawnableDat)[1] = spawnableCount;
 		SpawnableBlock result = ParseSpawnableBlock(spawnableDat, spawnables, config.spawnableCfg, config.memSizes.mapDataSize);
@@ -95,7 +95,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	uint32_t passedSeeds = 0;
 
 	int dbg_seed_loop_ctr = 1;
-	int dbg_seed_loop_max = 10;
+	int dbg_seed_loop_max = 1;
 
 	uint32_t currentSeed = config.generalCfg.seedStart;
 	int index = 0;

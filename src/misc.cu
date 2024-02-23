@@ -14,17 +14,19 @@ _universal void writeByte(uint8_t* ptr, int& offset, uint8_t b)
 {
 	ptr[offset++] = b;
 }
-_universal int readInt(uint8_t* ptr, int& offset)
-{
-	int tmp;
-	memcpy(&tmp, ptr + offset, 4);
+_universal int readInt(uint8_t* ptr, int& offset) {
+	ptr += offset;
 	offset += 4;
-	return tmp;
+	return (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | (ptr[0]);
 }
-_universal void writeInt(uint8_t* ptr, int& offset, int val)
-{
-	memcpy(ptr + offset, &val, 4);
+
+_universal void writeInt(uint8_t* ptr, int& offset, int val) {
+	ptr += offset;
 	offset += 4;
+	ptr[0] = val;
+	ptr[1] = val << 8;
+	ptr[2] = val << 16;
+	ptr[3] = val << 24;
 }
 _universal void incrInt(uint8_t* ptr)
 {
@@ -42,13 +44,13 @@ _universal void writeShort(uint8_t* ptr, int& offset, short s)
 	writeByte(ptr, offset, ((short)s) & 0xff);
 	writeByte(ptr, offset, (((short)s) >> 8) & 0xff);
 }
-_universal int readMisaligned(int* ptr2)
+_compute int readMisaligned(int* ptr2)
 {
 	uint8_t* ptr = (uint8_t*)ptr2;
 	int offset = 0;
 	return readInt(ptr, offset);
 }
-_universal Spawnable readMisalignedSpawnable(Spawnable* sPtr)
+_compute Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 {
 	uint8_t* bPtr = (uint8_t*)sPtr;
 	Spawnable s;
@@ -59,10 +61,10 @@ _universal Spawnable readMisalignedSpawnable(Spawnable* sPtr)
 	s.count = readInt(bPtr, offset);
 	return s;
 }
-_universal WandData readMisalignedWand(WandData* wPtr)
+_compute WandData readMisalignedWand(WandData* wPtr)
 {
 	WandData w = {};
-	memcpy(&w, wPtr, 37);
+	cMemcpyU(&w, wPtr, 37);
 	return w;
 }
 
@@ -100,7 +102,7 @@ _universal static uint64_t SetRandomSeedHelper(double r)
 
 	uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
 	uint64_t a = (uint64_t)j << 0x20 | j;
-	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
+	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
 _universal static uint64_t SetRandomSeedHelperInt(int64_t r)
@@ -117,7 +119,7 @@ _universal static uint64_t SetRandomSeedHelperInt(int64_t r)
 
 	uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
 	uint64_t a = (uint64_t)j << 0x20 | j;
-	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
+	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
 _universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)

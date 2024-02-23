@@ -6,9 +6,8 @@
 #include <cstdio>
 #include <cstdint>
 
-_compute static void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCount)
+_compute static void ItemFilterPassed(Spawnable* s, int count, ItemFilter f, int& foundCount)
 {
-	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
 	{
 		Item c = (&s->contents)[n];
@@ -45,9 +44,8 @@ _compute static void ItemFilterPassed(Spawnable* s, ItemFilter f, int& foundCoun
 		}
 	}
 }
-_compute static void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& foundCount)
+_compute static void MaterialFilterPassed(Spawnable* s, int count, MaterialFilter mf, int& foundCount)
 {
-	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
 	{
 		Item c = (&s->contents)[n];
@@ -91,9 +89,8 @@ _compute static void MaterialFilterPassed(Spawnable* s, MaterialFilter mf, int& 
 
 	}
 }
-_compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter sf, int& foundCount)
+_compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, SpellFilter sf, int& foundCount)
 {
-	int count = readMisaligned(&(s->count));
 	int largestChain = 0;
 	for (int n = 0; n < count; n++)
 	{
@@ -164,9 +161,8 @@ _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, SpellFilter 
 	}
 	if (sf.consecutive) foundCount = largestChain;
 }
-_compute static bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
+_compute static bool WandFilterPassed(uint32_t seed, Spawnable* s, int count, int howBig)
 {
-	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
 	{
 		Item c = (&s->contents)[n];
@@ -194,9 +190,8 @@ _compute static bool WandFilterPassed(uint32_t seed, Spawnable* s, int howBig)
 	}
 	return false;
 }
-_compute static void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, int& foundCount)
+_compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneFilter psf, int& foundCount)
 {
-	int count = readMisaligned(&(s->count));
 	for (int n = 0; n < count; n++)
 	{
 		Item c = (&s->contents)[n];
@@ -259,12 +254,21 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 		{
 			Spawnable* s = b.spawnables[j];
 			if (s == NULL) continue;
+
+			Spawnable sDat = readMisalignedSpawnable(s);
+
+			bool failed = fCfg.upwarp;
+			if (failed) {
+				if (sDat.x == 315 && sDat.y == 17) failed = false;
+				if (sDat.x == 75 && sDat.y == 117) failed = false;
+			}
+			if (failed) continue;
 			bool added = false;
 
 			for (int i = 0; i < fCfg.itemFilterCount; i++)
 			{
 				int prevPassCount = itemsPassed[i];
-				ItemFilterPassed(s, fCfg.itemFilters[i], itemsPassed[i]);
+				ItemFilterPassed(s, sDat.count, fCfg.itemFilters[i], itemsPassed[i]);
 				if (itemsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -275,7 +279,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.materialFilterCount; i++)
 			{
 				int prevPassCount = materialsPassed[i];
-				MaterialFilterPassed(s, fCfg.materialFilters[i], materialsPassed[i]);
+				MaterialFilterPassed(s, sDat.count, fCfg.materialFilters[i], materialsPassed[i]);
 				if (materialsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -286,7 +290,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.spellFilterCount; i++)
 			{
 				int prevPassCount = spellsPassed[i];
-				SpellFilterPassed(b.seed, s, fCfg.spellFilters[i], spellsPassed[i]);
+				SpellFilterPassed(b.seed, s, sDat.count, fCfg.spellFilters[i], spellsPassed[i]);
 				if (spellsPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -297,7 +301,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
 			{
 				int prevPassCount = pixelScenesPassed[i];
-				PixelSceneFilterPassed(s, fCfg.pixelSceneFilters[i], pixelScenesPassed[i]);
+				PixelSceneFilterPassed(s, sDat.count, fCfg.pixelSceneFilters[i], pixelScenesPassed[i]);
 				if (pixelScenesPassed[i] > prevPassCount && !added)
 				{
 					added = true;
@@ -337,8 +341,8 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 
 			Spawnable sDat = readMisalignedSpawnable(s);
 
-			bool failed = true;
-			if (fCfg.upwarp) {
+			bool failed = fCfg.upwarp;
+			if (failed) {
 				if (sDat.x == 315 && sDat.y == 17) failed = false;
 				if (sDat.x == 75 && sDat.y == 117) failed = false;
 			}
@@ -347,7 +351,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.itemFilterCount; i++)
 			{
 				int passCount = 0;
-				ItemFilterPassed(s, fCfg.itemFilters[i], passCount);
+				ItemFilterPassed(s, sDat.count, fCfg.itemFilters[i], passCount);
 				if (passCount < fCfg.itemFilters[i].duplicates)
 				{
 					failed = true;
@@ -359,7 +363,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.materialFilterCount; i++)
 			{
 				int passCount = 0;
-				MaterialFilterPassed(s, fCfg.materialFilters[i], passCount);
+				MaterialFilterPassed(s, sDat.count, fCfg.materialFilters[i], passCount);
 				if (passCount < fCfg.materialFilters[i].duplicates)
 				{
 					failed = true;
@@ -371,7 +375,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.spellFilterCount; i++)
 			{
 				int passCount = 0;
-				SpellFilterPassed(b.seed, s, fCfg.spellFilters[i], passCount);
+				SpellFilterPassed(b.seed, s, sDat.count, fCfg.spellFilters[i], passCount);
 				if (passCount < fCfg.spellFilters[i].duplicates)
 				{
 					failed = true;
@@ -383,7 +387,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
 			{
 				int passCount = 0;
-				PixelSceneFilterPassed(s, fCfg.pixelSceneFilters[i], passCount);
+				PixelSceneFilterPassed(s, sDat.count, fCfg.pixelSceneFilters[i], passCount);
 				if (passCount < fCfg.pixelSceneFilters[i].duplicates)
 				{
 					failed = true;
@@ -394,7 +398,7 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 
 			if (fCfg.checkBigWands)
 			{
-				if (!WandFilterPassed(b.seed, s, fCfg.howBig)) continue;
+				if (!WandFilterPassed(b.seed, s, sDat.count, fCfg.howBig)) continue;
 			}
 
 			relevantSpawnables[relevantSpawnableCount++] = s;

@@ -11,11 +11,11 @@
 
 
 //#define IMAGE_OUTPUT
-//#define SPAWNABLE_OUTPUT
+#define SPAWNABLE_OUTPUT
 //#define SQL_OUTPUT
 #define DO_WORLDGEN
 //#define DO_WANDGEN
-//#define DO_SPELLGEN
+#define DO_SPELLGEN
 //#define REALTIME_SEEDS
 //#define SFML
 
