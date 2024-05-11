@@ -249,9 +249,9 @@ _universal void writeInt(uint8_t* ptr, int& offset, int val)
 {
 	ptr += offset;
 	ptr[0] = val;
-	ptr[1] = val << 8;
-	ptr[2] = val << 16;
-	ptr[3] = val << 24;
+	ptr[1] = val >> 8;
+	ptr[2] = val >> 16;
+	ptr[3] = val >> 24;
 	offset += 4;
 }
 
