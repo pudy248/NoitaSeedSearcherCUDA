@@ -59,7 +59,7 @@ inline void __printLastCudaError(const char* errorMessage, const char* file,
 
 //CUDA-specific kernel config structs
 constexpr int MAXBLOCKS = 8;
-int BLOCKDIV = 60;
+int BLOCKDIV = 30;
 int BLOCKSIZE = 64 * BLOCKDIV;
 int NumBlocks;
 int memIdxCtr = 0;

@@ -130,6 +130,8 @@ _compute static bool MaterialEquals(Material reference, Material test, bool writ
 
 _compute static bool FungalShiftEquals(FungalShift reference, FungalShift test, int ptrs[4], Material vars[materialVarEntryCount * 4])
 {
+	if (reference.to == SD_FL_GOLD || reference.to == SD_FL_GRASS_HOLY)
+		return (test.randomRoll == 1) && test.toFlask && MaterialEquals((Material)reference.from, (Material)test.from, false, ptrs, vars);
 	if (reference.fromFlask && !test.fromFlask) return false;
 	if (reference.toFlask && !test.toFlask) return false;
 	if (!MaterialEquals((Material)reference.from, (Material)test.from, false, ptrs, vars)) return false;
@@ -267,16 +269,18 @@ _compute bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c)
 	FungalShift generatedShifts[maxFungalShifts];
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
-		random.SetRandomSeedInt(89346, 42345 + i);
-		Vec2i rnd = { 9123,58925 + i };
+		random.SetRandomSeedInt( 89346, 42345 + i);
+		Vec2i rnd = { 9123,42345 + i };
 		generatedShifts[i].from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, rnd)];
 		generatedShifts[i].to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, rnd)];
 		if (random_nexti(1, 100, random, rnd) <= 75)
 		{
-			if (random_nexti(1, 100, random, rnd) <= 50)
+			if (random_nexti(1, 100, random, rnd) <= 50) 
 				generatedShifts[i].fromFlask = true;
-			else
+			else {
+				generatedShifts[i].randomRoll = random_nexti(1, 1000, random, rnd);
 				generatedShifts[i].toFlask = true;
+			}
 		}
 	}
 

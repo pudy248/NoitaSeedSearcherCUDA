@@ -53,6 +53,7 @@ struct FungalShift
 	bool toFlask;
 	int minIdx;
 	int maxIdx;
+	int randomRoll = 0;
 	_universal constexpr FungalShift()
 		: from(SS_NONE), to(SD_NONE), fromFlask(false), toFlask(false), minIdx(0), maxIdx(0)
 	{

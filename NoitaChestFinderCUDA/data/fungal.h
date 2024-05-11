@@ -46,7 +46,7 @@ _data const float fungalProbsFrom[] = {
 	0.0003f,
 };
 
-_data constexpr int fungalMaterialsToCount = 31;
+_data constexpr int fungalMaterialsToCount = 32;
 _data const ShiftDest fungalMaterialsTo[] = {
 	SD_WATER,
 	SD_LAVA,
@@ -75,12 +75,13 @@ _data const ShiftDest fungalMaterialsTo[] = {
 	SD_MAGIC_LIQUID_POLYMORPH,
 	SD_MAGIC_LIQUID_RANDOM_POLYMORPH,
 	SD_MAGIC_LIQUID_TELEPORTATION,
+	SD_MIMIC_LIQUID,
 	SD_URINE,
 	SD_POO,
 	SD_VOID_LIQUID,
 	SD_CHEESE_STATIC,
 };
-_data constexpr float fungalSumTo = 20.63f;
+_data constexpr float fungalSumTo = 20.73f;
 _data const float fungalProbsTo[] = {
 	1,
 	1,
@@ -109,6 +110,7 @@ _data const float fungalProbsTo[] = {
 	0.02f,
 	0.02f,
 	0.15f,
+	0.10f,
 	0.01f,
 	0.01f,
 	0.01f,

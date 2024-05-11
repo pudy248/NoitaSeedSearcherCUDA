@@ -397,7 +397,7 @@ const ShiftSource _fungalMaterialsFrom[_fungalMaterialsFromCount] = {
 	SS_GOLD,
 	SS_NONE
 };
-constexpr int _fungalMaterialsToCount = 37;
+constexpr int _fungalMaterialsToCount = 40;
 const ShiftDest _fungalMaterialsTo[_fungalMaterialsToCount] = {
 	SD_FLASK,
 	SD_VAR1,
@@ -431,10 +431,13 @@ const ShiftDest _fungalMaterialsTo[_fungalMaterialsToCount] = {
 	SD_MAGIC_LIQUID_POLYMORPH,
 	SD_MAGIC_LIQUID_RANDOM_POLYMORPH,
 	SD_MAGIC_LIQUID_TELEPORTATION,
+	SD_MIMIC_LIQUID,
 	SD_URINE,
 	SD_POO,
 	SD_VOID_LIQUID,
 	SD_CHEESE_STATIC,
+	SD_FL_GOLD,
+	SD_FL_GRASS_HOLY,
 	SD_NONE
 };
 
@@ -507,4 +510,4 @@ const Item _items[_itemCount] = {
 
 constexpr int _materialCount = SPARK_TEAL + 1;
 
-constexpr int _spellCount = SPELL_RAINBOW_TRAIL + 1;
+constexpr int _spellCount = SPELL_CESSATION + 1;
