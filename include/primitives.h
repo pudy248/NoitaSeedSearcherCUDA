@@ -1,9 +1,10 @@
 #pragma once
 #include "../platforms/platform_implementation.h"
 #include <cstdint>
+#include <cmath>
 
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
+//#define max(a, b) ((a) > (b) ? (a) : (b))
+//#define min(a, b) ((a) < (b) ? (a) : (b))
 
 struct Vec2i {
 	int x;
@@ -28,15 +29,15 @@ struct Vec2i {
 	}
 };
 
-uint64_t operator""_KB(uint64_t x)
+unsigned long long operator""_KB(unsigned long long x)
 {
 	return x * 1024;
 }
-uint64_t operator""_MB(uint64_t x)
+unsigned long long operator""_MB(unsigned long long x)
 {
 	return x * 1024 * 1024;
 }
-uint64_t operator""_GB(uint64_t x)
+unsigned long long operator""_GB(unsigned long long x)
 {
 	return x * 1024 
 		* 1024 * 1024;

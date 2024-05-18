@@ -137,15 +137,15 @@ void AllocateComputeMemory()
 	cudaMemGetInfo(&freeMem, &physicalMem);
 	printf("Memory free: %lli of %lli bytes\n", freeMem, physicalMem);
 	freeMem *= 0.9f; //leave a bit of extra
-	freeMem = min(freeMem, config.memSizes.memoryCap);
+	freeMem = std::min(freeMem, config.memSizes.memoryCap);
 
 	size_t memPerThread = GetMinimumSpanMemory() + GetMinimumOutputMemory();
 	//printf("Each thread requires %lli bytes of block memory\n", memPerThread);
 
-	int numThreads = min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart), freeMem / memPerThread);
+	int numThreads = std::min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart), freeMem / memPerThread);
 	int numBlocks = numThreads / BLOCKSIZE;
-	NumBlocks = max(min(MAXBLOCKS, numBlocks - numBlocks % 1), 1);
-	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart) / (NumBlocks * BLOCKSIZE) + 1);
+	NumBlocks = std::max(std::min(MAXBLOCKS, numBlocks - numBlocks % 1), 1);
+	config.generalCfg.seedBlockSize = std::min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart) / (NumBlocks * BLOCKSIZE) + 1);
 	
 	SetWorkerCount(NumBlocks);
 	SetWorkerAppetite(BLOCKSIZE);
@@ -161,7 +161,7 @@ void AllocateComputeMemory()
 	checkCudaErrors(cudaHostAlloc(&hostPtrs.uOutput, outputSize, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostAlloc(&hostPtrs.hIO, KIO_size * NumBlocks, cudaHostAllocMapped));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.numActiveThreads, (void*)hostPtrs.numActiveThreads, 0));
-	checkCudaErrors(cudaMalloc(&computePtrs.dArena, totalMemory));
+	checkCudaErrors(cudaMalloc((void**)&computePtrs.dArena, totalMemory));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.uOutput, (void*)hostPtrs.uOutput, 0));
 	checkCudaErrors(cudaHostGetDevicePointer((void**)&computePtrs.uIO, (void*)hostPtrs.hIO, 0));
 
@@ -182,8 +182,8 @@ void AllocateComputeMemory()
 }
 void FreeComputeMemory()
 {
-	//TODO fix the fact that we leak literally everything, I don't want to write this function right now.
-	//Device reset fixes all woes.
+	// TODO: fix the fact that we leak literally everything, I don't want to write this function right now.
+	// Device reset fixes all woes.
 }
 
 Worker CreateWorker()
@@ -200,7 +200,6 @@ void DestroyWorker(Worker& worker)
 
 __global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig config, int memIdx, int BLOCKSIZE)
 {
-	//dAtomicAdd((int*)dPointers.numActiveThreads, 1);
 	uint32_t hwIdx = blockIdx.x * blockDim.x + threadIdx.x;
 	uint8_t* ioPtr = KIO_idx(dPointers.uIO, memIdx);
 	uint8_t* threadMemBlock = dPointers.dArena + arenaPitch * (memIdx * BLOCKSIZE + hwIdx);
@@ -210,8 +209,6 @@ __global__ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, Sear
 	for (uint64_t i = 0; i < sizeof(SpanRet) / sizeof(uint64_t); i++)
 		((uint64_t*)&KIO_ret(ioPtr)[hwIdx])[i] = ((uint64_t*)&ret)[i];
 	//memcpy(&KIO_ret(ioPtr)[hwIdx], &ret, sizeof(SpanRet));
-	
-	//dAtomicAdd((int*)dPointers.numActiveThreads, -1);
 }
 
 void DispatchJob(Worker& worker, SpanParams* spans)

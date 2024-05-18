@@ -24,9 +24,9 @@ _universal void writeInt(uint8_t* ptr, int& offset, int val) {
 	ptr += offset;
 	offset += 4;
 	ptr[0] = val;
-	ptr[1] = val << 8;
-	ptr[2] = val << 16;
-	ptr[3] = val << 24;
+	ptr[1] = val >> 8;
+	ptr[2] = val >> 16;
+	ptr[3] = val >> 24;
 }
 _universal void incrInt(uint8_t* ptr)
 {
@@ -156,7 +156,12 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 	double y_ = y + c;
 
 	double r = x_ * 134217727.0;
-	uint64_t e = SetRandomSeedHelper(r);
+	// Apparently equivalent?
+	// Seems to be correct for the inputs that get generated anyway.
+	uint32_t e = (uint32_t)(int64_t)r; //SetRandomSeedHelper(r);
+	// Debug, remove later
+	if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("e %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
+
 
 	uint64_t _x = *(uint64_t*)&x_ & 0x7fffffffffffffff;
 	uint64_t _y = *(uint64_t*)&y_ & 0x7fffffffffffffff;
@@ -173,7 +178,8 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 		r = y_;
 	}
 
-	uint64_t f = SetRandomSeedHelper(r);
+	uint32_t f = (uint32_t)(int64_t)r; //SetRandomSeedHelper(r);
+	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("f %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
 
 	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
 

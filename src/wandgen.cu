@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cmath>
 
+#define min(a, b) (a < b ? a : b)
 
 _compute static void GetBestSprite(NollaPRNG* rnd, Wand w)
 {
@@ -308,8 +309,15 @@ _compute static void applyShuffle(Wand* gun, StatProb prob, NollaPRNG* random)
 _compute static void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock dict[7], NollaPRNG* random)
 {
 	StatProb prob = getGunProbs(s, dict, random);
-	static void (*applyVars[7])(Wand*, StatProb, NollaPRNG*) = { applyReload, applyDelay, applySpread, applySpeed, applyCapacity, applyMulticast, applyShuffle, };
-	applyVars[s](gun, prob, random);
+	switch (s) {
+	case RELOAD: applyReload(gun, prob, random); break;
+	case CAST_DELAY: applyDelay(gun, prob, random); break;
+	case SPREAD: applySpread(gun, prob, random); break;
+	case SPEED_MULT: applySpeed(gun, prob, random); break;
+	case CAPACITY: applyCapacity(gun, prob, random); break;
+	case MULTICAST: applyMulticast(gun, prob, random); break;
+	case SHUFFLE: applyShuffle(gun, prob, random); break;
+	}
 }
 
 _compute static Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPRNG* random)

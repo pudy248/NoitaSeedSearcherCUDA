@@ -1,11 +1,12 @@
 ﻿#pragma once
-
 #include "../platforms/platform_implementation.h"
 #include "../include/primitives.h"
 #include "../include/worldgen_structs.h"
 #include "../include/noita_random.h"
-
+#undef max
+#include <cstdio>
 #include <vector>
+
 
 _compute void CopySpawnFuncs();
 int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpawnFunctions** funcs, int stride, int w, int h);
@@ -29,6 +30,7 @@ _compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int 
 _compute void CheckSpawnables(WangFuncIndex* idxs, WangTileset* tileSet, SpawnParams params, int maxMemory);
 _compute void CheckMountains(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount);
 _compute void CheckEyeRooms(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount);
+_compute void CheckNightmareSpawnWands(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount);
 _compute SpawnableBlock ParseSpawnableBlock(uint8_t* bytes, uint8_t* putSpawnablesHere, SpawnableConfig sCfg, int maxMemory);
 _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* tmp, bool write);
 _compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount);

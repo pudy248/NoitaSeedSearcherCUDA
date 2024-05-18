@@ -70,6 +70,7 @@ struct PerkConfig
 {
 	bool check;
 	PerkInfo perks[maxPerkFilters];
+	Perk ignore_these[2];
 	uint8_t perksPerMountain[7];
 };
 
@@ -107,6 +108,7 @@ struct SpawnableConfig
 	bool biomePixelScenes;
 	bool biomeEnemies;
 	bool hellShops;
+	bool nightmare;
 
 	bool genPotions;
 	bool genSpells;

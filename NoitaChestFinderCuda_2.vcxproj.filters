@@ -151,5 +151,14 @@
     <ClInclude Include="src\worldgen.cu">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="include\gui_primitives.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="include\gui_structs.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\gui.cpp">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

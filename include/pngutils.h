@@ -66,8 +66,7 @@ void WriteImageRGBA(const char* file_name, uint8_t* data, int w, int h)
 	}
 
 	/* create file */
-	FILE* fp;
-	fopen_s(&fp, file_name, "wb");
+	FILE* fp = fopen(file_name, "wb");
 
 	png_structp png_ptr;
 	png_infop info_ptr;

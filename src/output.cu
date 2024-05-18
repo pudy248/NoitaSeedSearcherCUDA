@@ -32,6 +32,9 @@ _compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables
 void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*))
 //write output
 {
+#ifdef DISABLE_OUTPUT
+	return;
+#endif
 	char* seedNum = (char*)malloc(12);
 	char* seedInfo = (char*)malloc(8192);
 	int memOffset = 0;
@@ -51,13 +54,12 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 
 	int sCount = readInt(output, memOffset);
 #ifdef REALTIME_SEEDS
-	sprintfc(seedInfo, "in %i seconds [UNIX %i]\n", time[0], (int)(time[1] + time[0]), GenerateSeed(time[1] + time[0]));
+	sprintfc(seedInfo, "in %i seconds [UNIX %i]\n", time[0], (int)(time[1] + time[0]), pick_world_seed(time[1] + time[0]));
 #endif
 	sprintfc(seedInfo, "%i: ", seed);
 	if (sCount > 0) {
-		Spawnable* sPtr;
 		for (int i = 0; i < sCount; i++) {
-			sPtr = (Spawnable*)(output + memOffset);
+			Spawnable* sPtr = (Spawnable*)(output + memOffset);
 			Spawnable s = *sPtr;
 			Vec2i chunkCoords = GetLocalPos(s.x, s.y);
 
@@ -122,7 +124,7 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 					}
 				}
 			}
-			sprintfc(seedInfo, "]\n\n");
+			sprintfc(seedInfo, "]\n");
 			memOffset += s.count + 13;
 		}
 	}

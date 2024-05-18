@@ -28,8 +28,10 @@ int seedCtr = 0;
 
 void appendOutput(char* s, char* c)
 {
-	printf("%i: %s (checked %i)\n", d.elapsedMillis, s, d.searchedSeeds);
+	//printf("%ims: %s (checked %i)\n", d.elapsedMillis, c, d.searchedSeeds);
 }
+
+int buckets[1001];
 
 namespace DATA_SCRIPTS
 {
@@ -171,17 +173,17 @@ int main()
 			(size_t)512,
 	#endif
 			(size_t)maxMapArea * 4 + 512,
-			(size_t)maxMapArea * 4 + 128,
-			(size_t)maxMapArea * 4 + 128,
+			(size_t)maxMapArea * 4 + 256,
+			(size_t)maxMapArea * 4 + 256,
 			(size_t)512,
 	};
 
-	config.generalCfg = { 1, INT_MAX, 65536, false };
+	config.generalCfg = { 1, INT_MAX, 1, false };
 #ifdef REALTIME_SEEDS
 	config.generalCfg.seedBlockSize = 1;
 #endif
 	config.spawnableCfg = {
-		{0, 0}, {0, 0}, 0, 0,
+		{0, 0}, {0, 0}, 0, 6,
 
 		false, //greed
 		false, //pacifist
@@ -195,31 +197,38 @@ int main()
 		false, //biome pixelscenes
 		false, //enemies
 		false, //hell shops
+		true, //nightmare
 		false, //potion contents
 		false, //chest spells
-		false, //wand stats
+		true, //wand stats
 	};
 
 	config.filterCfg = {
-		false, false, 
-		0, { ItemFilter({HEART_MIMIC}) }, 
+		false, false,
+		0, { ItemFilter({HEART_MIMIC}), ItemFilter({REFRESH_MIMIC})},
 		0, {}, 
-		0, { SpellFilter({SPELL_LIGHT_BULLET, SPELL_LIGHT_BULLET_TRIGGER}, 8)},
+		4, { SpellFilter({SPELL_MANA_REDUCE}), SpellFilter({SPELL_TELEPORT_PROJECTILE_SHORT}),
+			 SpellFilter({SPELL_CHAINSAW}), SpellFilter({SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER})},
 		0, {}, false, 27
 	};
 
 	config.precheckCfg = {
 		{false, CART_NONE},
-		{false, GOLD},
+		{false, ACID},
 		{false, SPELL_NONE, SPELL_NONE},
 		{false, MATERIAL_NONE},
 		{false, AlchemyOrdering::UNORDERED, {}, {}},
 		{false, {}},
 		{false, {}},
-		{false, {}, {3, 3, 3, 3, 3, 3, 3}},
+		{false, {
+			{PERK_ANGRY_GHOST, false, 0, 3},
+		}, {PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, { 3, 3, 3, 3, 3, 3, 3 }},
 	};
 
-	config.outputCfg = { 0.05f, false, false };
+	config.outputCfg = { 0.05f, false, true };
+
+	config.memSizes.mapDataSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
+	config.memSizes.mapDataSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
 
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;

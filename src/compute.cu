@@ -2,6 +2,7 @@
 
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
+#include "../include/pngutils.h"
 
 #include <cstdio>
 #include <fstream>
@@ -62,6 +63,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 
 		CheckMountains(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
 		CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		CheckNightmareSpawnWands(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
 		threadSync();
 
 		((int*)spawnableDat)[1] = spawnableCount;
@@ -132,7 +134,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 #ifdef REALTIME_SEEDS
 				nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
-				uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
+				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
 				params[j] = { (int)nextSeed, (int)length };
 				currentSeed += length;
 			}
@@ -236,7 +238,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 #ifdef REALTIME_SEEDS
 					nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
-					uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
+					uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
 					params[inputIdx++] = { (int)nextSeed, (int)length };
 					currentSeed += length;
 				}
@@ -252,7 +254,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				if (!hasOutput[i]) continue;
 				uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 
-				int time[2] = { times[i], startTime };
+				int time[2] = { times[i], (int)startTime };
 				PrintOutputBlock(output, time, outputFile, config.outputCfg, appendOutput);
 			}
 			free(times);
@@ -301,7 +303,7 @@ void InstantiateSector(BiomeWangScope* scopes, int& biomeCount, int& maxMapArea,
 	partialSector.wang_h = (partialSector.map_h + tileSet->short_side_len + 3) / tileSet->short_side_len;
 	free(tileSet);
 
-	maxMapArea = max(maxMapArea, (int)(partialSector.wang_w * partialSector.wang_h));
+	maxMapArea = std::max(maxMapArea, (int)(partialSector.wang_w * partialSector.wang_h));
 
 	scopes[biomeCount++] = { dTileSet, partialSector };
 }
@@ -396,7 +398,7 @@ void SearchMain(OutputProgressData& progress, void(*appendOutput)(char*, char*))
 	AllocateComputeMemory();
 	FILE* f = fopen("output.txt", "wb");
 
-	time_t startTime = _time64(NULL);
+	time_t startTime = time(NULL);
 	Vec2i seedCounts = OutputLoop(f, startTime, progress, appendOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();

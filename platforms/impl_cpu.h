@@ -50,7 +50,11 @@ void GetProcessorName(char* buffer)
 
 void InitializePlatform()
 {
+#ifdef SINGLE_THREAD
+	NumThreads = 1;
+#else
 	NumThreads = std::thread::hardware_concurrency();
+#endif
 	char buffer[0x40];
 	GetProcessorName(buffer);
 	printf("Running with CPU backend using %s\n", buffer, NumThreads);
@@ -133,4 +137,15 @@ void* UploadToDevice(void* hostMem, size_t size)
 void CopyToDevice(void* dPtr, void* hPtr, size_t size)
 {
 	memcpy(dPtr, hPtr, size);
+}
+
+static void __SetSpawnFuncs(void* uPtr, Biome b) {
+	CopySpawnFuncs();
+	memcpy(uPtr, AllSpawnFunctions[b], sizeof(BiomeSpawnFunctions));
+}
+BiomeSpawnFunctions* GetSpawnFunc(Biome b)
+{
+	BiomeSpawnFunctions* rPtr = (BiomeSpawnFunctions*)malloc(sizeof(BiomeSpawnFunctions));
+	__SetSpawnFuncs(rPtr, b);
+	return rPtr;
 }
