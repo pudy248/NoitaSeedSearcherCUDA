@@ -51,7 +51,7 @@ _data const Material potionMaterialsSecret[secretMaterialCount] = {
 	PURIFYING_POWDER
 };
 
-_data constexpr int sandMaterialCount = 86;
+_data constexpr int sandMaterialCount = 87;
 _data const Material potionSands[sandMaterialCount] = {
 	MUD,
 	CONCRETE_SAND,
@@ -91,6 +91,7 @@ _data const Material potionSands[sandMaterialCount] = {
 	ORB_POWDER,
 	GUNPOWDER_UNSTABLE_BOSS_LIMBS,
 	PLASTIC_RED,
+	PLASTIC_GREY,
 	GRASS,
 	GRASS_HOLY,
 	GRASS_DARKER,
@@ -141,9 +142,9 @@ _data const Material potionSands[sandMaterialCount] = {
 	FUNGI_YELLOW,
 };
 
-_data constexpr int liquidMaterialCount = 97;
+_data constexpr int liquidMaterialCount = 98;
 _data const Material potionLiquids[liquidMaterialCount] = {
-	WATER,
+	 WATER,
 	WATER_TEMP,
 	WATER_ICE,
 	WATER_SWAMP,
@@ -202,6 +203,7 @@ _data const Material potionLiquids[liquidMaterialCount] = {
 	SLUSH,
 	VOMIT,
 	PLASTIC_RED_MOLTEN,
+	PLASTIC_GREY_MOLTEN,
 	ACID,
 	LAVA,
 	URINE,

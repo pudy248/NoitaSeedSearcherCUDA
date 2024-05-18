@@ -85,11 +85,6 @@ const char* ItemNames[] = {
 };
 
 const char* MaterialNames[] = {
-	"Any Material",
-	"Variable X",
-	"Variable Y",
-	"Variable Z",
-	"Variable W",
 	"Rock",
 	"Ice",
 	"Ice",
@@ -285,6 +280,7 @@ const char* MaterialNames[] = {
 	"Guiding powder",
 	"Slimy meat",
 	"Plastic",
+	"Plastic",
 	"Grass",
 	"Divine ground",
 	"Grass",
@@ -469,6 +465,7 @@ const char* MaterialNames[] = {
 	"Slime",
 	"Slush",
 	"Vomit",
+	"Molten plastic",
 	"Molten plastic",
 	"Acid",
 	"Lava",
