@@ -204,7 +204,7 @@ void CreateConfigsAndDispatch()
 		for (int i = 0; i < gui->filterConfig.leftPanel.matRowCount; i++)
 		{
 			config.filterCfg.materialFilters[i] = {
-				{(Material)((gui->filterConfig.leftPanel.rows[i].material.list.selectedElement - 1 + _materialCount) % _materialCount)},
+				{(Material)((gui->filterConfig.leftPanel.rows[i].material.list.selectedElement + 1) % _materialCount)},
 				atoi(gui->filterConfig.leftPanel.rows[i].count.text.str.toAnsiString().c_str())
 			};
 		}
