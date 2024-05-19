@@ -217,7 +217,7 @@ void CreateConfigsAndDispatch()
 		for (int i = 0; i < gui->filterConfig.centerPanel.spellRowCount; i++)
 		{
 			config.filterCfg.spellFilters[i] = {
-				{(Spell)((gui->filterConfig.centerPanel.rows[i].spell.list.selectedElement - 1 + _spellCount) % _spellCount)},
+				{(Spell)((gui->filterConfig.centerPanel.rows[i].spell.list.selectedElement + 1) % _spellCount)},
 				atoi(gui->filterConfig.centerPanel.rows[i].count.text.str.toAnsiString().c_str())
 			};
 		}
