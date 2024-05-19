@@ -140,24 +140,38 @@ _compute _noinline void CheckNormalChestLoot(int x, int y, bool hasMimicSign, Sp
 		if (rnd <= 7) writeByte(params.bytes, params.offset, BOMB);
 		else if (rnd <= 40)
 		{
+			int amount = 5;
 			rnd = random.Random(0, 100);
-
+			if (rnd <= 80) {
+				amount = 7;
+			}
+			else if (rnd <= 95) {
+				amount = 10;
+			}
+			else {
+				amount = 20;
+			}
+			
 			rnd = random.Random(0, 100);
-			if (rnd > 99)
+			if (rnd > 30) {
+				random.Next();
+				random.Next();
+			}
+			else if (rnd > 99)
 			{
 				int tamount = random.Random(1, 3);
 				for (int i = 0; i < tamount; i++)
 				{
-					random.Random(-10, 10);
-					random.Random(-10, 5);
+					random.Next();
+					random.Next();
 				}
 				if (random.Random(0, 100) > 50)
 				{
 					tamount = random.Random(1, 3);
 					for (int i = 0; i < tamount; i++)
 					{
-						random.Random(-10, 10);
-						random.Random(-10, 5);
+						random.Next();
+						random.Next();
 					}
 				}
 				if (random.Random(0, 100) > 80)
@@ -165,15 +179,14 @@ _compute _noinline void CheckNormalChestLoot(int x, int y, bool hasMimicSign, Sp
 					tamount = random.Random(1, 3);
 					for (int i = 0; i < tamount; i++)
 					{
-						random.Random(-10, 10);
-						random.Random(-10, 5);
+						random.Next();
+						random.Next();
 					}
 				}
 			}
-			else
-			{
-				random.Random(-10, 10);
-				random.Random(-10, 5);
+			for (int i = 0; i < amount; i++) {
+				random.Next();
+				random.Next();
 			}
 			writeByte(params.bytes, params.offset, GOLD_NUGGETS);
 		}
