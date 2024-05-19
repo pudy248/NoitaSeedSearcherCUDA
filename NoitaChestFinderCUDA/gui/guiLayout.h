@@ -494,8 +494,8 @@ struct WorldConfigTab : GuiObject
 
 			texts[textIdx++] = BGTextRect("First HM", sf::FloatRect(175, 555, 0, 0), 36);
 			texts[textIdx++] = BGTextRect("Last HM", sf::FloatRect(475, 555, 0, 0), 36);
-			dropdowns[ddIdx++] = GuiDropdown(8, HMNames, sf::FloatRect(25, 565, 300, 500), 0);
-			dropdowns[ddIdx++] = GuiDropdown(8, HMNames, sf::FloatRect(335, 565, 300, 500), 7);
+			dropdowns[ddIdx++] = GuiDropdown(7, HMNames, sf::FloatRect(25, 565, 300, 500), 0);
+			dropdowns[ddIdx++] = GuiDropdown(7, HMNames, sf::FloatRect(335, 565, 300, 500), 6);
 
 			texts[textIdx++] = BGTextRect("PW Center X", sf::FloatRect(175, 625, 0, 0), 36);
 			texts[textIdx++] = BGTextRect("PW Width X", sf::FloatRect(475, 625, 0, 0), 36);
@@ -941,7 +941,7 @@ struct FilterConfigTab : GuiObject
 				bg = OutlinedRect(sf::FloatRect(1290, top, 600, 50), 1, sf::Color(30, 30, 30), sf::Color(20, 20, 20));
 				count = InputRect(sf::FloatRect(1300, top + 8, 60, 34), TextInput::CHARSET_Numeric, 3, "1", sf::Color(30, 30, 30));
 				text = AlignedTextRect("duplicates", sf::FloatRect(1370, top + 8, 80, 0), 30, sf::Color::White, 0, 1, 1);
-				ps = GuiDropdown(_itemCount, psNames, sf::FloatRect(1460, top + 5, 425, 600), _itemCount - 1);
+				ps = GuiDropdown(_psCount, psNames, sf::FloatRect(1460, top + 5, 425, 600), _psCount - 1);
 			}
 			void Render()
 			{
@@ -980,12 +980,13 @@ struct FilterConfigTab : GuiObject
 
 			addFilter = BGTextRect("Add Filter", sf::FloatRect(1290, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
 			removeFilter = BGTextRect("Remove Filter", sf::FloatRect(1690, 190, 200, 50), 36, sf::Color::White, sf::Color(30, 30, 30));
-			addFilter.mRect.interactable = false;
-			removeFilter.mRect.interactable = false;
+			
+			//addFilter.mRect.interactable = false;
+			//removeFilter.mRect.interactable = false;
 
-			psNames = (const char**)malloc(sizeof(const char*) * _itemCount);
-			for (int i = 0; i < _itemCount; i++)
-				psNames[i] = ItemNames[_items[i]];
+			psNames = (const char**)malloc(sizeof(const char*) * _psCount);
+			for (int i = 0; i < _psCount; i++)
+				psNames[i] = PixelSceneNames[_pixelscenes[i]];
 		}
 
 		void Render()

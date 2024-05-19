@@ -182,7 +182,7 @@ void CreateConfigsAndDispatch()
 				atoi(gui->staticConfig.rightPanel.rows[i].lowerBound.text.str.toAnsiString().c_str()),
 				atoi(gui->staticConfig.rightPanel.rows[i].upperBound.text.str.toAnsiString().c_str()) };
 		}
-		for (int i = gui->staticConfig.rightPanel.perkRowCount; i < maxPerkFilters; i++) config.precheckCfg.perks.perks[i] = { PERK_NONE, false, 0, 0 };
+		for (int i = gui->staticConfig.rightPanel.perkRowCount; i < maxPerkFilters; i++) config.precheckCfg.perks.perks[i] = { };
 	}
 
 	if (gui->worldConfig.rightPanel.itemRowCount > 0)
@@ -195,7 +195,7 @@ void CreateConfigsAndDispatch()
 				atoi(gui->worldConfig.rightPanel.rows[i].count.text.str.toAnsiString().c_str())
 			};
 		}
-		for (int i = gui->worldConfig.rightPanel.itemRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.itemFilters[i] = { {}, 0 };
+		for (int i = gui->worldConfig.rightPanel.itemRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.itemFilters[i] = { };
 	}
 
 	if (gui->filterConfig.leftPanel.matRowCount > 0)
@@ -208,7 +208,7 @@ void CreateConfigsAndDispatch()
 				atoi(gui->filterConfig.leftPanel.rows[i].count.text.str.toAnsiString().c_str())
 			};
 		}
-		for (int i = gui->filterConfig.leftPanel.matRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.materialFilters[i] = { {}, 0 };
+		for (int i = gui->filterConfig.leftPanel.matRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.materialFilters[i] = { };
 	}
 
 	if (gui->filterConfig.centerPanel.spellRowCount > 0)
@@ -221,7 +221,19 @@ void CreateConfigsAndDispatch()
 				atoi(gui->filterConfig.centerPanel.rows[i].count.text.str.toAnsiString().c_str())
 			};
 		}
-		for (int i = gui->filterConfig.centerPanel.spellRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.spellFilters[i] = { {}, 0 };
+		for (int i = gui->filterConfig.centerPanel.spellRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.spellFilters[i] = { };
+	}
+
+
+	if (gui->filterConfig.rightPanel.psRowCount> 0) {
+		config.filterCfg.pixelSceneFilterCount = gui->filterConfig.rightPanel.psRowCount;
+		for (int i = 0; i < gui->filterConfig.rightPanel.psRowCount; i++) {
+			config.filterCfg.pixelSceneFilters[i] = {
+				{(PixelScene)((gui->filterConfig.rightPanel.rows[i].ps.list.selectedElement + 1) % _psCount)},
+				atoi(gui->filterConfig.rightPanel.rows[i].count.text.str.toAnsiString().c_str())
+			};
+		}
+		for (int i = gui->filterConfig.rightPanel.psRowCount; i < TOTAL_FILTER_COUNT; i++) config.filterCfg.pixelSceneFilters[i] = { };
 	}
 
 

@@ -85,6 +85,11 @@ const char* ItemNames[] = {
 };
 
 const char* MaterialNames[] = {
+	"Any Material",
+	"Variable X",
+	"Variable Y",
+	"Variable Z",
+	"Variable W",
 	"Rock",
 	"Ice",
 	"Ice",
