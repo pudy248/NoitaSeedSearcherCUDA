@@ -197,35 +197,35 @@ int main()
 		false, //biome pixelscenes
 		false, //enemies
 		false, //hell shops
-		true, //nightmare
+		false, //nightmare
 		false, //potion contents
 		false, //chest spells
-		true, //wand stats
+		false, //wand stats
 	};
 
 	config.filterCfg = {
 		false, false,
 		0, { ItemFilter({HEART_MIMIC}), ItemFilter({REFRESH_MIMIC})},
 		0, {}, 
-		4, { SpellFilter({SPELL_MANA_REDUCE}), SpellFilter({SPELL_TELEPORT_PROJECTILE_SHORT}),
+		0, { SpellFilter({SPELL_MANA_REDUCE}), SpellFilter({SPELL_TELEPORT_PROJECTILE_SHORT}),
 			 SpellFilter({SPELL_CHAINSAW}), SpellFilter({SPELL_BLACK_HOLE, SPELL_BLACK_HOLE_DEATH_TRIGGER})},
 		0, {}, false, 27
 	};
 
 	config.precheckCfg = {
-		{false, CART_NONE},
-		{false, ACID},
+		{false, SKATEBOARD},
+		{true, GOLD},
 		{false, SPELL_NONE, SPELL_NONE},
 		{false, MATERIAL_NONE},
-		{false, AlchemyOrdering::UNORDERED, {}, {}},
+		{false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
 		{false, {}},
-		{false, {}},
+		{false, {FungalShift(SS_DIAMOND, SD_FLASK, 0, 1), FungalShift(SS_FLASK, SD_DIAMOND, 1, 2)}},
 		{false, {
 			{PERK_ANGRY_GHOST, false, 0, 3},
 		}, {PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, { 3, 3, 3, 3, 3, 3, 3 }},
 	};
 
-	config.outputCfg = { 0.05f, false, true };
+	config.outputCfg = { 0, 0.05f, true, false, false };
 
 	config.memSizes.mapDataSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
 	config.memSizes.mapDataSize *= config.spawnableCfg.pwWidth.y * 2 + 1;

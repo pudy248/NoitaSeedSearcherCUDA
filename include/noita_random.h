@@ -27,6 +27,7 @@ public:
 	_universal float Next();
 	_universal double NextD();
 	_universal int Random(int a, int b);
+	_universal int RandomD(int a, int b);
 	_universal float ProceduralRandomf(double x, double y, float a, float b);
 	_universal int ProceduralRandomi(double x, double y, int a, int b);
 	_universal _noinline float GetDistribution(float mean, float sharpness, float baseline);

@@ -343,40 +343,33 @@ namespace gui {
 		}
 	};
 
-	/*struct GuiDropdown : GuiInteractable {
-		sf::FloatRect openRect;
+	struct Dropdown : GuiInteractable {
 		ScrollList list;
 
-		GuiDropdown() = default;
-		GuiDropdown(int _numElements, const char** _elements, sf::FloatRect _rect, int _selected) {
-			openRect = _rect;
-			openRect.height = fminf(openRect.height, _numElements * list.entryHeight);
+		Dropdown() = default;
+		Dropdown(sf::FloatRect openRect, GenericTextRect templateEntry, std::vector<sf::String> elements, int selected) {
+			list.rect = openRect;
+			list.rect.height = fminf(list.rect.height, elements.size() * templateEntry.rect.height);
 			sf::FloatRect clippedOpenRect = sf::FloatRect(openRect);
-			if (openRect.top + openRect.height > 1080) {
-				clippedOpenRect.top -= openRect.top + openRect.height - 1080;
+			if (list.rect.top + list.rect.height > 1080) {
+				clippedOpenRect.top -= list.rect.top + list.rect.height - 1080;
 			}
-			list = GuiScrollList(_numElements, _elements, clippedOpenRect, _selected);
+			list = ScrollList(clippedOpenRect, templateEntry, elements);
 		}
 
-		void SetEntryHeight(int _height) {
-			list.entryHeight = _height;
-			openRect.height = fminf(openRect.height, list.numElements * list.entryHeight);
-			sf::FloatRect clippedOpenRect = sf::FloatRect(openRect);
-			if (openRect.top + openRect.height > 1080) {
-				clippedOpenRect.top -= openRect.top + openRect.height - 1080;
-			}
-			list.mRect.rect = clippedOpenRect;
-		}
-
-		void Render() {
+		void Render(const sf::FloatRect& window) {
 			if (sfmlState->selectedScrollList != &list) {
-				BGTextRect bg(list.elements[list.selectedElement], sf::FloatRect(openRect.left, openRect.top, openRect.width, list.entryHeight), list.textSize, sf::Color::White, list.backgroundColor);
-				bg.Render();
+				list.templateEntry.text = list.elements[list.selectedElement];
+				list.templateEntry.Render(window);
 			}
+			else list.Render(window);
 		}
 
 		bool HandleClick(sf::Vector2f position) {
-			if (!list.mRect.interactable) return false;
+			if (!interactable) return false;
+			if (sfmlState->selectedScrollList != &list) {
+
+			}
 			if (sf::FloatRect(openRect.left, openRect.top, openRect.width, list.entryHeight).contains(position)) {
 				if (sfmlState->selectedScrollList != NULL) {
 					if (!sfmlState->selectedScrollList->rect.contains(position)) {
@@ -396,6 +389,6 @@ namespace gui {
 		}
 
 		bool HandleMouse(sf::Vector2f position) { return false; }
-	};*/
+	};
 }
 

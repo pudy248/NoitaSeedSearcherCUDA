@@ -130,7 +130,7 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 	}
 	else seedInfo[bufOffset++] = '\n';
 	seedInfo[bufOffset++] = '\0';
-	fprintf(outputFile, "%s", seedInfo);
+	if (outputCfg.printOutputToFile) fprintf(outputFile, "%s", seedInfo);
 	if (outputCfg.printOutputToConsole) printf("%s", seedInfo);
 #else
 #ifdef REALTIME_SEEDS

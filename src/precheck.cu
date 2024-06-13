@@ -17,34 +17,28 @@ _compute static AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed
 	AlchemyRecipe result;
 	int counter = 0;
 	int failed = 0;
-	while (counter < 3 && failed < 99999)
-	{
-		int r = (int)(prng.Next() * alchemyLiquidCount);
+	while (counter < 3 && failed < 99999) {
+		int r = prng.Random(0, alchemyLiquidCount - 1);
 		Material picked = alchemyLiquids[r];
 		bool duplicate = false;
-		for (int i = 0; i < counter; i++)
-		{
+		for (int i = 0; i < counter; i++) {
 			if (picked == result.mats[i]) duplicate = true;
 		}
 		if (duplicate) failed++;
-		else
-		{
+		else {
 			result.mats[counter++] = picked;
 		}
 	}
 	failed = 0;
-	while (counter < 4 && failed < 99999)
-	{
-		int r = (int)(prng.Next() * alchemySolidCount);
+	while (counter < 4 && failed < 99999) {
+		int r = prng.Random(0, alchemySolidCount - 1);
 		Material picked = alchemySolids[r];
 		bool duplicate = false;
-		for (int i = 0; i < counter; i++)
-		{
+		for (int i = 0; i < counter; i++) {
 			if (picked == result.mats[i]) duplicate = true;
 		}
 		if (duplicate) failed++;
-		else
-		{
+		else {
 			result.mats[counter++] = picked;
 		}
 	}
@@ -53,10 +47,7 @@ _compute static AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed
 	prng2.Next();
 	for (int i = 3; i >= 0; i--)
 	{
-		int r = (int)(prng2.Next() * (i + 1));
-		if (r == 4) {
-			r = 3;
-		}
+		int r = prng2.Random(0, i);
 		Material temp = result.mats[i];
 		result.mats[i] = result.mats[r];
 		result.mats[r] = temp;

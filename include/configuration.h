@@ -133,7 +133,11 @@ struct FilterConfig
 
 struct OutputConfig
 {
+	// 0=human-readable, 1=code, 2=binary
+	int outputMode;
+
 	float printInterval;
 	bool printProgressLog;
 	bool printOutputToConsole;
+	bool printOutputToFile;
 };

@@ -293,7 +293,17 @@ _universal int NollaPRNG::Random(int a, int b)
 		v4 += 0x7fffffff;
 	}
 	Seed = v4;
-	return a + (int)(((uint64_t)(b + 1 - a) * (uint64_t)Seed) >> 31);
+	//return a + (int)(((b - a + 1) * (uint64_t)(Seed)) >> 31);
+	return a + (int)(((double)(b - a + 1) * (double)Seed * 4.656612875e-10));
+	//return a + (int)(((float)(b + 1 - a) * (float)Seed * 4.656612875e-10f));
+}
+_universal int NollaPRNG::RandomD(int a, int b) {
+	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
+	if (v4 < 0) {
+		v4 += 0x7fffffff;
+	}
+	Seed = v4;
+	return a + (int)(((double)(b - a + 1) * (double)Seed * 4.656612875e-10));
 }
 _universal float NollaPRNG::ProceduralRandomf(double x, double y, float a, float b)
 {
