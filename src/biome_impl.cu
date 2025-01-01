@@ -10,7 +10,6 @@ namespace FUNCS_COALMINE
 {
 
 	_data BiomeWands wandLevels(
-		2,
 		{
 			WandLevel(17, UNKNOWN_WAND),
 			WandLevel(1.9f, WAND_T1)
@@ -66,9 +65,9 @@ namespace FUNCS_COALMINE
 		}
 	);
 
-	_compute void spawn_pixel_scene_01(int x, int y, SpawnParams params)
+	_compute void spawn_pixel_scene_01(int x, int y, const SpawnParams& params)
 	{
-		if (!params.sCfg->biomePixelScenes) return;
+		if (!params.sCfg.biomePixelScenes) return;
 		NollaPRNG random = NollaPRNG(params.seed);
 		random.SetRandomSeed(x, y);
 		int rnd = random.Random(1, 100);
@@ -77,14 +76,14 @@ namespace FUNCS_COALMINE
 		else
 			LoadPixelScene(x, y, oiltank, params);
 	}
-	_compute void spawn_pixel_scene_02(int x, int y, SpawnParams params)
+	_compute void spawn_pixel_scene_02(int x, int y, const SpawnParams& params)
 	{
-		if (!params.sCfg->biomePixelScenes) return;
+		if (!params.sCfg.biomePixelScenes) return;
 		LoadPixelScene(x, y, pixel_scene_02, params);
 	}
-	_compute void spawn_oiltank(int x, int y, SpawnParams params)
+	_compute void spawn_oiltank(int x, int y, const SpawnParams& params)
 	{
-		if (!params.sCfg->biomePixelScenes) return;
+		if (!params.sCfg.biomePixelScenes) return;
 		NollaPRNG random = NollaPRNG(params.seed);
 		random.SetRandomSeed(x, y);
 		int rnd = random.Random(1, 100);
@@ -94,7 +93,7 @@ namespace FUNCS_COALMINE
 			LoadPixelScene(x, y, oiltank, params);
 	}
 
-	_compute bool spawn_item(int x, int y, SpawnParams params)
+	_compute bool spawn_item(int x, int y, const SpawnParams& params)
 	{
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x, y, 0, 1);
@@ -129,5 +128,5 @@ _compute void CopySpawnFuncs()
 {
 	AllSpawnFunctions[0] = &_DefaultFunctions;
 	AllSpawnFunctions[B_COALMINE] = &FUNCS_COALMINE::_CoalmineFuncs;
-	AllSpawnFunctions[B_EXCAVATIONSITE] = &FUNCS_COALMINE::_CoalmineFuncs;
+	AllWandLevels[B_COALMINE] = &FUNCS_COALMINE::wandLevels;
 }

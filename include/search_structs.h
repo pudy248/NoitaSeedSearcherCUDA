@@ -74,6 +74,7 @@ struct SpellData
 	Spell s;
 	ActionType type;
 	double spawn_probabilities[11];
+	const char* name;
 };
 
 struct SpellProb
@@ -138,7 +139,7 @@ struct BiomeWands
 	WandLevel levels[6];
 
 	_universal constexpr BiomeWands() : count(), levels() {}
-	_universal constexpr BiomeWands(int _c, std::initializer_list<WandLevel> list) : count(_c), levels() {
+	_universal constexpr BiomeWands(std::initializer_list<WandLevel> list) : count(list.size()), levels() {
 		for (int i = 0; i < list.size(); i++) levels[i] = list.begin()[i];
 	}
 };

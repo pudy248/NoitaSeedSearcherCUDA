@@ -238,15 +238,18 @@ _compute static void PixelSceneFilterPassed(Spawnable* s, PixelSceneFilter psf, 
 	}
 }
 
-_compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* tmp, bool write)
+_compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write)
 {
 	int relevantSpawnableCount = 0;
-	MemoryArena localArena = { tmp, 0 };
-	int* itemsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
-	int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
-	int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
-	int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT);
-	Spawnable** relevantSpawnables = (Spawnable**)ArenaAlloc(localArena, 0);
+	MemoryArena localArena = { tmp.ptr, 0 };
+	int* itemsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+	int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+	int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+	int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+	Spawnable** relevantSpawnables = (Spawnable**)ArenaAlloc(localArena, 0).ptr;
+
+	if (!tmp.is_safe(localArena.offset - 1))
+		printf("SpawnablesPassed(): tmp ran out of space.\n");
 
 	if (fCfg.aggregate)
 	{
@@ -387,20 +390,16 @@ _compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* out
 			if (failed) continue;
 
 			if (fCfg.checkBigWands)
-			{
 				if (!WandFilterPassed(b.seed, s, fCfg.howBig)) continue;
-			}
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
 		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount + fCfg.checkBigWands) > 0)
-		{
 			return false;
-		}
 	}
 #ifndef IMAGE_OUTPUT
-	if (write) WriteOutputBlock(output, b.seed, relevantSpawnables, relevantSpawnableCount);
+	if (write) WriteOutputBlock(output, { b.seed, relevantSpawnableCount, relevantSpawnables });
 #endif
 	return true;
 }

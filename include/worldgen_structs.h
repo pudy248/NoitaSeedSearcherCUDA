@@ -13,6 +13,7 @@ struct BiomeSector
 	int worldY;
 	int worldW;
 	int worldH;
+
 	uint32_t tiles_w;
 	uint32_t tiles_h;
 	uint32_t map_w;
@@ -30,11 +31,11 @@ struct WangSpawn
 	uint8_t y;
 	WangFuncIndex i;
 };
-constexpr int _WangTileMaxSpawns = 6;
+constexpr int _WangTileMaxSpawns = 4;
 struct WangTile
 {
+	bool should_block;
 	char colors[6];
-	char edges[8];
 	WangSpawn spawns[_WangTileMaxSpawns];
 };
 
@@ -44,50 +45,56 @@ struct WangTileset
 	int num_vary[2];
 	int num_color[6];
 	int short_side_len;
-	int numH, maxH, numV, maxV;
+	int widthH, heightH, widthV, heightV;
 	WangTile hTiles[72];
 	WangTile vTiles[72];
 	uint16_t hIndices[64];
 	uint16_t vIndices[64];
+	uint8_t* tileData;
+	uint32_t tdStride;
+	_universal uint32_t h_tile_at(int tx, int ty, int xoff, int yoff) const;
+	_universal uint32_t v_tile_at(int tx, int ty, int xoff, int yoff) const;
 };
 
-struct WangConfig
-{
-	char is_corner;
-	int short_side_len; // rectangles is 2n x n, n = short_side_len
-	int num_color[6];   // see below diagram for meaning of the index to this;
-	int num_vary_x;     // additional number of variations along x axis in the template
-	int num_vary_y;     // additional number of variations along y axis in the template
-	int corner_type_color_template[4][4];
+struct MainPathFill {
+	bool active;
+	int x1, x2;
 };
 
 struct BiomeWangScope
 {
-	WangTileset* tileSet;
+	WangTileset ts;
 	BiomeSector bSec;
+};
+
+struct GeneratedBiome
+{
+	const BiomeWangScope& scope;
+	WangTileIndex* indices;
+	WangFuncIndex* funcs;
 };
 
 struct SpawnParams
 {
 	int seed;
-	BiomeWangScope* currentBiome;
-	SpawnableConfig* sCfg;
-	uint8_t* bytes;
+	const BiomeWangScope& currentBiome;
+	const SpawnableConfig& sCfg;
+	MemSpan bytes;
 	int& offset;
 	int& sCount;
 
-	void(*spawnSmallEnemies)(int x, int y, SpawnParams params);
-	void(*spawnBigEnemies)(int x, int y, SpawnParams params);
-	bool(*spawnItem)(int x, int y, SpawnParams params);
+	void(*spawnSmallEnemies)(int x, int y, const SpawnParams& params);
+	void(*spawnBigEnemies)(int x, int y, const SpawnParams& params);
+	bool(*spawnItem)(int x, int y, const SpawnParams& params);
 };
 
 struct SpawnFunction
 {
 	uint32_t color;
-	void(*func)(int, int, SpawnParams);
+	void(*func)(int, int, const SpawnParams&);
 
 	_compute constexpr SpawnFunction() : color(0), func(NULL) {}
-	_compute constexpr SpawnFunction(uint32_t _c, void(*_fn)(int, int, SpawnParams)) : color(_c), func(_fn) {}
+	_compute constexpr SpawnFunction(uint32_t _c, void(*_fn)(int, int, const SpawnParams&)) : color(_c), func(_fn) {}
 };
 
 struct BiomeSpawnFunctions

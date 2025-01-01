@@ -18,44 +18,45 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 	{
 		arena.offset = 0;
 		bool seedPassed = true;
-		uint8_t* output = ArenaAlloc(arena, config.memSizes.outputSize, 4);
+		MemSpan output = ArenaAlloc(arena, config.memSizes.outputSize, 4);
 
 		seedPassed &= PrecheckSeed(currentSeed, config.precheckCfg);
 		if (!seedPassed) continue;
 
 		if (config.spawnableCfg.staticUpwarps)
 		{
-			uint8_t* upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
-			uint8_t* miscMem2 = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
+			MemSpan upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
+			MemSpan miscMem2 = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
 			int offset = 0;
 			int _ = 0;
-			spawnChest(315, 17, { currentSeed, {}, &config.spawnableCfg, upwarps, offset, _ });
-			uint8_t* ptr1 = upwarps + offset;
-			spawnChest(75, 117, { currentSeed, {}, &config.spawnableCfg, upwarps, offset, _ });
-			Spawnable* spawnables[] = { (Spawnable*)upwarps, (Spawnable*)ptr1 };
+			spawnChest(315, 17, { currentSeed, {}, config.spawnableCfg, upwarps, offset, _ });
+			MemSpan ptr1 = { upwarps.ptr + offset, upwarps.sz - offset };
+			spawnChest(75, 117, { currentSeed, {}, config.spawnableCfg, upwarps, offset, _ });
+			Spawnable* spawnables[] = { (Spawnable*)upwarps.ptr, (Spawnable*)ptr1.ptr };
 			SpawnableBlock b = { currentSeed, 2, spawnables };
 
-			seedPassed &= SpawnablesPassed(b, config.filterCfg, NULL, miscMem2, false);
-			ArenaSetOffset(arena, upwarps);
+			seedPassed &= SpawnablesPassed(b, config.filterCfg, { 0, 0 }, miscMem2, false);
+			ArenaSetOffset(arena, upwarps.ptr);
 			if (!seedPassed) continue;
 		}
 
 		int spawnableCount = 0;
-		int spawnableOffset = 8;
-		uint8_t* mapMem = ArenaAlloc(arena, config.memSizes.mapDataSize, 8);
-		uint8_t* visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
-		uint8_t* spawnableDat = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
-		uint8_t* spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
-		uint8_t* miscMem = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
+		int spawnableOffset = 0;
+		MemSpan mapMem = ArenaAlloc(arena, config.memSizes.mapDataSize, 8);
+		MemSpan visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
+		MemSpan spawnableDat = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
+		MemSpan spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize / 16, 4);
+		MemSpan miscMem = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
+		MemSpan miscMem2 = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT, 4);
 
-		*(int*)spawnableDat = currentSeed;
 #ifdef DO_WORLDGEN
 		for (int biomeNum = 0; biomeNum < config.biomeCount; biomeNum++)
 		{
-			GenerateMap(currentSeed, config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
+			GeneratedBiome b = GenerateMap(currentSeed, *config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			threadSync();
-			CheckSpawnables((WangFuncIndex*)mapMem, config.biomeScopes[biomeNum].tileSet,
-				{ currentSeed, &config.biomeScopes[biomeNum], &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount }, config.memSizes.spawnableMemSize);
+			CopySpawnFuncs();
+			SpawnParams p = { currentSeed, *config.biomeScopes[biomeNum], config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount };
+			CheckSpawnables(b, p);
 			threadSync();
 		}
 #endif
@@ -64,17 +65,15 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		//CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
 		//threadSync();
 
-		((int*)spawnableDat)[1] = spawnableCount;
-		SpawnableBlock result = ParseSpawnableBlock(spawnableDat, spawnables, config.spawnableCfg, config.memSizes.mapDataSize);
-		seedPassed &= SpawnablesPassed(result, config.filterCfg, output, miscMem, true);
+		SpawnableBlock result = ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
+		threadSync();
+		seedPassed &= SpawnablesPassed(result, config.filterCfg, output, miscMem2, true);
 
-		if (!seedPassed)
-		{
-			continue;
-		}
-		
-		memcpy(output, &currentSeed, 4);
-		memcpy((uint8_t*)outputPtr, output, config.memSizes.outputSize);
+#ifndef SEEDS_AS_TRIES
+		if (!seedPassed) continue;
+#endif
+		memcpy(output.ptr, &currentSeed, 4);
+		memcpy((uint8_t*)outputPtr, output.ptr, config.memSizes.outputSize);
 
 		int extraSeeds = span.seedStart + span.seedCount - currentSeed - 1;
 		return { span.seedStart, span.seedCount, true, extraSeeds };
@@ -156,14 +155,16 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			progress.elapsedMillis = milliseconds;
 			progress.searchedSeeds = checkedSeeds;
 			progress.validSeeds = passedSeeds;
-			if (recountIntervals * 50 < milliseconds)
+			if (recountIntervals * 250 < milliseconds)
 			{
 				recountIntervals++;
 #ifndef REALTIME_SEEDS
 				if (!config.generalCfg.seedBlockOverride && returnedBlocksThisIter < 2 && config.generalCfg.seedBlockSize > 1)
 					config.generalCfg.seedBlockSize *= 0.7f;
+				else if (!config.generalCfg.seedBlockOverride && returnedBlocksThisIter < 3 && config.generalCfg.seedBlockSize > 1)
+					config.generalCfg.seedBlockSize *= 0.9f;
 				else if (!config.generalCfg.seedBlockOverride && returnedBlocksThisIter > 5)
-					config.generalCfg.seedBlockSize *= 2;
+					config.generalCfg.seedBlockSize *= 4;
 #endif
 				returnedBlocksThisIter = 0;
 			}
@@ -261,7 +262,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	return { (int)checkedSeeds, (int)passedSeeds };
 }
 
-void InstantiateSector(BiomeWangScope* scopes, int& biomeCount, int& maxMapArea, const char* path, BiomeSector partialSector)
+void InstantiateSector(BiomeWangScope** scopes, int& biomeCount, int& maxMapArea, const char* path, BiomeSector partialSector)
 {
 	Vec2i tileDims = GetImageDimensions(path);
 
@@ -272,24 +273,24 @@ void InstantiateSector(BiomeWangScope* scopes, int& biomeCount, int& maxMapArea,
 
 	uint8_t* hTileData = (uint8_t*)malloc(3 * tileDims.x * tileDims.y);
 	ReadImage(path, hTileData);
-	//blockOutRooms(hTileData, tileDims.x, tileDims.y, COLOR_WHITE);
-	WangTileset* tileSet = (WangTileset*)malloc(sizeof(WangTileset));
-	BiomeSpawnFunctions* fns[2] = { GetSpawnFunc(B_NONE), GetSpawnFunc(partialSector.b)};
-	stbhw_build_tileset_from_image(hTileData, tileSet, fns, 3 * tileDims.x, tileDims.x, tileDims.y);
-	free(hTileData);
+	BiomeSpawnFunctions* fns[2] = { GetSpawnFunc(B_NONE), GetSpawnFunc(partialSector.b) };
+
+	BiomeWangScope scope;
+	scope.ts = stbhw_build_tileset_from_image(hTileData, fns, 3 * tileDims.x, tileDims.x, tileDims.y);
+	partialSector.wang_w = (partialSector.map_w + scope.ts.short_side_len - 1) / scope.ts.short_side_len;
+	partialSector.wang_h = (partialSector.map_h + scope.ts.short_side_len + 3) / scope.ts.short_side_len;
+	maxMapArea = max(maxMapArea, (int)(partialSector.map_w * partialSector.map_h));
+
 	free(fns[0]);
 	free(fns[1]);
-	WangTileset* dTileSet = (WangTileset*)UploadToDevice(tileSet, sizeof(WangTileset));
+	scope.ts.tileData = (uint8_t*)UploadToDevice(scope.ts.tileData, 3 * tileDims.x * tileDims.y);
+	scope.bSec = partialSector;
+	free(hTileData);
+	BiomeWangScope* dScope = (BiomeWangScope*)UploadToDevice(&scope, sizeof(BiomeWangScope));
 
-	partialSector.wang_w = (partialSector.map_w + tileSet->short_side_len - 1) / tileSet->short_side_len;
-	partialSector.wang_h = (partialSector.map_h + tileSet->short_side_len + 3) / tileSet->short_side_len;
-	free(tileSet);
-
-	maxMapArea = max(maxMapArea, (int)(partialSector.wang_w * partialSector.wang_h));
-
-	scopes[biomeCount++] = { dTileSet, partialSector };
+	scopes[biomeCount++] = dScope;
 }
-void InstantiateBiome(const char* path, BiomeWangScope* ss, int& bC, int& mA)
+void InstantiateBiome(const char* path, BiomeWangScope** ss, int& bC, int& mA)
 {
 	{
 		if (strcmp(path, "resources/wang_tiles/coalmine.png") == 0)
@@ -380,7 +381,7 @@ void SearchMain(OutputProgressData& progress, void(*appendOutput)(char*, char*))
 	AllocateComputeMemory();
 	FILE* f = fopen("output.txt", "wb");
 
-	time_t startTime = _time64(NULL);
+	time_t startTime = time(NULL);
 	Vec2i seedCounts = OutputLoop(f, startTime, progress, appendOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();

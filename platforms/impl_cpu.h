@@ -1,13 +1,17 @@
 #pragma once
 #include "platform.h"
 #include <thread>
+#include <cstdlib>
+#ifdef _MSC_VER
 #include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
 
 #include "../include/pngutils.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
 
-#include <iostream>
 
 int NumThreads;
 int memIdxCtr = 0;
@@ -28,32 +32,45 @@ struct Worker
 
 void GetProcessorName(char* buffer)
 {
-	int CPUInfo[4] = { -1 };
-	__cpuid(CPUInfo, 0x80000000);
-	unsigned int nExIds = CPUInfo[0];
-
 	memset(buffer, 0, sizeof(0x40));
-
-	// Get the information associated with each extended ID.
-	for (int i = 0x80000000; i <= nExIds; ++i)
-	{
-		__cpuid(CPUInfo, i);
-		// Interpret CPU brand string.
-		if (i == 0x80000002)
-			memcpy(buffer, CPUInfo, sizeof(CPUInfo));
-		else if (i == 0x80000003)
-			memcpy(buffer + 16, CPUInfo, sizeof(CPUInfo));
-		else if (i == 0x80000004)
-			memcpy(buffer + 32, CPUInfo, sizeof(CPUInfo));
-	}
+#ifdef _MSC_VER
+	int CPUInfo[4] = { -1 };
+	__cpuid(CPUInfo, 0x80000002);
+	memcpy(buffer, CPUInfo, sizeof(CPUInfo));
+	__cpuid(CPUInfo, 0x80000003);
+	memcpy(buffer + 16, CPUInfo, sizeof(CPUInfo));
+	__cpuid(CPUInfo, 0x80000004);
+	memcpy(buffer + 32, CPUInfo, sizeof(CPUInfo));
+#else
+	int eax, ebx, ecx, edx;
+	__cpuid(0x80000002, eax, ebx, ecx, edx);
+	memcpy(buffer, &eax, 4);
+	memcpy(buffer + 4, &ebx, 4);
+	memcpy(buffer + 8, &ecx, 4);
+	memcpy(buffer + 12, &edx, 4);
+	__cpuid(0x80000003, eax, ebx, ecx, edx);
+	memcpy(buffer + 16, &eax, 4);
+	memcpy(buffer + 20, &ebx, 4);
+	memcpy(buffer + 24, &ecx, 4);
+	memcpy(buffer + 28, &edx, 4);
+	__cpuid(0x80000004, eax, ebx, ecx, edx);
+	memcpy(buffer + 32, &eax, 4);
+	memcpy(buffer + 36, &ebx, 4);
+	memcpy(buffer + 40, &ecx, 4);
+	memcpy(buffer + 44, &edx, 4);
+#endif
 }
 
 void InitializePlatform()
 {
+#ifdef SINGLE_THREAD
+	NumThreads = 1;
+#else
 	NumThreads = std::thread::hardware_concurrency();
+#endif
 	char buffer[0x40];
 	GetProcessorName(buffer);
-	printf("Running with CPU backend using %s\n", buffer, NumThreads);
+	printf("Running with CPU backend using %s\n", buffer);
 	memIdxCtr = 0;
 }
 void DestroyPlatform()
@@ -63,7 +80,7 @@ void DestroyPlatform()
 
 void AllocateComputeMemory()
 {
-	SearchConfig config = GetSearchConfig();
+	//SearchConfig config = GetSearchConfig();
 
 	SetWorkerCount(NumThreads);
 	SetWorkerAppetite(1);
@@ -76,7 +93,7 @@ void AllocateComputeMemory()
 	coalmine_overlay = (uint8_t*)malloc(3 * 256 * 103);
 	ReadImage("resources/wang_tiles/coalmine_overlay.png", coalmine_overlay);
 
-	printf("Allocated %lliKB of host memory\n", ((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
+	printf("Allocated %lluKB of host memory\n", ((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
 }
 void FreeComputeMemory()
 {
@@ -124,13 +141,16 @@ void AbortJob(Worker& worker)
 	worker.thread.join();
 }
 
-void* UploadToDevice(void* hostMem, size_t size)
+void* UploadToDevice(const void* hostMem, size_t size)
 {
 	void* ptr = malloc(size);
 	memcpy(ptr, hostMem, size);
 	return ptr;
 }
-void CopyToDevice(void* dPtr, void* hPtr, size_t size)
+BiomeSpawnFunctions* GetSpawnFunc(Biome b)
 {
-	memcpy(dPtr, hPtr, size);
+	CopySpawnFuncs();
+	BiomeSpawnFunctions* r = (BiomeSpawnFunctions*)malloc(sizeof(BiomeSpawnFunctions));
+	memcpy(r, AllSpawnFunctions[b], sizeof(BiomeSpawnFunctions));
+	return r;
 }

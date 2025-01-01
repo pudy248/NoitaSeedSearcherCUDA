@@ -3,29 +3,32 @@
 
 #include "../include/search_structs.h"
 #include "../include/misc_funcs.h"
+#include "../data/uiNames.h"
 
 #include <iostream>
 
-_compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount)
+_compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b)
 {
 	int offset = 0;
-	writeInt(output, offset, seed);
-	writeInt(output, offset, sCount);
+	writeInt(output, offset, b.seed);
+	writeInt(output, offset, b.count);
 
-	for (int i = 0; i < sCount; i++)
+	for (int i = 0; i < b.count; i++)
 	{
-		Spawnable* sPtr = spawnables[i];
+		Spawnable* sPtr = b.spawnables[i];
 		Spawnable s = readMisalignedSpawnable(sPtr);
 		writeInt(output, offset, s.x);
 		writeInt(output, offset, s.y);
 		writeByte(output, offset, s.sType);
 		writeInt(output, offset, s.count);
-		memcpy(output + offset, &sPtr->contents, s.count);
+		if (!output.is_safe(offset + s.count - 1))
+			printf("WriteOutputBlock(): Ran out of output space.\n");
+		memcpy(output.ptr + offset, &sPtr->contents, s.count);
 		offset += s.count;
 	}
 }
 
-void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*))
+void PrintOutputBlock(const uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*))
 //write output
 {
 	char* seedNum = (char*)malloc(12);
@@ -43,12 +46,12 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 	char buffer[30];
 	_putstr_offset("outputs/", buffer, bufOffset);
 	_itoa_offset(seed, 10, buffer, bufOffset);
-	_putstr_offset(".hex", buffer, bufOffset);
+	_putstr_offset(".png", buffer, bufOffset);
 	buffer[bufOffset++] = '\0';
-	//FILE* hexOut = fopen(buffer, "wb");
-	//fwrite(output + memOffset, 1, w * h * 3, hexOut);
-	//fclose(hexOut);
-	//WriteImage(buffer, output + memOffset, w, h);
+	FILE* hexOut = fopen(buffer, "wb");
+	fwrite(output + memOffset, 1, w * h * 3, hexOut);
+	fclose(hexOut);
+	WriteImage(buffer, output + memOffset, w, h);
 #else
 #ifdef SPAWNABLE_OUTPUT
 	constexpr int NEWLINE_CHAR_LIMIT = 100;
@@ -221,11 +224,11 @@ void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg,
 					}
 				}
 			}
-			_putstr_offset("]\n\n", seedInfo, bufOffset);
+			_putstr_offset("]\n", seedInfo, bufOffset);
 			memOffset += s.count + 13;
 		}
 	}
-	else seedInfo[bufOffset++] = '\n';
+	//else seedInfo[bufOffset++] = '\n';
 	seedInfo[bufOffset++] = '\0';
 	fprintf(outputFile, "%s", seedInfo);
 	if(outputCfg.printOutputToConsole) printf("%s", seedInfo);

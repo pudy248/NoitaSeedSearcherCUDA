@@ -4,26 +4,28 @@
 #include "../include/search_structs.h"
 #include <cstdint>
 
-_universal uint8_t readByte(uint8_t* ptr, int& offset);
-_universal void writeByte(uint8_t* ptr, int& offset, uint8_t b);
-_universal int readInt(uint8_t* ptr, int& offset);
-_universal void writeInt(uint8_t* ptr, int& offset, int val);
-_universal void incrInt(uint8_t* ptr);
-_universal short readShort(uint8_t* ptr, int& offset);
-_universal void writeShort(uint8_t* ptr, int& offset, short s);
-_universal int readMisaligned(int* ptr2);
-_universal Spawnable readMisalignedSpawnable(Spawnable* sPtr);
-_universal WandData readMisalignedWand(WandData* wPtr);
+_universal uint8_t readByte(const uint8_t* ptr, int& offset);
+_universal void writeByte(MemSpan ptr, int& offset, uint8_t b);
+_universal int readInt(const uint8_t* ptr, int& offset);
+_universal void writeInt(MemSpan ptr, int& offset, int val);
+_universal void incrInt(int* ptr);
+_universal short readShort(const uint8_t* ptr, int& offset);
+_universal void writeShort(MemSpan ptr, int& offset, short s);
+_universal int readMisaligned(const int* ptr);
+_universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr);
+_universal WandData readMisalignedWand(const WandData* wPtr);
 
 struct MemoryArena
 {
 	uint8_t* ptr;
 	uint64_t offset;
 };
-_compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size);
-_compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth);
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size);
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth);
 _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer);
 
+template <bool skip_coalmine = false, bool skip_fill = false>
+_compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl);
 _universal uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b);
 _universal int GetWidthFromPix(int a, int b);
 _universal Vec2i GetGlobalPos(const int x, const int y, const int px, int py);
@@ -40,7 +42,7 @@ constexpr uint32_t COLOR_BLACK = 0x000000U;
 constexpr uint32_t COLOR_WHITE = 0xffffffU;
 constexpr uint32_t COLOR_YELLOW = 0xffff00U;
 constexpr uint32_t COLOR_COFFEE = 0xc0ffeeU;
-constexpr uint32_t COLOR_FROZEN_VAULT_MINT = 0xcff7c8;
-constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80;
+constexpr uint32_t COLOR_FROZEN_VAULT_MINT = 0xcff7c8U;
+constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80U;
 
 _compute uint8_t* coalmine_overlay;

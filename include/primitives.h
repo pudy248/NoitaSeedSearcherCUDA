@@ -1,9 +1,12 @@
 #pragma once
 #include "../platforms/platform_implementation.h"
 #include <cstdint>
+#include <cstdio>
 
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
+template <typename A, typename B>
+_universal constexpr auto max(A a, B b) { return (a > b) ? a : b; }
+template <typename A, typename B>
+_universal constexpr auto min(A a, B b) { return (a > b) ? b : a; }
 
 struct Vec2i {
 	int x;
@@ -28,15 +31,32 @@ struct Vec2i {
 	}
 };
 
-uint64_t operator""_KB(uint64_t x)
+struct MemSpan {
+	uint8_t* ptr;
+	uint64_t sz;
+#ifdef NDEBUG
+	constexpr static bool check = true;
+#else
+	constexpr static bool check = true;
+#endif
+	_universal constexpr bool is_safe(int idx, int elem_size = 1) const {
+		if constexpr (!check) return true;
+		if (idx < 0 || idx * elem_size >= sz) {
+			printf("ERR");
+		}
+		return idx < 0 || idx * elem_size < sz;
+	}
+};
+
+uint64_t operator""_KB(unsigned long long x)
 {
 	return x * 1024;
 }
-uint64_t operator""_MB(uint64_t x)
+uint64_t operator""_MB(unsigned long long x)
 {
 	return x * 1024 * 1024;
 }
-uint64_t operator""_GB(uint64_t x)
+uint64_t operator""_GB(unsigned long long x)
 {
 	return x * 1024 
 		* 1024 * 1024;

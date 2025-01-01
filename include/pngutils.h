@@ -5,21 +5,19 @@
 #include <cstdint>
 #include <png.h>
 
-void WriteImage(const char* file_name, uint8_t* data, int w, int h);
-void WriteImageRGBA(const char* file_name, uint8_t* data, int w, int h);
+void WriteImage(const char* file_name, const uint8_t* data, int w, int h);
+void WriteImageRGBA(const char* file_name, const uint8_t* data, int w, int h);
 Vec2i GetImageDimensions(const char* file_name);
 void ReadImage(const char* file_name, uint8_t* data);
 void ReadImageRGBA(const char* file_name, uint8_t* data);
 
 #ifdef PNG_IMPL
 
-void WriteImage(const char* file_name, uint8_t* data, int w, int h)
+void WriteImage(const char* file_name, const uint8_t* data, int w, int h)
 {
-	png_bytep* rows = (png_bytep*)malloc(sizeof(void*) * h);
+	const png_byte** rows = (const png_byte**)malloc(sizeof(void*) * h);
 	for (int y = 0; y < h; y++)
-	{
 		rows[y] = data + 3 * y * w;
-	}
 
 	/* create file */
 	FILE* fp = fopen(file_name, "wb");
@@ -46,7 +44,7 @@ void WriteImage(const char* file_name, uint8_t* data, int w, int h)
 	png_write_info(png_ptr, info_ptr);
 
 	/* write bytes */
-	png_write_image(png_ptr, rows);
+	png_write_image(png_ptr, (png_bytepp)rows);
 
 	/* end write */
 
@@ -57,17 +55,14 @@ void WriteImage(const char* file_name, uint8_t* data, int w, int h)
 	free(rows);
 }
 
-void WriteImageRGBA(const char* file_name, uint8_t* data, int w, int h)
+void WriteImageRGBA(const char* file_name, const uint8_t* data, int w, int h)
 {
-	png_bytep* rows = (png_bytep*)malloc(sizeof(void*) * h);
+	const png_byte** rows = (const png_byte**)malloc(sizeof(void*) * h);
 	for (int y = 0; y < h; y++)
-	{
 		rows[y] = data + 4 * y * w;
-	}
 
 	/* create file */
-	FILE* fp;
-	fopen_s(&fp, file_name, "wb");
+	FILE* fp = fopen(file_name, "wb");
 
 	png_structp png_ptr;
 	png_infop info_ptr;
@@ -91,7 +86,7 @@ void WriteImageRGBA(const char* file_name, uint8_t* data, int w, int h)
 	png_write_info(png_ptr, info_ptr);
 
 	/* write bytes */
-	png_write_image(png_ptr, rows);
+	png_write_image(png_ptr, (png_bytepp)rows);
 
 	/* end write */
 
@@ -174,13 +169,13 @@ void ReadImage(const char* file_name, uint8_t* data)
 	int w = png_get_image_width(png_ptr, info_ptr);
 	int h = png_get_image_height(png_ptr, info_ptr);
 	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
-	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+	//png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 	if (color_type != PNG_COLOR_TYPE_RGB)
 	{
 		printf("Attempted to read RGBA image as RGB: %s\n", file_name);
 	}
 
-	int number_of_passes = png_set_interlace_handling(png_ptr);
+	//int number_of_passes = png_set_interlace_handling(png_ptr);
 	png_read_update_info(png_ptr, info_ptr);
 
 
@@ -222,13 +217,13 @@ void ReadImageRGBA(const char* file_name, uint8_t* data)
 	int w = png_get_image_width(png_ptr, info_ptr);
 	int h = png_get_image_height(png_ptr, info_ptr);
 	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
-	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+	//png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 	if (color_type == PNG_COLOR_TYPE_RGB)
 	{
 		printf("Attempted to read RGB image as RGBA: %s\n", file_name);
 	}
 
-	int number_of_passes = png_set_interlace_handling(png_ptr);
+	//int number_of_passes = png_set_interlace_handling(png_ptr);
 	png_read_update_info(png_ptr, info_ptr);
 
 	/* read file */
@@ -268,10 +263,10 @@ void ConvertRGBAToRGB(const char* file_name)
 
 	int w = png_get_image_width(png_ptr, info_ptr);
 	int h = png_get_image_height(png_ptr, info_ptr);
-	png_byte color_type = png_get_color_type(png_ptr, info_ptr);
-	png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+	//png_byte color_type = png_get_color_type(png_ptr, info_ptr);
+	//png_byte bit_depth = png_get_bit_depth(png_ptr, info_ptr);
 
-	int number_of_passes = png_set_interlace_handling(png_ptr);
+	//int number_of_passes = png_set_interlace_handling(png_ptr);
 	png_read_update_info(png_ptr, info_ptr);
 
 	uint8_t* dat1 = (uint8_t*)malloc(4 * w * h);

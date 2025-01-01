@@ -17,7 +17,7 @@ struct SearchConfig
 	OutputConfig outputCfg;
 
 	int biomeCount;
-	BiomeWangScope biomeScopes[20];
+	BiomeWangScope* biomeScopes[20];
 };
 
 //These are internal functions and variables and should not be accessed by platform-specific code.
@@ -77,7 +77,7 @@ namespace PLATFORM_API
 	{
 		SearchConfig config = GetSearchConfig();
 #ifdef DO_WORLDGEN
-		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.mapDataSize + config.memSizes.miscMemSize + config.memSizes.visitedMemSize + config.memSizes.spawnableMemSize;
+		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.mapDataSize + config.memSizes.miscMemSize + config.memSizes.visitedMemSize + config.memSizes.spawnableMemSize + 16 * TOTAL_FILTER_COUNT;
 #else
 		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.spawnableMemSize;
 #endif

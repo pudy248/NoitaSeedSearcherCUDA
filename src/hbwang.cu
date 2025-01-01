@@ -6,145 +6,163 @@
 #include <cmath>
 #include <cstdio>
 
+static constexpr uint32_t blockedColors[] = {
+	0xff00ffU,
+	0xff0080U,
+	0xff0affU,
+	0xc35700U,
+	0x00ac64U,
+	0x00ac6eU,
+	0x7868ffU,
+	0x70d79eU,
+	0x70d79fU,
+	0x70d7a0U,
+	0x70d7a1U,
+};
+static constexpr int BCSize = sizeof(blockedColors) / sizeof(blockedColors[0]);
+_universal constexpr static bool contains(const uint32_t arr[BCSize], uint32_t val) {
+	for (int i = 0; i < BCSize; i++)
+		if (arr[i] == val) return true;
+	return false;
+};
+
 struct WangProcess
 {
 	BiomeSpawnFunctions** funcs;
-	WangConfig c;
-	uint8_t* data;
+	int corner_type_color_template[4][4];
 	uint32_t* colors;
-	int stride, w, h, sx, sy;
+	int w, h, sx, sy;
 };
 
-static void stbhw__get_template_info(WangProcess* p, WangTileset* ts)
-{
-	int size_x, size_y;
-	int horz_count, vert_count;
-
-	if (p->c.is_corner)
-	{
-		int horz_w = p->c.num_color[1] * p->c.num_color[2] * p->c.num_color[3] * p->c.num_vary_x;
-		int horz_h = p->c.num_color[0] * p->c.num_color[1] * p->c.num_color[2] * p->c.num_vary_y;
-
-		int vert_w = p->c.num_color[0] * p->c.num_color[3] * p->c.num_color[2] * p->c.num_vary_y;
-		int vert_h = p->c.num_color[1] * p->c.num_color[0] * p->c.num_color[3] * p->c.num_vary_x;
-
-		int horz_x = horz_w * (2 * p->c.short_side_len + 3);
-		int horz_y = horz_h * (p->c.short_side_len + 3);
-
-		int vert_x = vert_w * (p->c.short_side_len + 3);
-		int vert_y = vert_h * (2 * p->c.short_side_len + 3);
-
-		horz_count = horz_w * horz_h;
-		vert_count = vert_w * vert_h;
-
-		size_x = horz_x > vert_x ? horz_x : vert_x;
-		size_y = 2 + horz_y + 2 + vert_y;
-	}
-	else
-	{
-		int horz_w = p->c.num_color[0] * p->c.num_color[1] * p->c.num_color[2] * p->c.num_vary_x;
-		int horz_h = p->c.num_color[3] * p->c.num_color[4] * p->c.num_color[2] * p->c.num_vary_y;
-
-		int vert_w = p->c.num_color[0] * p->c.num_color[5] * p->c.num_color[1] * p->c.num_vary_y;
-		int vert_h = p->c.num_color[3] * p->c.num_color[4] * p->c.num_color[5] * p->c.num_vary_x;
-
-		int horz_x = horz_w * (2 * p->c.short_side_len + 3);
-		int horz_y = horz_h * (p->c.short_side_len + 3);
-
-		int vert_x = vert_w * (p->c.short_side_len + 3);
-		int vert_y = vert_h * (2 * p->c.short_side_len + 3);
-
-		horz_count = horz_w * horz_h;
-		vert_count = vert_w * vert_h;
-
-		size_x = horz_x > vert_x ? horz_x : vert_x;
-		size_y = 2 + horz_y + 2 + vert_y;
-	}
-
-	p->sx = size_x;
-	p->sy = size_y;
-	ts->maxH = horz_count;
-	ts->maxV = vert_count;
+_universal uint32_t WangTileset::h_tile_at(int tx, int ty, int xoff, int yoff) const {
+	int xpos = tx * (2 * short_side_len + 3) + 1;
+	int ypos = ty * (short_side_len + 3) + 3;
+	uint8_t* pix = &tileData[(ypos + yoff) * tdStride + (xpos + xoff) * 3];
+	return (pix[0] << 16) | (pix[1] << 8) | pix[2];
+}
+_universal uint32_t WangTileset::v_tile_at(int tx, int ty, int xoff, int yoff) const {
+	int xpos = tx * (short_side_len + 3) + 1;
+	int ypos = heightH * (short_side_len + 3) + ty * (2 * short_side_len + 3) + 5;
+	uint8_t* pix = &tileData[(ypos + yoff) * tdStride + (xpos + xoff) * 3];
+	return (pix[0] << 16) | (pix[1] << 8) | pix[2];
 }
 
-static void stbhw__parse_h_rect(WangProcess* p, WangTileset* tileSet, int xpos, int ypos,
+static void stbhw__get_template_info(WangProcess& p, WangTileset& ts) {
+	int size_x, size_y;
+	int horz_w, horz_h, vert_w, vert_h;
+
+	if (ts.is_corner) {
+		horz_w = ts.num_color[1] * ts.num_color[2] * ts.num_color[3] * ts.num_vary[0];
+		horz_h = ts.num_color[0] * ts.num_color[1] * ts.num_color[2] * ts.num_vary[1];
+
+		vert_w = ts.num_color[0] * ts.num_color[3] * ts.num_color[2] * ts.num_vary[1];
+		vert_h = ts.num_color[1] * ts.num_color[0] * ts.num_color[3] * ts.num_vary[0];
+
+		int horz_x = horz_w * (2 * ts.short_side_len + 3);
+		int horz_y = horz_h * (ts.short_side_len + 3);
+
+		int vert_x = vert_w * (ts.short_side_len + 3);
+		int vert_y = vert_h * (2 * ts.short_side_len + 3);
+
+		size_x = horz_x > vert_x ? horz_x : vert_x;
+		size_y = 2 + horz_y + 2 + vert_y;
+	}
+	else {
+		horz_w = ts.num_color[0] * ts.num_color[1] * ts.num_color[2] * ts.num_vary[0];
+		horz_h = ts.num_color[3] * ts.num_color[4] * ts.num_color[2] * ts.num_vary[1];
+
+		vert_w = ts.num_color[0] * ts.num_color[5] * ts.num_color[1] * ts.num_vary[1];
+		vert_h = ts.num_color[3] * ts.num_color[4] * ts.num_color[5] * ts.num_vary[0];
+
+		int horz_x = horz_w * (2 * ts.short_side_len + 3);
+		int horz_y = horz_h * (ts.short_side_len + 3);
+
+		int vert_x = vert_w * (ts.short_side_len + 3);
+		int vert_y = vert_h * (2 * ts.short_side_len + 3);
+
+		size_x = horz_x > vert_x ? horz_x : vert_x;
+		size_y = 2 + horz_y + 2 + vert_y;
+	}
+
+	p.sx = size_x;
+	p.sy = size_y;
+	ts.widthH = horz_w;
+	ts.heightH = horz_h;
+	ts.widthV = vert_w;
+	ts.heightV = vert_h;
+}
+
+static void stbhw__parse_h_rect(WangProcess& p, WangTileset& ts, int tx, int ty,
 	char a, char b, char c, char d, char e, char f, int idx)
 {
 	int sIdx = 0;
-	int len = p->c.short_side_len;
-	WangTile* h = &tileSet->hTiles[idx];
+	int len = ts.short_side_len;
+	WangTile& h = ts.hTiles[idx];
+	h.should_block = contains(blockedColors, ts.h_tile_at(tx, ty, 0, 0));
 	for (int i = 0; i < _WangTileMaxSpawns; i++)
-		h->spawns[i] = { 0, 0, -1 };
-	h->s[0] = a;
-	h->s[1] = b;
-	h->s[2] = c;
-	h->s[3] = d;
-	h->s[4] = e;
-	h->s[5] = f;
+		h.spawns[i] = { 0, 0, -1 };
+	h.colors[0] = a;
+	h.colors[1] = b;
+	h.colors[2] = c;
+	h.colors[3] = d;
+	h.colors[4] = e;
+	h.colors[5] = f;
 	//printf("H %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
+
 	for (uint8_t j = 0; j < len; ++j)
-		for (uint8_t i = 0; i < len * 2; ++i)
-		{
-			uint8_t* buf = (p->data + (ypos + j + 1) * p->stride + (xpos + i + 1) * 3);
-			uint32_t color = (buf[0] << 16) | (buf[1] << 8) | buf[2];
-			for (int16_t z = 0; z < p->funcs[0]->count; z++)
+		for (uint8_t i = 0; i < len * 2; ++i) {
+			uint32_t pix = ts.h_tile_at(tx, ty, i, j);
+			for (int16_t z = 0; z < p.funcs[0]->count; z++)
 			{
-				if (color == p->funcs[0]->funcs[z].color)
-					h->spawns[sIdx++] = { i, j, z };
+				if (pix == p.funcs[0]->funcs[z].color)
+					h.spawns[sIdx++] = { i, j, z };
 			}
-			for (int16_t z = 0; z < p->funcs[1]->count; z++)
+			for (int16_t z = 0; z < p.funcs[1]->count; z++)
 			{
-				if (color == p->funcs[1]->funcs[z].color)
-					h->spawns[sIdx++] = { i, j, (int16_t)(p->funcs[0]->count + z) };
+				if (pix == p.funcs[1]->funcs[z].color)
+					h.spawns[sIdx++] = { i, j, (int16_t)(p.funcs[0]->count + z) };
 			}
 		}
 	if (sIdx >= _WangTileMaxSpawns)
-	{
 		printf("H Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
-	}
-	tileSet->numH++;
 }
 
-static void stbhw__parse_v_rect(WangProcess* p, WangTileset* tileSet, int xpos, int ypos,
+static void stbhw__parse_v_rect(WangProcess& p, WangTileset& ts, int tx, int ty,
 	char a, char b, char c, char d, char e, char f, int idx)
 {
 	int sIdx = 0;
-	int len = p->c.short_side_len;
-	WangTile* h = &tileSet->vTiles[idx];
+	int len = ts.short_side_len;
+	WangTile& h = ts.vTiles[idx];
+	h.should_block = contains(blockedColors, ts.v_tile_at(tx, ty, 0, 0));
 	for (int i = 0; i < _WangTileMaxSpawns; i++)
-		h->spawns[i] = { 0, 0, -1 };
-	h->s[0] = a;
-	h->s[1] = b;
-	h->s[2] = c;
-	h->s[3] = d;
-	h->s[4] = e;
-	h->s[5] = f;
+		h.spawns[i] = { 0, 0, -1 };
+	h.colors[0] = a;
+	h.colors[1] = b;
+	h.colors[2] = c;
+	h.colors[3] = d;
+	h.colors[4] = e;
+	h.colors[5] = f;
 	//printf("V %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
+
 	for (uint8_t j = 0; j < len * 2; ++j)
 		for (uint8_t i = 0; i < len; ++i)
 		{
-			uint8_t* buf = (p->data + (ypos + j + 1) * p->stride + (xpos + i + 1) * 3);
-			uint32_t color = (buf[0] << 16) | (buf[1] << 8) | buf[2];
-			for (int16_t z = 0; z < p->funcs[0]->count; z++)
-			{
-				if (color == p->funcs[0]->funcs[z].color)
-					h->spawns[sIdx++] = { i, j, z };
+			uint32_t pix = ts.v_tile_at(tx, ty, i, j);
+			for (int16_t z = 0; z < p.funcs[0]->count; z++) {
+				if (pix == p.funcs[0]->funcs[z].color)
+					h.spawns[sIdx++] = { i, j, z };
 			}
-			for (int16_t z = 0; z < p->funcs[1]->count; z++)
-			{
-				if (color == p->funcs[1]->funcs[z].color)
-					h->spawns[sIdx++] = { i, j, (int16_t)(p->funcs[0]->count + z) };
+			for (int16_t z = 0; z < p.funcs[1]->count; z++) {
+				if (pix == p.funcs[1]->funcs[z].color)
+					h.spawns[sIdx++] = { i, j, (int16_t)(p.funcs[0]->count + z) };
 			}
 		}
 	if (sIdx >= _WangTileMaxSpawns)
-	{
 		printf("V Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
-	}
-	tileSet->numV++;
 }
 
-static void stbhw__process_h_row(WangProcess* p, WangTileset* tileSet,
-	int xpos, int ypos,
+static void stbhw__process_h_row(WangProcess& p, WangTileset& ts,
+	int tx, int ty,
 	int a0, int a1,
 	int b0, int b1,
 	int c0, int c1,
@@ -161,13 +179,13 @@ static void stbhw__process_h_row(WangProcess* p, WangTileset* tileSet,
 						for (char b = b0; b <= b1; ++b)
 							for (char a = a0; a <= a1; ++a)
 							{
-								stbhw__parse_h_rect(p, tileSet, xpos, ypos, a, b, c, d, e, f, i++);
-								xpos += 2 * p->c.short_side_len + 3;
+								stbhw__parse_h_rect(p, ts, tx, ty, a, b, c, d, e, f, i++);
+								tx++;
 							}
 }
 
-static void stbhw__process_v_row(WangProcess* p, WangTileset* tileSet,
-	int xpos, int ypos,
+static void stbhw__process_v_row(WangProcess& p, WangTileset& ts,
+	int tx, int ty,
 	int a0, int a1,
 	int b0, int b1,
 	int c0, int c1,
@@ -184,55 +202,54 @@ static void stbhw__process_v_row(WangProcess* p, WangTileset* tileSet,
 						for (char b = b0; b <= b1; ++b)
 							for (char a = a0; a <= a1; ++a)
 							{
-								stbhw__parse_v_rect(p, tileSet, xpos, ypos, a, b, c, d, e, f, i++);
-								xpos += p->c.short_side_len + 3;
+								stbhw__parse_v_rect(p, ts, tx, ty, a, b, c, d, e, f, i++);
+								tx++;
 							}
 }
 
-static int stbhw__process_template(WangProcess* p, WangTileset* tileSet)
+static int stbhw__process_template(WangProcess& p, WangTileset& ts)
 {
-	int i, j, k, q, ypos;
-	WangConfig* c = &p->c;
+	int i, j, k, q, ty;
 
 	int vi = 0;
 	int hi = 0;
 
-	printf("%i %i [%i %i %i %i]\n", c->num_vary_x, c->num_vary_y, c->num_color[0], c->num_color[1], c->num_color[2], c->num_color[3]);
+	// printf("process_template: %i %i [%i %i %i %i]\n", ts.num_vary[0], ts.num_vary[1], ts.num_color[0], ts.num_color[1], ts.num_color[2], ts.num_color[3]);
 
-	if (p->c.is_corner)
+	if (ts.is_corner)
 	{
-		ypos = 2;
-		for (k = 0; k < c->num_color[2]; ++k)
+		ty = 0;
+		for (k = 0; k < ts.num_color[2]; ++k)
 		{
-			for (j = 0; j < c->num_color[1]; ++j)
+			for (j = 0; j < ts.num_color[1]; ++j)
 			{
-				for (i = 0; i < c->num_color[0]; ++i)
+				for (i = 0; i < ts.num_color[0]; ++i)
 				{
-					for (q = 0; q < c->num_vary_y; ++q)
+					for (q = 0; q < ts.num_vary[1]; ++q)
 					{
-						stbhw__process_h_row(p, tileSet, 0, ypos,
-							0, c->num_color[1] - 1, 0, c->num_color[2] - 1, 0, c->num_color[3] - 1,
+						stbhw__process_h_row(p, ts, 0, ty,
+							0, ts.num_color[1] - 1, 0, ts.num_color[2] - 1, 0, ts.num_color[3] - 1,
 							i, i, j, j, k, k,
-							c->num_vary_x, hi);
-						ypos += c->short_side_len + 3;
+							ts.num_vary[0], hi);
+						ty++;
 					}
 				}
 			}
 		}
-		ypos += 2;
-		for (k = 0; k < c->num_color[3]; ++k)
+		ty = 0;
+		for (k = 0; k < ts.num_color[3]; ++k)
 		{
-			for (j = 0; j < c->num_color[0]; ++j)
+			for (j = 0; j < ts.num_color[0]; ++j)
 			{
-				for (i = 0; i < c->num_color[1]; ++i)
+				for (i = 0; i < ts.num_color[1]; ++i)
 				{
-					for (q = 0; q < c->num_vary_x; ++q)
+					for (q = 0; q < ts.num_vary[0]; ++q)
 					{
-						stbhw__process_v_row(p, tileSet, 0, ypos,
-							0, c->num_color[0] - 1, 0, c->num_color[3] - 1, 0, c->num_color[2] - 1,
+						stbhw__process_v_row(p, ts, 0, ty,
+							0, ts.num_color[0] - 1, 0, ts.num_color[3] - 1, 0, ts.num_color[2] - 1,
 							i, i, j, j, k, k,
-							c->num_vary_y, vi);
-						ypos += (c->short_side_len * 2) + 3;
+							ts.num_vary[1], vi);
+						ty++;
 					}
 				}
 			}
@@ -240,40 +257,40 @@ static int stbhw__process_template(WangProcess* p, WangTileset* tileSet)
 	}
 	else
 	{
-		ypos = 2;
-		for (k = 0; k < c->num_color[3]; ++k)
+		ty = 0;
+		for (k = 0; k < ts.num_color[3]; ++k)
 		{
-			for (j = 0; j < c->num_color[4]; ++j)
+			for (j = 0; j < ts.num_color[4]; ++j)
 			{
-				for (i = 0; i < c->num_color[2]; ++i)
+				for (i = 0; i < ts.num_color[2]; ++i)
 				{
-					for (q = 0; q < c->num_vary_y; ++q)
+					for (q = 0; q < ts.num_vary[1]; ++q)
 					{
-						stbhw__process_h_row(p, tileSet, 0, ypos,
-							0, c->num_color[2] - 1, k, k,
-							0, c->num_color[1] - 1, j, j,
-							0, c->num_color[0] - 1, i, i,
-							c->num_vary_x, hi);
-						ypos += c->short_side_len + 3;
+						stbhw__process_h_row(p, ts, 0, ty,
+							0, ts.num_color[2] - 1, k, k,
+							0, ts.num_color[1] - 1, j, j,
+							0, ts.num_color[0] - 1, i, i,
+							ts.num_vary[0], hi);
+						ty++;
 					}
 				}
 			}
 		}
-		ypos += 2;
-		for (k = 0; k < c->num_color[3]; ++k)
+		ty = 0;
+		for (k = 0; k < ts.num_color[3]; ++k)
 		{
-			for (j = 0; j < c->num_color[4]; ++j)
+			for (j = 0; j < ts.num_color[4]; ++j)
 			{
-				for (i = 0; i < c->num_color[5]; ++i)
+				for (i = 0; i < ts.num_color[5]; ++i)
 				{
-					for (q = 0; q < c->num_vary_x; ++q)
+					for (q = 0; q < ts.num_vary[0]; ++q)
 					{
-						stbhw__process_v_row(p, tileSet, 0, ypos,
-							0, c->num_color[0] - 1, i, i,
-							0, c->num_color[1] - 1, j, j,
-							0, c->num_color[5] - 1, k, k,
-							c->num_vary_y, vi);
-						ypos += (c->short_side_len * 2) + 3;
+						stbhw__process_v_row(p, ts, 0, ty,
+							0, ts.num_color[0] - 1, i, i,
+							0, ts.num_color[1] - 1, j, j,
+							0, ts.num_color[5] - 1, k, k,
+							ts.num_vary[1], vi);
+						ty++;
 					}
 				}
 			}
@@ -289,13 +306,13 @@ static Vec2i stbhw_get_index_stride(WangTile* list, int numlist, char a, char b,
 	int second = -1;
 	for (int i = 0; i < numlist; ++i)
 	{
-		WangTile* h = &list[i];
-		if ((a < 0 || a == h->s[0]) &&
-			(b < 0 || b == h->s[1]) &&
-			(c < 0 || c == h->s[2]) &&
-			(d < 0 || d == h->s[3]) &&
-			(e < 0 || e == h->s[4]) &&
-			(f < 0 || f == h->s[5]))
+		WangTile& h = list[i];
+		if ((a < 0 || a == h.colors[0]) &&
+			(b < 0 || b == h.colors[1]) &&
+			(c < 0 || c == h.colors[2]) &&
+			(d < 0 || d == h.colors[3]) &&
+			(e < 0 || e == h.colors[4]) &&
+			(f < 0 || f == h.colors[5]))
 		{
 			//printf("%i ", i);
 			if (first < 0) first = i;
@@ -311,7 +328,7 @@ static Vec2i stbhw_get_index_stride(WangTile* list, int numlist, char a, char b,
 	return { first, second - first };
 }
 
-static void stbhw_get_all_indices(WangTileset* tileSet)
+static void stbhw_get_all_indices(WangTileset& ts)
 {
 	for (char a = 0; a < 2; a++)
 		for (char b = 0; b < 2; b++)
@@ -320,16 +337,17 @@ static void stbhw_get_all_indices(WangTileset* tileSet)
 					for (char e = 0; e < 2; e++)
 						for (char f = 0; f < 2; f++)
 						{
-							Vec2i h = stbhw_get_index_stride(tileSet->hTiles, tileSet->numH, a, b, c, d, e, f);
-							Vec2i v = stbhw_get_index_stride(tileSet->vTiles, tileSet->numV, a, b, c, d, e, f);
-							tileSet->hIndices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f] = ((h.x & 0xff) << 8 | (h.y & 0xff));
-							tileSet->vIndices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f] = ((v.x & 0xff) << 8 | (v.y & 0xff));
+							Vec2i h = stbhw_get_index_stride(ts.hTiles, ts.widthH * ts.heightH, a, b, c, d, e, f);
+							Vec2i v = stbhw_get_index_stride(ts.vTiles, ts.widthV * ts.heightV, a, b, c, d, e, f);
+							ts.hIndices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f] = ((h.x & 0xff) << 8 | (h.y & 0xff));
+							ts.vIndices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f] = ((v.x & 0xff) << 8 | (v.y & 0xff));
 						}
 }
 
-int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpawnFunctions** funcs, int stride, int w, int h)
+WangTileset stbhw_build_tileset_from_image(uint8_t* data, BiomeSpawnFunctions** funcs, int stride, int w, int h)
 {
 	uint8_t header[9];
+	WangTileset ts = {};
 	WangProcess p = {};
 	p.funcs = funcs;
 
@@ -338,84 +356,76 @@ int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpa
 		header[i] = data[w * 3 - 1 - i] ^ (i * 55);
 	}
 
-	for (int i = 0; i < 6; i++) p.c.num_color[i] = 0;
+	for (int i = 0; i < 6; i++) ts.num_color[i] = 0;
 
 	// extract header info
 	if (header[7] == 0xc0)
 	{
 		// corner-type
-		p.c.is_corner = 1;
+		ts.is_corner = 1;
 		for (int i = 0; i < 4; ++i)
-			p.c.num_color[i] = header[i];
-		p.c.num_vary_x = header[4];
-		p.c.num_vary_y = header[5];
-		p.c.short_side_len = header[6];
+			ts.num_color[i] = header[i];
+		ts.num_vary[0] = header[4];
+		ts.num_vary[1] = header[5];
+		ts.short_side_len = header[6];
 	}
 	else
 	{
-		p.c.is_corner = 0;
+		ts.is_corner = 0;
 		// edge-type
 		for (int i = 0; i < 6; ++i)
-			p.c.num_color[i] = header[i];
-		p.c.num_vary_x = header[6];
-		p.c.num_vary_y = header[7];
-		p.c.short_side_len = header[8];
+			ts.num_color[i] = header[i];
+		ts.num_vary[0] = header[6];
+		ts.num_vary[1] = header[7];
+		ts.short_side_len = header[8];
 	}
 
-	//if (p.c.num_vary_x < 0 || p.c.num_vary_x > 64 || p.c.num_vary_y < 0 || p.c.num_vary_y > 64)
+	//if (ts.num_vary[0] < 0 || ts.num_vary[0] > 64 || ts.num_vary[1] < 0 || ts.num_vary[1] > 64)
 	//	return tileSet;
-	//if (p.c.short_side_len == 0)
+	//if (ts.short_side_len == 0)
 	//	return tileSet;
-	//if (p.c.num_color[0] > 32 || p.c.num_color[1] > 32 || p.c.num_color[2] > 32 || p.c.num_color[3] > 32)
+	//if (ts.num_color[0] > 32 || ts.num_color[1] > 32 || ts.num_color[2] > 32 || ts.num_color[3] > 32)
 	//	return tileSet;
 
-	stbhw__get_template_info(&p, tileSet);
 
-	tileSet->num_vary[0] = p.c.num_vary_x;
-	tileSet->num_vary[1] = p.c.num_vary_y;
-	for (int i = 0; i < 6; i++) tileSet->num_color[i] = p.c.num_color[i];
-	tileSet->numH = tileSet->numV = 0;
-	tileSet->short_side_len = p.c.short_side_len;
-	tileSet->is_corner = p.c.is_corner;
-
-	p.data = data;
-	p.stride = stride;
+	ts.tileData = data;
+	ts.tdStride = stride;
 	p.w = w;
 	p.h = h;
-
-	int ret = stbhw__process_template(&p, tileSet);
-	stbhw_get_all_indices(tileSet);
-	return ret;
+	stbhw__get_template_info(p, ts);
+	
+	int ret = stbhw__process_template(p, ts);
+	stbhw_get_all_indices(ts);
+	return ts;
 }
 
-
 #if 1
-_compute static int stbhw__choose_tile(WangTile* list, uint16_t* indices, int numVary, WorldgenPRNG* prng,
-	signed char* a, signed char* b, signed char* c, signed char* d, signed char* e, signed char* f)
+_compute static int stbhw__choose_tile(const WangTile* list, const uint16_t* indices, int numVary, WorldgenPRNG& prng,
+	signed char& a, signed char& b, signed char& c, signed char& d, signed char& e, signed char& f)
 {
-	uint16_t index = indices[32 * *a + 16 * *b + 8 * *c + 4 * *d + 2 * *e + *f];
+	uint16_t index = indices[32 * a + 16 * b + 8 * c + 4 * d + 2 * e + f];
 	uint8_t start = index >> 8;
 	uint8_t stride = index & 0xff;
 
-	int m = prng->NextU() % numVary;
+	int m = prng.NextU() % numVary;
 	int i = start + m * stride;
-	WangTile* h = &list[i];
-	*a = h->s[0];
-	*b = h->s[1];
-	*c = h->s[2];
-	*d = h->s[3];
-	*e = h->s[4];
-	*f = h->s[5];
+	const WangTile& h = list[i];
+	a = h.colors[0];
+	b = h.colors[1];
+	c = h.colors[2];
+	d = h.colors[3];
+	e = h.colors[4];
+	f = h.colors[5];
 	return i;
 }
 #else
 // randomly choose a tile that fits constraints for a given spot, and update the constraints
 _compute static int stbhw__choose_tile(WangTile* list, int numlist,
-	signed char* a, signed char* b, signed char* c,
-	signed char* d, signed char* e, signed char* f,
-	WorldgenPRNG* prng)
+	signed char& a, signed char& b, signed char& c,
+	signed char& d, signed char& e, signed char& f,
+	WorldgenPRNG& prng)
 {
-	printf("%i %i %i %i %i %i:\n", *a, *b, *c, *d, *e, *f);
+	printf("%i %i %i %i %i %i:\n", a, b, c, d, e, f);
 	int i, n, m = 1 << 30, pass;
 	for (pass = 0; pass < 2; ++pass)
 	{
@@ -427,12 +437,12 @@ _compute static int stbhw__choose_tile(WangTile* list, int numlist,
 		for (i = 0; i < numlist; ++i)
 		{
 			WangTile* h = &list[i];
-			if ((*a < 0 || *a == h->s[0]) &&
-				(*b < 0 || *b == h->s[1]) &&
-				(*c < 0 || *c == h->s[2]) &&
-				(*d < 0 || *d == h->s[3]) &&
-				(*e < 0 || *e == h->s[4]) &&
-				(*f < 0 || *f == h->s[5]))
+			if ((a < 0 || a == h->colors[0]) &&
+				(b < 0 || b == h->colors[1]) &&
+				(c < 0 || c == h->colors[2]) &&
+				(d < 0 || d == h->colors[3]) &&
+				(e < 0 || e == h->colors[4]) &&
+				(f < 0 || f == h->colors[5]))
 			{
 				n += 1;
 				printf("%i ", i);
@@ -441,12 +451,12 @@ _compute static int stbhw__choose_tile(WangTile* list, int numlist,
 					printf("\n");
 					// use list[i]
 					// update constraints to reflect what we placed
-					*a = h->s[0];
-					*b = h->s[1];
-					*c = h->s[2];
-					*d = h->s[3];
-					*e = h->s[4];
-					*f = h->s[5];
+					a = h->colors[0];
+					b = h->colors[1];
+					c = h->colors[2];
+					d = h->colors[3];
+					e = h->colors[4];
+					f = h->colors[5];
 					return i;
 				}
 			}
@@ -457,7 +467,7 @@ _compute static int stbhw__choose_tile(WangTile* list, int numlist,
 			return -1;
 		}
 		printf("-- %i\n", n);
-		m = prng->NextU() % n;
+		m = prng.NextU() % n;
 	}
 	return -1;
 }
@@ -470,21 +480,21 @@ static int stbhw__match(int x, int y, signed char c_color[64][64])
 }
 
 _compute
-static int stbhw__change_color(int old_color, int num_options, WorldgenPRNG* prng)
+static int stbhw__change_color(int old_color, int num_options, WorldgenPRNG& prng)
 {
-	int offset = 1 + prng->NextU() % (num_options - 1);
+	int offset = 1 + prng.NextU() % (num_options - 1);
 	return (old_color + offset) % num_options;
 }
 
 // generate a map that is w * h pixels (3-bytes each)
 // returns 1 on success, 0 on error
-_compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, int w, int h, WorldgenPRNG* prng)
+_compute int stbhw_generate_image(WangTileIndex* output, const BiomeWangScope& scope, int w, int h, WorldgenPRNG& prng)
 {
 	signed char c_color[64][64];
 	signed char v_color[64][64];
 	signed char h_color[64][64];
 
-	int sidelen = tileSet->short_side_len;
+	int sidelen = scope.ts.short_side_len;
 	int xmax = (w / sidelen) + 6;
 	int ymax = (h / sidelen) + 6;
 	if (xmax > 64 || ymax > 64)
@@ -493,21 +503,21 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 		return 0;
 	}
 
-	int yIdx = 0;
+	int yIdx = -1;
 	int xIdx = 0;
-	int yWidth = (w + sidelen - 1) / sidelen;
+	int yWidth = scope.bSec.wang_w;
 
-	if (tileSet->is_corner)
+	if (scope.ts.is_corner)
 	{
-		int i, j, ypos;
-		int* cc = tileSet->num_color;
+		int i, j;
+		const int* cc = scope.ts.num_color;
 
 		for (j = 0; j < ymax; ++j)
 		{
 			for (i = 0; i < xmax; ++i)
 			{
 				int p = (i - j + 1) & 3; // corner type
-				c_color[j][i] = prng->NextU() % cc[p];
+				c_color[j][i] = prng.NextU() % cc[p];
 			}
 		}
 		// now go back through and make sure we don't have adjancent 3x2 vertices that are identical,
@@ -532,8 +542,7 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 			}
 		}
 
-		ypos = -1 * sidelen;
-		for (j = -1; ypos < h; ++j)
+		for (j = -1; yIdx < scope.bSec.wang_h; ++j)
 		{
 			// a general herringbone row consists of:
 			//    horizontal left block, the bottom of a previous vertical, the top of a new vertical
@@ -549,53 +558,48 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 			}
 			for (;; i += 4)
 			{
-				int xpos = i * sidelen;
 				xIdx = i;
-				if (xpos >= w)
+				if (xIdx >= scope.bSec.wang_w)
 					break;
 				// horizontal left-block
-				if (xpos + sidelen * 2 >= 0 && ypos >= 0)
+				if (xIdx + 2 >= 0 && yIdx >= 0)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->hTiles, tileSet->hIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
-						&c_color[j + 2][i + 2], &c_color[j + 2][i + 3], &c_color[j + 2][i + 4],
-						&c_color[j + 3][i + 2], &c_color[j + 3][i + 3], &c_color[j + 3][i + 4]);
+						scope.ts.hTiles, scope.ts.hIndices, scope.ts.num_vary[0] * scope.ts.num_vary[1], prng,
+						c_color[j + 2][i + 2], c_color[j + 2][i + 3], c_color[j + 2][i + 4],
+						c_color[j + 3][i + 2], c_color[j + 3][i + 3], c_color[j + 3][i + 4]);
 					if (ti == -1)
 						return 0;
-					output[yIdx * yWidth + xIdx] = ti;
-					output[yIdx * yWidth + xIdx + 1] = 0x8000;
+					if (xIdx >= 0) output[yIdx * yWidth + xIdx] = ti;
+					if (xIdx + 1 >= 0) output[yIdx * yWidth + xIdx + 1] = ti | 0x8000;
 				}
-				xpos += sidelen * 2;
 				xIdx += 2;
 				// now we're at the end of a previous vertical one
-				xpos += sidelen;
 				xIdx++;
 				// now we're at the start of a new vertical one
-				if (xpos < w)
+				if (xIdx < scope.bSec.wang_w)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->vTiles, tileSet->vIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
-						&c_color[j + 2][i + 5], &c_color[j + 3][i + 5], &c_color[j + 4][i + 5],
-						&c_color[j + 2][i + 6], &c_color[j + 3][i + 6], &c_color[j + 4][i + 6]);
+						scope.ts.vTiles, scope.ts.vIndices, scope.ts.num_vary[0] * scope.ts.num_vary[1], prng,
+						c_color[j + 2][i + 5], c_color[j + 3][i + 5], c_color[j + 4][i + 5],
+						c_color[j + 2][i + 6], c_color[j + 3][i + 6], c_color[j + 4][i + 6]);
 					if (ti == -1)
 						return 0;
-					output[yIdx * yWidth + xIdx] = ti | 0x4000;
-					output[(yIdx + 1) * yWidth + xIdx] = 0xC000;
+					if (yIdx >= 0) output[yIdx * yWidth + xIdx] = ti | 0x4000;
+					output[(yIdx + 1) * yWidth + xIdx] = ti | 0xC000;
 				}
 			}
-			ypos += sidelen;
 			yIdx++;
 		}
 	}
 	else
 	{
 		// @TODO edge-color repetition reduction
-		int i, j, ypos;
+		int i, j;
 		cMemset(v_color, -1, sizeof(v_color));
 		cMemset(h_color, -1, sizeof(h_color));
 
-		ypos = -1 * sidelen;
-		for (j = -1; ypos < h; ++j)
+		for (j = -1; yIdx < scope.bSec.wang_h; ++j)
 		{
 			// a general herringbone row consists of:
 			//    horizontal left block, the bottom of a previous vertical, the top of a new vertical
@@ -611,44 +615,40 @@ _compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, i
 			}
 			for (;; i += 4)
 			{
-				int xpos = i * sidelen;
 				xIdx = i;
-				if (xpos >= w)
+				if (xIdx >= scope.bSec.wang_w)
 					break;
 				// horizontal left-block
-				if (xpos + sidelen * 2 >= 0 && ypos >= 0)
+				if (xIdx + 2 >= 0 && yIdx >= 0)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->hTiles, tileSet->hIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
-						&h_color[j + 2][i + 2], &h_color[j + 2][i + 3],
-						&v_color[j + 2][i + 2], &v_color[j + 2][i + 4],
-						&h_color[j + 3][i + 2], &h_color[j + 3][i + 3]);
+						scope.ts.hTiles, scope.ts.hIndices, scope.ts.num_vary[0] * scope.ts.num_vary[1], prng,
+						h_color[j + 2][i + 2], h_color[j + 2][i + 3],
+						v_color[j + 2][i + 2], v_color[j + 2][i + 4],
+						h_color[j + 3][i + 2], h_color[j + 3][i + 3]);
 					if (ti == -1)
 						return 0;
-					output[yIdx * yWidth + xIdx] = ti;
-					output[yIdx * yWidth + xIdx + 1] = 0x8000;
+					if (xIdx >= 0) output[yIdx * yWidth + xIdx] = ti;
+					if (xIdx + 1 >= 0) output[yIdx * yWidth + xIdx + 1] = ti | 0x8000;
 				}
-				xpos += sidelen * 2;
 				xIdx += 2;
 				// now we're at the end of a previous vertical one
-				xpos += sidelen;
 				xIdx++;
 				// now we're at the start of a new vertical one
-				if (xpos < w)
+				if (xIdx < scope.bSec.wang_w)
 				{
 					int ti = stbhw__choose_tile(
-						tileSet->vTiles, tileSet->vIndices, tileSet->num_vary[0] * tileSet->num_vary[1], prng,
-						&h_color[j + 2][i + 5],
-						&v_color[j + 2][i + 5], &v_color[j + 2][i + 6],
-						&v_color[j + 3][i + 5], &v_color[j + 3][i + 6],
-						&h_color[j + 4][i + 5]);
+						scope.ts.vTiles, scope.ts.vIndices, scope.ts.num_vary[0] * scope.ts.num_vary[1], prng,
+						h_color[j + 2][i + 5],
+						v_color[j + 2][i + 5], v_color[j + 2][i + 6],
+						v_color[j + 3][i + 5], v_color[j + 3][i + 6],
+						h_color[j + 4][i + 5]);
 					if (ti == -1)
 						return 0;
-					output[yIdx * yWidth + xIdx] = ti | 0x4000;
-					output[(yIdx + 1) * yWidth + xIdx] = 0xC000;
+					if (yIdx >= 0)output[yIdx * yWidth + xIdx] = ti | 0x4000;
+					output[(yIdx + 1) * yWidth + xIdx] = ti | 0xC000;
 				}
 			}
-			ypos += sidelen;
 			yIdx++;
 		}
 	}

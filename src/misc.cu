@@ -6,60 +6,63 @@
 #include <cstring>
 #include <cmath>
 
-_universal uint8_t readByte(uint8_t* ptr, int& offset)
+_universal uint8_t readByte(const uint8_t* ptr, int& offset)
 {
 	return ptr[offset++];
 }
-_universal void writeByte(uint8_t* ptr, int& offset, uint8_t b)
+_universal void writeByte(MemSpan ptr, int& offset, uint8_t b)
 {
-	ptr[offset++] = b;
+	if (!ptr.is_safe(offset))
+		printf("writeByte(): Ran out of space.\n");
+	ptr.ptr[offset++] = b;
 }
-_universal int readInt(uint8_t* ptr, int& offset)
+_universal int readInt(const uint8_t* ptr, int& offset)
 {
 	int tmp;
 	memcpy(&tmp, ptr + offset, 4);
 	offset += 4;
 	return tmp;
 }
-_universal void writeInt(uint8_t* ptr, int& offset, int val)
+_universal void writeInt(MemSpan ptr, int& offset, int val)
 {
-	memcpy(ptr + offset, &val, 4);
+	if (!ptr.is_safe(offset + 3))
+		printf("writeByte(): Ran out of space.\n");
+	memcpy(ptr.ptr + offset, &val, 4);
 	offset += 4;
 }
-_universal void incrInt(uint8_t* ptr)
+_universal void incrInt(int* ptr)
 {
 	int offsetTmp = 0;
-	int tmp = readInt(ptr, offsetTmp);
+	int tmp = readInt((const uint8_t*)ptr, offsetTmp);
 	offsetTmp = 0;
-	writeInt(ptr, offsetTmp, tmp + 1);
+	writeInt({ (uint8_t*)ptr, 4 }, offsetTmp, tmp + 1);
 }
-_universal short readShort(uint8_t* ptr, int& offset)
+_universal short readShort(const uint8_t* ptr, int& offset)
 {
 	return (readByte(ptr, offset) | (readByte(ptr, offset) << 8));
 }
-_universal void writeShort(uint8_t* ptr, int& offset, short s)
+_universal void writeShort(MemSpan ptr, int& offset, short s)
 {
 	writeByte(ptr, offset, ((short)s) & 0xff);
 	writeByte(ptr, offset, (((short)s) >> 8) & 0xff);
 }
-_universal int readMisaligned(int* ptr2)
+_universal int readMisaligned(const int* ptr)
 {
-	uint8_t* ptr = (uint8_t*)ptr2;
 	int offset = 0;
-	return readInt(ptr, offset);
+	return readInt((const uint8_t*)ptr, offset);
 }
-_universal Spawnable readMisalignedSpawnable(Spawnable* sPtr)
+_universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr)
 {
-	uint8_t* bPtr = (uint8_t*)sPtr;
+	const uint8_t* ptr = (const uint8_t*)sPtr;
 	Spawnable s;
 	int offset = 0;
-	s.x = readInt(bPtr, offset);
-	s.y = readInt(bPtr, offset);
-	s.sType = (SpawnableMetadata)readByte(bPtr, offset);
-	s.count = readInt(bPtr, offset);
+	s.x = readInt(ptr, offset);
+	s.y = readInt(ptr, offset);
+	s.sType = (SpawnableMetadata)readByte(ptr, offset);
+	s.count = readInt(ptr, offset);
 	return s;
 }
-_universal WandData readMisalignedWand(WandData* wPtr)
+_universal WandData readMisalignedWand(const WandData* wPtr)
 {
 	WandData w = {};
 	memcpy(&w, wPtr, 37);
@@ -87,12 +90,7 @@ _universal double WorldgenPRNG::Next()
 	return Seed / 0x7fffffff;
 }
 
-_universal NollaPRNG::NollaPRNG(uint32_t worldSeed)
-{
-	world_seed = worldSeed;
-	Seed = worldSeed;
-}
-_universal uint64_t NollaPRNG::SetRandomSeedHelper(double r)
+_universal static uint64_t SetRandomSeedHelper(double r)
 {
 	uint64_t e = *(uint64_t*)&r;
 	e &= 0x7fffffffffffffff;
@@ -108,7 +106,7 @@ _universal uint64_t NollaPRNG::SetRandomSeedHelper(double r)
 	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
 	return b & 0xffffffff;
 }
-_universal uint64_t NollaPRNG::SetRandomSeedHelperInt(int64_t r)
+_universal static uint64_t SetRandomSeedHelperInt(int64_t r)
 {
 	double dr = r;
 	uint64_t e = *(uint64_t*)&dr;
@@ -125,7 +123,7 @@ _universal uint64_t NollaPRNG::SetRandomSeedHelperInt(int64_t r)
 	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
 	return b & 0xffffffff;
 }
-_universal uint32_t NollaPRNG::SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
+_universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
 {
 	uint32_t uVar1;
 	uint32_t uVar2;
@@ -140,6 +138,12 @@ _universal uint32_t NollaPRNG::SetRandomSeedHelper2(uint32_t a, uint32_t b, uint
 	uVar2 = (uVar2 - uVar1) - uVar3 ^ uVar3 >> 3;
 	uVar1 = (uVar1 - uVar2) - uVar3 ^ uVar2 << 10;
 	return (uVar3 - uVar2) - uVar1 ^ uVar1 >> 0xf;
+}
+
+_universal NollaPRNG::NollaPRNG(uint32_t worldSeed)
+{
+	world_seed = worldSeed;
+	Seed = worldSeed;
 }
 _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 {
@@ -311,7 +315,7 @@ _universal _noinline float NollaPRNG::GetDistribution(float mean, float sharpnes
 		if (div < 0.5f)
 		{
 			// double v11 = sin(((0.5f - mean) + r1) * M_PI);
-			float v11 = sinf(((0.5f - mean) + r1) * 3.1415f);
+			float v11 = sinf(((0.5f - mean) + r1) * 3.14159265f);
 			float v12 = powf(v11, sharpness);
 			if (v12 > r2)
 			{
@@ -340,7 +344,7 @@ _universal int NollaPRNG::RandomDistribution(float min, float max, float mean, f
 }
 _universal float NollaPRNG::RandomDistributionf(float min, float max, float mean, float sharpness)
 {
-	if (sharpness == 0.0)
+	if (sharpness == 0.0f)
 	{
 		float r = Next();
 		return (r * (max - min)) + min;
@@ -382,13 +386,40 @@ _compute int pick_random_from_table_weighted(const float* probs, float sum, int 
 	return 0;
 }
 
-_compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size)
+_compute int pick_world_seed(uint64_t time)
+{
+	if (time > 0x7fffffff)
+		time >>= 1;
+	double r = (double)time;
+	time >>= 0x1f;
+	r += time * 8;
+
+	if (r > 2147483647.0)
+		r *= 0.5;
+
+	int Seed = (int)r;
+	for (int i = 0; i < 2; i++)
+	{
+		Seed = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
+		if (Seed < 0)
+		{
+			Seed += 0x7fffffff;
+		}
+	}
+	r = Seed;
+	
+	r = ((r * 4.656612875e-10) * 2147483646.0);
+	int out = SetRandomSeedHelper(r);
+	return out;
+}
+
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size)
 {
 	uint8_t* ptr = arena.ptr + arena.offset;
 	arena.offset += size;
-	return ptr;
+	return { ptr, size };
 }
-_compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth)
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth)
 {
 	uint8_t* ptr = arena.ptr + arena.offset;
 	uint64_t ptrAddr = (uint64_t)ptr;
@@ -396,7 +427,7 @@ _compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignme
 	arena.offset += alignmentWidth - alignment;
 	uint8_t* alignedPtr = arena.ptr + arena.offset;
 	arena.offset += size;
-	return alignedPtr;
+	return { alignedPtr, size };
 }
 _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer)
 {
@@ -427,8 +458,8 @@ _universal Vec2i GetLocalPos(const int gx, int gy)
 _compute int roundRNGPos(int num)
 {
 	if (-1000000 < num && num < 1000000) return num;
-	else if (-10000000 < num && num < 10000000) return rintf(num / 10.0) * 10;
-	else if (-100000000 < num && num < 100000000) return rintf(num / 100.0) * 100;
+	else if (-10000000 < num && num < 10000000) return int(num / 10.0f) * 10;
+	else if (-100000000 < num && num < 100000000) return int(num / 100.0f) * 100;
 	return num;
 }
 

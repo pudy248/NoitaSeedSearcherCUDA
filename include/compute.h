@@ -7,32 +7,33 @@
 
 #include <vector>
 
-void CopySpawnFuncs();
-int stbhw_build_tileset_from_image(uint8_t* data, WangTileset* tileSet, BiomeSpawnFunctions** funcs, int stride, int w, int h);
-void InstantiateBiome(const char* path, BiomeWangScope* ss, int& bC, int& mA);
+_compute void CopySpawnFuncs();
+WangTileset stbhw_build_tileset_from_image(uint8_t* data, BiomeSpawnFunctions** funcs, int stride, int w, int h);
+void InstantiateBiome(const char* path, BiomeWangScope** ss, int& bC, int& mA);
 
 _compute bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c);
-_compute int stbhw_generate_image(WangTileIndex* output, WangTileset* tileSet, int w, int h, WorldgenPRNG* prng);
-_compute void GenerateMap(uint32_t worldSeed, BiomeWangScope scope, uint8_t* output, uint8_t* res, uint8_t* visited, uint8_t* miscMem);
+_compute int stbhw_generate_image(WangTileIndex* output, const BiomeWangScope& scope, int w, int h, WorldgenPRNG& prng);
+_compute bool isValid(const GeneratedBiome& s, MemSpan stackMemArea, MemSpan visited);
+_compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& scope, MemSpan output, MemSpan res, MemSpan visited, MemSpan miscMem);
 
-_compute void spawnHeart(int x, int y, SpawnParams params);
-_compute void spawnChest(int x, int y, SpawnParams params);
-_compute void spawnPotion(int x, int y, SpawnParams params);
-_compute void spawnWand(int x, int y, SpawnParams params);
-_compute static void LoadPixelScene(int x, int y, PixelSceneList list, SpawnParams params);
+_compute void spawnHeart(int x, int y, const SpawnParams& params);
+_compute void spawnChest(int x, int y, const SpawnParams& params);
+_compute void spawnPotion(int x, int y, const SpawnParams& params);
+_compute void spawnWand(int x, int y, const SpawnParams& params);
+_compute static void LoadPixelScene(int x, int y, PixelSceneList list, const SpawnParams& params);
 
 _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset);
 _compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset);
 _compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better);
 
-_compute void CheckSpawnables(WangFuncIndex* idxs, WangTileset* tileSet, SpawnParams params, int maxMemory);
-_compute void CheckMountains(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount);
-_compute void CheckEyeRooms(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount);
-_compute SpawnableBlock ParseSpawnableBlock(uint8_t* bytes, uint8_t* putSpawnablesHere, SpawnableConfig sCfg, int maxMemory);
-_compute bool SpawnablesPassed(SpawnableBlock b, FilterConfig fCfg, uint8_t* output, uint8_t* tmp, bool write);
-_compute void WriteOutputBlock(uint8_t* output, int seed, Spawnable** spawnables, int sCount);
+_compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params);
+_compute void CheckMountains(const SpawnParams& params);
+_compute void CheckEyeRooms(const SpawnParams& params);
+_compute SpawnableBlock ParseSpawnableBlock(const uint8_t* block, MemSpan spawnables_block, const SpawnableConfig& sCfg, int seed, int sCount);
+_compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write);
+_compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b);
 
-void PrintOutputBlock(uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*));
+void PrintOutputBlock(const uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*));
 
 struct OutputProgressData
 {

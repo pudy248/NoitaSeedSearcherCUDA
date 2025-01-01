@@ -13,9 +13,9 @@
 #include <cstdio>
 #include <cmath>
 
-_compute static void createPotion(double x, double y, Item type, SpawnParams params)
+_compute static void createPotion(double x, double y, Item type, const SpawnParams& params)
 {
-	if (!params.sCfg->genPotions) writeByte(params.bytes, params.offset, type);
+	if (!params.sCfg.genPotions) writeByte(params.bytes, params.offset, type);
 	else
 	{
 		writeByte(params.bytes, params.offset, DATA_MATERIAL);
@@ -51,7 +51,7 @@ _compute static void createPotion(double x, double y, Item type, SpawnParams par
 		}
 	}
 }
-_compute static void createWand(double x, double y, Item type, bool addOffset, SpawnParams params)
+_compute static void createWand(double x, double y, Item type, bool addOffset, const SpawnParams& params)
 {
 	writeByte(params.bytes, params.offset, type);
 
@@ -61,7 +61,7 @@ _compute static void createWand(double x, double y, Item type, bool addOffset, S
 	bool better = wandNum % 3 == 2;
 
 #ifdef DO_WANDGEN
-	if (type < WAND_T1 || type > WAND_T10NS || !params.sCfg->genWands || better) return;
+	if (type < WAND_T1 || type > WAND_T10NS || !params.sCfg.genWands || better) return;
 	else
 	{
 		int rand_x = (int)x;
@@ -75,9 +75,11 @@ _compute static void createWand(double x, double y, Item type, bool addOffset, S
 
 		Wand w = GetWandWithLevel(params.seed, rand_x, rand_y, tier, nonshuffle, better);
 		writeByte(params.bytes, params.offset, DATA_WAND); //-1
-		cMemcpyU(params.bytes + params.offset, &w.capacity, 37);
+		if (!params.bytes.is_safe(params.offset + 36 + w.spellCount * 3))
+			printf("createWand(): Ran out of output space.\n");
+		cMemcpyU(params.bytes.ptr + params.offset, &w.capacity, 37);
 		params.offset += 37;
-		cMemcpyU(params.bytes + params.offset, w.spells, w.spellCount * 3);
+		cMemcpyU(params.bytes.ptr + params.offset, w.spells, w.spellCount * 3);
 		params.offset += w.spellCount * 3;
 	}
 #endif
@@ -112,7 +114,7 @@ _compute static Spell MakeRandomUtility(NollaPRNG& random)
 	return res;
 }
 
-_compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicSign, SpawnParams params)
+_compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicSign, const SpawnParams& params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -224,13 +226,13 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 			{
 				random.Next();
 				Spell s = MakeRandomCard(random);
-				if (params.sCfg->genSpells)
+				if (params.sCfg.genSpells)
 				{
 					writeByte(params.bytes, params.offset, DATA_SPELL);
 					writeShort(params.bytes, params.offset, s);
 				}
 			}
-			if (!params.sCfg->genSpells)
+			if (!params.sCfg.genSpells)
 				writeByte(params.bytes, params.offset, RANDOM_SPELL);
 		}
 		else if (rnd <= 84)
@@ -261,7 +263,7 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 	}
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
-_compute _noinline static void CheckGreatChestLoot(int x, int y, bool hasMimicSign, SpawnParams params)
+_compute _noinline static void CheckGreatChestLoot(int x, int y, bool hasMimicSign, const SpawnParams& params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -343,7 +345,7 @@ _compute _noinline static void CheckGreatChestLoot(int x, int y, bool hasMimicSi
 	}
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
-_compute _noinline static void CheckItemPedestalLoot(int x, int y, SpawnParams params)
+_compute _noinline static void CheckItemPedestalLoot(int x, int y, const SpawnParams& params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -387,7 +389,7 @@ _compute _noinline static void CheckItemPedestalLoot(int x, int y, SpawnParams p
 
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
-_compute _noinline static void CheckUtilityBoxLoot(int x, int y, SpawnParams params)
+_compute _noinline static void CheckUtilityBoxLoot(int x, int y, const SpawnParams& params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -444,13 +446,13 @@ _compute _noinline static void CheckUtilityBoxLoot(int x, int y, SpawnParams par
 			{
 				random.Next();
 				Spell s = MakeRandomUtility(random);
-				if (params.sCfg->genSpells)
+				if (params.sCfg.genSpells)
 				{
 					writeByte(params.bytes, params.offset, DATA_SPELL);
 					writeShort(params.bytes, params.offset, s);
 				}
 			}
-			if (!params.sCfg->genSpells)
+			if (!params.sCfg.genSpells)
 				writeByte(params.bytes, params.offset, RANDOM_SPELL);
 		}
 		else if (rnd <= 99)
@@ -461,9 +463,9 @@ _compute _noinline static void CheckUtilityBoxLoot(int x, int y, SpawnParams par
 	writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 }
 
-_compute void spawnHeart(int x, int y, SpawnParams params)
+_compute void spawnHeart(int x, int y, const SpawnParams& params)
 {
-	if (!params.sCfg->biomeChests) return;
+	if (!params.sCfg.biomeChests) return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	float heart_spawn_percent = 0.7f;
@@ -516,12 +518,12 @@ _compute void spawnHeart(int x, int y, SpawnParams params)
 		}
 	}
 }
-_compute void spawnChest(int x, int y, SpawnParams params)
+_compute void spawnChest(int x, int y, const SpawnParams& params)
 {
-	if (!params.sCfg->biomeChests) return;
+	if (!params.sCfg.biomeChests) return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	random.SetRandomSeed(x, y);
-	int super_chest_spawn_rate = params.sCfg->greedCurse ? 100 : 2000;
+	int super_chest_spawn_rate = params.sCfg.greedCurse ? 100 : 2000;
 	int rnd = random.Random(1, super_chest_spawn_rate);
 
 	if (rnd >= super_chest_spawn_rate - 1)
@@ -529,24 +531,24 @@ _compute void spawnChest(int x, int y, SpawnParams params)
 	else
 		CheckNormalChestLoot(x, y, false, params);
 }
-_compute void spawnPotion(int x, int y, SpawnParams params)
+_compute void spawnPotion(int x, int y, const SpawnParams& params)
 {
-	if (!params.sCfg->biomePedestals) return;
+	if (!params.sCfg.biomePedestals) return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	float rnd = random.ProceduralRandomf(x, y, 0, 1);
 
 	if (rnd > 0.65f)
 		CheckItemPedestalLoot(x + 5, y - 4, params);
 }
-_compute void spawnWand(int x, int y, SpawnParams params)
+_compute void spawnWand(int x, int y, const SpawnParams& params)
 {
-	if (!params.sCfg->biomeAltars) return;
+	if (!params.sCfg.biomeAltars) return;
 	if (!params.spawnItem(x, y, params)) return;
 
 	NollaPRNG random = NollaPRNG(params.seed);
 	int nx = x - 5;
 	int ny = y - 14;
-	BiomeWands wandSet = *AllWandLevels[params.currentBiome->bSec.b];
+	BiomeWands wandSet = *AllWandLevels[params.currentBiome.bSec.b];
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
 	float r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
@@ -568,9 +570,8 @@ _compute void spawnWand(int x, int y, SpawnParams params)
 	}
 }
 
-_compute static void LoadPixelScene(int x, int y, PixelSceneList list, SpawnParams params)
+_compute static void LoadPixelScene(int x, int y, PixelSceneList list, const SpawnParams& params)
 {
-
 	NollaPRNG random = NollaPRNG(params.seed);
 	float rnd2 = random.ProceduralRandomf(x, y, 0, list.probSum);
 
@@ -604,37 +605,42 @@ _compute static void LoadPixelScene(int x, int y, PixelSceneList list, SpawnPara
 	for (int i = 0; i < pickedScene.spawnCount; i++)
 	{
 		PixelSceneSpawn spawn = pickedScene.spawns[i];
+		Vec2i chunk = GetLocalPos(x + spawn.x, y + spawn.y);
+		Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
+		if (cBiome != params.currentBiome.bSec.b)
+			continue;
+
 		switch (spawn.spawnType)
 		{
 		case PSST_SmallEnemy:
-			//if (params.sCfg->biomeEnemies)
-				//spawnSmallEnemies(spawn.x, spawn.y, params);
+			//if (params.sCfg.biomeEnemies)
+				//spawnSmallEnemies(x + spawn.x, y + spawn.y, params);
 			break;
 		case PSST_LargeEnemy:
-			//if (params.sCfg->biomeEnemies)
-			//	spawnBigEnemies(spawn.x, spawn.y, params);
+			//if (params.sCfg.biomeEnemies)
+			//	spawnBigEnemies(x + spawn.x, y + spawn.y, params);
 			break;
 		case PSST_SpawnHeart:
-			if (params.sCfg->biomeChests)
-				spawnHeart(spawn.x, spawn.y, params);
+			if (params.sCfg.biomeChests)
+				spawnHeart(x + spawn.x, y + spawn.y, params);
 			break;
 		case PSST_SpawnChest:
-			if (params.sCfg->biomeChests)
-				spawnChest(spawn.x, spawn.y, params);
+			if (params.sCfg.biomeChests)
+				spawnChest(x + spawn.x, y + spawn.y, params);
 			break;
 		case PSST_SpawnItem:
-			if (params.sCfg->biomeAltars)
-				spawnWand(spawn.x, spawn.y, params);
+			if (params.sCfg.biomeAltars)
+				spawnWand(x + spawn.x, y + spawn.y, params);
 			break;
 		case PSST_SpawnFlask:
-			if (params.sCfg->biomePedestals)
-				spawnPotion(spawn.x, spawn.y, params);
+			if (params.sCfg.biomePedestals)
+				spawnPotion(x + spawn.x, y + spawn.y, params);
 			break;
 		}
 	}
 }
 
-/*_compute void SpawnEnemies(int x, int y, EnemyList list, SpawnParams params)
+/*_compute void SpawnEnemies(int x, int y, EnemyList list, const SpawnParams& params)
 {
 	NollaPRNG random = NollaPRNG(params.seed);
 	float rnd2 = random.ProceduralRandomf(x, y, 0, list.probSum);
@@ -708,7 +714,7 @@ _compute static void LoadPixelScene(int x, int y, PixelSceneList list, SpawnPara
 }
 */
 
-_compute static void spawnHellShop(int x, int y, SpawnParams params)
+_compute static void spawnHellShop(int x, int y, const SpawnParams& params)
 {
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
@@ -727,30 +733,30 @@ _compute static Wand GetShopWand(NollaPRNG& random, double x, double y, int leve
 	return GetWandWithLevel(random.world_seed, x, y, level, shuffle, false);
 }
 
-_compute void CheckMountains(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount)
+_compute void CheckMountains(const SpawnParams& params)
 {
-	if (sCfg->pacifist)
+	if (params.sCfg.pacifist)
 	{
-		for (int pw = sCfg->pwCenter.x - sCfg->pwWidth.x; pw <= sCfg->pwCenter.x + sCfg->pwWidth.x; pw++)
+		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x; pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++)
 		{
-			for (int hm_level = sCfg->minHMidx; hm_level < min(sCfg->maxHMidx, pw == 0 ? 7 : 6); hm_level++)
+			for (int hm_level = params.sCfg.minHMidx; hm_level < min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6); hm_level++)
 			{
 				int x = temple_x[hm_level] + chestOffsetX + 70 * 512 * pw;
 				int y = temple_y[hm_level] + chestOffsetY;
-				CheckNormalChestLoot(x, y, false, { seed, {}, sCfg, bytes, offset, sCount });
+				CheckNormalChestLoot(x, y, false, params);
 			}
 		}
 	}
 
-	if (sCfg->shopSpells || sCfg->shopWands)
+	if (params.sCfg.shopSpells || params.sCfg.shopWands)
 	{
-		NollaPRNG random(seed);
+		NollaPRNG random(params.seed);
 		int width = 132;
 		constexpr int itemCount = 5;
 		float stepSize = width / (float)itemCount;
-		for (int pw = sCfg->pwCenter.x - sCfg->pwWidth.x; pw <= sCfg->pwCenter.x + sCfg->pwWidth.x; pw++)
+		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x; pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++)
 		{
-			for (int hm_level = sCfg->minHMidx; hm_level < min(sCfg->maxHMidx, pw == 0 ? 7 : 6); hm_level++)
+			for (int hm_level = params.sCfg.minHMidx; hm_level < min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6); hm_level++)
 			{
 				int x = temple_x[hm_level] + shopOffsetX + 70 * 512 * pw;
 				int y = temple_y[hm_level] + shopOffsetY;
@@ -761,139 +767,139 @@ _compute void CheckMountains(int seed, SpawnableConfig* sCfg, uint8_t* bytes, in
 
 				if (wands)
 				{
-					if (!sCfg->shopWands) continue;
+					if (!params.sCfg.shopWands) continue;
 #ifdef DO_WANDGEN
-					sCount++;
-					writeInt(bytes, offset, x);
-					writeInt(bytes, offset, y);
-					writeByte(bytes, offset, TYPE_HM_SHOP);
-					int countOffset = offset;
-					offset += 4;
+					params.sCount++;
+					writeInt(params.bytes, params.offset, x);
+					writeInt(params.bytes, params.offset, y);
+					writeByte(params.bytes, params.offset, TYPE_HM_SHOP);
+					int countOffset = params.offset;
+					params.offset += 4;
 
 					for (int i = 0; i < itemCount; i++)
 					{
 						Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier));
-						writeByte(bytes, offset, DATA_WAND);
-						cMemcpyU(bytes + offset, &w.capacity, 37);
-						offset += 37;
-						cMemcpyU(bytes + offset, w.spells, w.spellCount * 3);
-						offset += w.spellCount * 3;
+						writeByte(params.bytes, params.offset, DATA_WAND);
+						if (!params.bytes.is_safe(params.offset + 36 + w.spellCount * 3))
+							printf("CheckMountains(): Ran out of output space.\n");
+						cMemcpyU(params.bytes.ptr + params.offset, &w.capacity, 37);
+						params.offset += 37;
+						cMemcpyU(params.bytes.ptr + params.offset, w.spells, w.spellCount * 3);
+						params.offset += w.spellCount * 3;
 					}
-					writeInt(bytes, countOffset, offset - countOffset - 4);
+					writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 #endif
 				}
 				else
 				{
-					if (!sCfg->shopSpells) continue;
-					sCount++;
-					writeInt(bytes, offset, x);
-					writeInt(bytes, offset, y);
-					writeByte(bytes, offset, TYPE_HM_SHOP);
-					writeInt(bytes, offset, 6 * itemCount);
+					if (!params.sCfg.shopSpells) continue;
+					params.sCount++;
+					writeInt(params.bytes, params.offset, x);
+					writeInt(params.bytes, params.offset, y);
+					writeByte(params.bytes, params.offset, TYPE_HM_SHOP);
+					writeInt(params.bytes, params.offset, 6 * itemCount);
 
 					for (int i = 0; i < itemCount; i++)
 					{
-						writeByte(bytes, offset, DATA_SPELL);
-						writeShort(bytes, offset, GetRandomAction(random.world_seed, x + i * stepSize, y - 30, tier, 0));
-						writeByte(bytes, offset, DATA_SPELL);
-						writeShort(bytes, offset, GetRandomAction(random.world_seed, x + i * stepSize, y, tier, 0));
+						writeByte(params.bytes, params.offset, DATA_SPELL);
+						writeShort(params.bytes, params.offset, GetRandomAction(random.world_seed, x + i * stepSize, y - 30, tier, 0));
+						writeByte(params.bytes, params.offset, DATA_SPELL);
+						writeShort(params.bytes, params.offset, GetRandomAction(random.world_seed, x + i * stepSize, y, tier, 0));
 					}
 				}
 			}
 		}
 	}
 }
-_compute void CheckEyeRooms(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount)
+_compute void CheckEyeRooms(const SpawnParams& params)
 {
 	Vec2i positions[8] = { {-3992, 5380}, {-3971, 5397}, {-3949, 5414}, {-3926, 5428}, {-3758, 5424}, {-3735, 5410}, {-3713, 5393}, {-3692, 5376} };
-	if (sCfg->eyeRooms)
+	if (params.sCfg.eyeRooms)
 	{
-		NollaPRNG random(seed);
-		for (int pw = sCfg->pwCenter.x - sCfg->pwWidth.x; pw <= sCfg->pwCenter.x + sCfg->pwWidth.x; pw++)
+		NollaPRNG random(params.seed);
+		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x; pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++)
 		{
 			int x = -3850 + pw * 70 * 512;
 			int y = 5400;
-			sCount++;
-			writeInt(bytes, offset, x);
-			writeInt(bytes, offset, y);
-			writeByte(bytes, offset, TYPE_EYE_ROOM);
-			writeInt(bytes, offset, 24);
+			params.sCount++;
+			writeInt(params.bytes, params.offset, x);
+			writeInt(params.bytes, params.offset, y);
+			writeByte(params.bytes, params.offset, TYPE_EYE_ROOM);
+			writeInt(params.bytes, params.offset, 24);
 
 			for (int i = 0; i < 8; i++)
 			{
 				Vec2i pos = positions[i] + Vec2i(pw * 70 * 512, 0);
 				random.SetRandomSeedInt(pos.x, pos.y);
-				writeByte(bytes, offset, DATA_SPELL);
-				writeShort(bytes, offset, MakeRandomCard(random));
+				writeByte(params.bytes, params.offset, DATA_SPELL);
+				writeShort(params.bytes, params.offset, MakeRandomCard(random));
 			}
 		}
 	}
 }
 
-_compute void CheckSpawnables(WangFuncIndex* idxs, WangTileset* tileSet, SpawnParams params, int maxMemory)
+_compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params)
 {
-	BiomeSpawnFunctions* funcs = AllSpawnFunctions[params.currentBiome->bSec.b];
+	BiomeSpawnFunctions* funcs = AllSpawnFunctions[params.currentBiome.bSec.b];
 	funcs->setSharedFuncs(params);
 
-	for (int y = 0; y < params.currentBiome->bSec.wang_h; y++)
+	for (int y = -1; y < params.currentBiome.bSec.wang_h; y++)
 	{
-		for (int x = 0; x < params.currentBiome->bSec.wang_w; x++)
+		for (int x = 0; x < params.currentBiome.bSec.wang_w; x++)
 		{
-			int z = y * params.currentBiome->bSec.wang_w + x;
-			if (idxs[z] & 0x8000) continue;
-			WangTile* t;
-			if (idxs[z] & 0x4000) t = &tileSet->vTiles[idxs[z] & 0x3fff];
-			else t = &tileSet->hTiles[idxs[z] & 0x3fff];
+			int tx = x * s.scope.ts.short_side_len;
+			int ty = y * s.scope.ts.short_side_len;
+			WangTileIndex tile = s.indices[y * params.currentBiome.bSec.wang_w + x];
+			if (tile & 0x8000) continue;
 
-			for (int sIdx = 0; t->spawns[sIdx].i >= 0; sIdx++)
+			const WangTile& t = tile & 0x4000 ? s.scope.ts.vTiles[tile & 0x3fff]
+													  : s.scope.ts.hTiles[tile & 0x3fff];
+			for (int sIdx = 0; t.spawns[sIdx].i >= 0 && sIdx < _WangTileMaxSpawns; sIdx++)
 			{
-				int px = x * tileSet->short_side_len;
-				int py = (y - 1) * tileSet->short_side_len;
-				px += t->spawns[sIdx].x;
-				py += t->spawns[sIdx].y;
+				int px = tx + t.spawns[sIdx].x;
+				int py = ty + t.spawns[sIdx].y;
 				py -= 4;
-				Vec2i global = GetGlobalPos(params.currentBiome->bSec.worldX, params.currentBiome->bSec.worldY, px * 10, py * 10);
+				if (px < 0 || py < 0 || px >= s.scope.bSec.map_w || py >= s.scope.bSec.map_h) continue;
+				if (get_pixel<false, true>(s, {}, px, py, s.scope.ts.short_side_len) == COLOR_WHITE) continue;
+				Vec2i global = GetGlobalPos(params.currentBiome.bSec.worldX, params.currentBiome.bSec.worldY, px * 10, py * 10);
 
-				auto func = t->spawns[sIdx].i >= AllSpawnFunctions[0]->count
-					? funcs->funcs[t->spawns[sIdx].i - AllSpawnFunctions[0]->count].func
-					: AllSpawnFunctions[0]->funcs[t->spawns[sIdx].i].func;
+				auto func = t.spawns[sIdx].i >= AllSpawnFunctions[0]->count
+					? funcs->funcs[t.spawns[sIdx].i - AllSpawnFunctions[0]->count].func
+					: AllSpawnFunctions[0]->funcs[t.spawns[sIdx].i].func;
 				
 				Vec2i chunk = GetLocalPos(global.x, global.y);
 				Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
-				if (cBiome != params.currentBiome->bSec.b)
+				if (cBiome != params.currentBiome.bSec.b)
 					continue;
 
-
-				for (int pwY = params.sCfg->pwCenter.y - params.sCfg->pwWidth.y; pwY <= params.sCfg->pwCenter.y + params.sCfg->pwWidth.y; pwY++)
+				for (int pwY = params.sCfg.pwCenter.y - params.sCfg.pwWidth.y; pwY <= params.sCfg.pwCenter.y + params.sCfg.pwWidth.y; pwY++)
 				{
-					for (int pwX = params.sCfg->pwCenter.x - params.sCfg->pwWidth.x; pwX <= params.sCfg->pwCenter.x + params.sCfg->pwWidth.x; pwX++)
+					for (int pwX = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x; pwX <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pwX++)
 					{
-						Vec2i gp = GetGlobalPos(params.currentBiome->bSec.worldX + 70 * pwX, params.currentBiome->bSec.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
-						//printf("%i  %i %i: %i\n", params.seed, gp.x, gp.y, t->spawns[sIdx].i);
-						if (t->spawns[sIdx].i == 1) func(gp.x, gp.y, params);
+						Vec2i gp = GetGlobalPos(params.currentBiome.bSec.worldX + 70 * pwX, params.currentBiome.bSec.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
+						func(gp.x, gp.y, params);
+
+						if (!params.bytes.is_safe(max(0, params.offset - 1)))
+							printf("CheckSpawnables(): Ran out of output space.\n");
 					}
 				}
 			}
-
-			if (params.offset > maxMemory) printf("ran out of spawnable memory: %i of %i bytes used\n", params.offset, maxMemory);
 		}
 	}
 }
 
-_compute SpawnableBlock ParseSpawnableBlock(uint8_t* bytes, uint8_t* putSpawnablesHere, SpawnableConfig sCfg, int maxMemory)
+_compute SpawnableBlock ParseSpawnableBlock(const uint8_t* block, MemSpan spawnables_block, const SpawnableConfig& sCfg, int seed, int sCount)
 {
 	int offset = 0;
-	int seed = readInt(bytes, offset);
-	int sCount = readInt(bytes, offset);
-
-	Spawnable** spawnables = (Spawnable**)putSpawnablesHere;
-	if (sCount * sizeof(Spawnable*) > maxMemory) printf("ran out of map memory: %i of %i bytes used\n", (int)(sCount * sizeof(Spawnable*)), maxMemory);
+	Spawnable** spawnables = (Spawnable**)spawnables_block.ptr;
+	if (!spawnables_block.is_safe(max(0, sCount * (int)sizeof(Spawnable*) - 1)))
+		printf("ParseSpawnableBlock(): Ran out of pointer block memory.\n");
 	for (int i = 0; i < sCount; i++)
 	{
-		Spawnable* s = (Spawnable*)(bytes + offset);
+		Spawnable* s = (Spawnable*)(block + offset);
 		spawnables[i] = s;
 		offset += 9;
-		int count = readInt(bytes, offset);
+		int count = readInt(block, offset);
 		offset += count;
 	}
 	SpawnableBlock ret{ seed, sCount, spawnables };

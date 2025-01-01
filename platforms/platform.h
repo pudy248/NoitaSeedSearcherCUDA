@@ -29,7 +29,7 @@ void AllocateComputeMemory();
 void FreeComputeMemory();
 
 //Generates compute-accessible data from host pointers.
-void* UploadToDevice(void* hostMem, size_t size);
+void* UploadToDevice(const void* hostMem, size_t size);
 BiomeSpawnFunctions* GetSpawnFunc(Biome b);
 
 //Creates or destroys a persistent worker that can recieve jobs.
