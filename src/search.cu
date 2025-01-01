@@ -137,40 +137,47 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 		if (rnd <= 7) writeByte(params.bytes, params.offset, BOMB);
 		else if (rnd <= 40)
 		{
+			int amount = 5;
 			rnd = random.Random(0, 100);
+			if (rnd <= 80) {
+				amount = 7;
+			}
+			else if (rnd <= 95) {
+				amount = 10;
+			}
+			else {
+				amount = 20;
+			}
 
 			rnd = random.Random(0, 100);
-			if (rnd > 99)
-			{
+			if (rnd > 30) {
+				random.Next();
+				random.Next();
+			}
+			else if (rnd > 99) {
 				int tamount = random.Random(1, 3);
-				for (int i = 0; i < tamount; i++)
-				{
-					random.Random(-10, 10);
-					random.Random(-10, 5);
+				for (int i = 0; i < tamount; i++) {
+					random.Next();
+					random.Next();
 				}
-				if (random.Random(0, 100) > 50)
-				{
+				if (random.Random(0, 100) > 50) {
 					tamount = random.Random(1, 3);
-					for (int i = 0; i < tamount; i++)
-					{
-						random.Random(-10, 10);
-						random.Random(-10, 5);
+					for (int i = 0; i < tamount; i++) {
+						random.Next();
+						random.Next();
 					}
 				}
-				if (random.Random(0, 100) > 80)
-				{
+				if (random.Random(0, 100) > 80) {
 					tamount = random.Random(1, 3);
-					for (int i = 0; i < tamount; i++)
-					{
-						random.Random(-10, 10);
-						random.Random(-10, 5);
+					for (int i = 0; i < tamount; i++) {
+						random.Next();
+						random.Next();
 					}
 				}
 			}
-			else
-			{
-				random.Random(-10, 10);
-				random.Random(-10, 5);
+			for (int i = 0; i < amount; i++) {
+				random.Next();
+				random.Next();
 			}
 			writeByte(params.bytes, params.offset, GOLD_NUGGETS);
 		}
@@ -835,6 +842,32 @@ _compute void CheckEyeRooms(const SpawnParams& params)
 				writeShort(params.bytes, params.offset, MakeRandomCard(random));
 			}
 		}
+	}
+}
+
+_compute void CheckNightmareSpawnWands(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount) {
+	int wx = 703;
+	float width = 132.f / 3;
+	int wy = -94;
+	int wtiers[] = {2, 2, 3, 1, 2, 3};
+	int wtypes[] = { WAND_T2, WAND_T2B, WAND_T3, WAND_T1NS, WAND_T2NS, WAND_T3NS };
+	if (sCfg->nightmare) {
+		writeInt(bytes, offset, wx);
+		writeInt(bytes, offset, wy);
+		writeByte(bytes, offset, TYPE_NIGHTMARE_WAND);
+		int countOffset = offset;
+		offset += 4;
+		for (int i = 0; i < 3; i++) {
+			Wand w = GetWandWithLevel(seed, wx + width * i, wy, wtiers[0], false, false);
+			writeByte(bytes, offset, DATA_WAND);
+			cMemcpyU(bytes + offset, &w.capacity, 37);
+			offset += 37;
+			cMemcpyU(bytes + offset, w.spells, w.spellCount * 3);
+			offset += w.spellCount * 3;
+
+		}
+		writeInt(bytes, countOffset, offset - countOffset - 4);
+		sCount += 1;
 	}
 }
 

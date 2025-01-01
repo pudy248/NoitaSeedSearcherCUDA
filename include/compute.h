@@ -1,10 +1,10 @@
 ﻿#pragma once
-
 #include "../platforms/platform_implementation.h"
 #include "../include/primitives.h"
 #include "../include/worldgen_structs.h"
 #include "../include/noita_random.h"
-
+#undef max
+#include <cstdio>
 #include <vector>
 
 _compute void CopySpawnFuncs();

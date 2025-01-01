@@ -21,7 +21,8 @@ struct FungalShift
 	bool toFlask;
 	int minIdx;
 	int maxIdx;
-	_universal constexpr FungalShift();
+	int randomRoll = 0;
+	_universal FungalShift();
 	_universal FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx);
 };
 

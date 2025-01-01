@@ -158,6 +158,15 @@ namespace DATA_SCRIPTS
 	}
 }
 
+			printf("_data const static int spellProbs_%i_Counts[] = {\n", tier);
+			for (int t = 0; t < 8; t++)
+			{
+				printf("%i,\n", counters[t]);
+			}
+			printf("};\n\n");
+		}
+	}
+}
 int main()
 {
 	int biomeCount = 0;
@@ -184,7 +193,7 @@ int main()
 	config.generalCfg.endSeed = 100;
 #endif
 #ifdef REALTIME_SEEDS
-	generalCfg.seedBlockSize = 1;
+	config.generalCfg.seedBlockSize = 1;
 #endif
 	config.spawnableCfg = {
 		{0, 0}, {0, 0}, 0, 0,
@@ -200,6 +209,7 @@ int main()
 		false, //biome pixelscenes
 		false, //enemies
 		false, //hell shops
+		false, //nightmare
 		false, //potion contents
 		false, //chest spells
 		false, //wand stats
@@ -214,10 +224,12 @@ int main()
 		{true, GOLD}, // flask
 		{false, SPELL_NONE, SPELL_NONE},
 		{false, MATERIAL_NONE},
-		{false, AlchemyOrdering::UNORDERED, {}, {}},
+		{false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
 		{false, {}},
-		{false, {}},
-		{false, {}, {3, 3, 3, 3, 3, 3, 3}},
+		{false, {FungalShift(SS_DIAMOND, SD_FLASK, 0, 1), FungalShift(SS_FLASK, SD_DIAMOND, 1, 2)}},
+		{false, {
+			{PERK_ANGRY_GHOST, false, 0, 3},
+		}, {PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, { 3, 3, 3, 3, 3, 3, 3 }},
 	};
 
 	config.outputCfg = { 1.f, true, false };

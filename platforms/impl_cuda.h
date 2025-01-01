@@ -11,53 +11,49 @@
 #include <iostream>
 
 //Copy/pasted standard CUDA error handler
-static const char* _cudaGetErrorEnum(cudaError_t error)
-{
-	return cudaGetErrorName(error);
-}
-template <typename T>
-void check(T result, char const* const func, const char* const file,
-	int const line)
-{
-	if (result)
-	{
-		fprintf(stderr, "CUDA error at %s:%d code=%d(%s) \"%s\" \n", file, line,
-			static_cast<unsigned int>(result), _cudaGetErrorEnum(result), func);
-		exit(EXIT_FAILURE);
+namespace cuda_error_helpers {
+	static const char* _cudaGetErrorEnum(cudaError_t error) {
+		return cudaGetErrorName(error);
 	}
-}
+	template <typename T>
+	void check(T result, char const* const func, const char* const file,
+		int const line) {
+		if (result) {
+			fprintf(stderr, "CUDA error at %s:%d code=%d(%s) \"%s\" \n", file, line,
+				static_cast<unsigned int>(result), _cudaGetErrorEnum(result), func);
+			exit(EXIT_FAILURE);
+		}
+	}
 #define checkCudaErrors(val) check((val), #val, __FILE__, __LINE__)
 #define getLastCudaError(msg) __getLastCudaError(msg, __FILE__, __LINE__)
-inline void __getLastCudaError(const char* errorMessage, const char* file,
-	const int line)
-{
-	cudaError_t err = cudaGetLastError();
+	inline void __getLastCudaError(const char* errorMessage, const char* file,
+		const int line) {
+		cudaError_t err = cudaGetLastError();
 
-	if (cudaSuccess != err)
-	{
-		fprintf(stderr,
-			"%s(%i) : getLastCudaError() CUDA error :"
-			" %s : (%d) %s.\n",
-			file, line, errorMessage, static_cast<int>(err),
-			cudaGetErrorString(err));
-		exit(EXIT_FAILURE);
+		if (cudaSuccess != err) {
+			fprintf(stderr,
+				"%s(%i) : getLastCudaError() CUDA error :"
+				" %s : (%d) %s.\n",
+				file, line, errorMessage, static_cast<int>(err),
+				cudaGetErrorString(err));
+			exit(EXIT_FAILURE);
+		}
 	}
-}
 #define printLastCudaError(msg) __printLastCudaError(msg, __FILE__, __LINE__)
-inline void __printLastCudaError(const char* errorMessage, const char* file,
-	const int line)
-{
-	cudaError_t err = cudaGetLastError();
+	inline void __printLastCudaError(const char* errorMessage, const char* file,
+		const int line) {
+		cudaError_t err = cudaGetLastError();
 
-	if (cudaSuccess != err)
-	{
-		fprintf(stderr,
-			"%s(%i) : getLastCudaError() CUDA error :"
-			" %s : (%d) %s.\n",
-			file, line, errorMessage, static_cast<int>(err),
-			cudaGetErrorString(err));
+		if (cudaSuccess != err) {
+			fprintf(stderr,
+				"%s(%i) : getLastCudaError() CUDA error :"
+				" %s : (%d) %s.\n",
+				file, line, errorMessage, static_cast<int>(err),
+				cudaGetErrorString(err));
+		}
 	}
 }
+using namespace cuda_error_helpers;
 
 //CUDA-specific kernel config structs
 #ifdef SINGLE_THREAD
@@ -134,12 +130,12 @@ void AllocateComputeMemory() {
 	cudaMemGetInfo(&freeMem, &physicalMem);
 	printf("Memory free: %lli of %lli bytes\n", freeMem, physicalMem);
 	freeMem *= 0.9f; //leave a bit of extra
-	freeMem = min(freeMem, config.memSizes.memoryCap);
+	freeMem = std::min(freeMem, config.memSizes.memoryCap);
 
 	size_t memPerThread = GetMinimumSpanMemory() + GetMinimumOutputMemory();
 	//printf("Each thread requires %lli bytes of block memory\n", memPerThread);
 
-	int numThreads = min((uint64_t)(config.generalCfg.endSeed - config.generalCfg.seedStart), freeMem / memPerThread);
+	int numThreads = std::min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart), freeMem / memPerThread);
 	int numBlocks = numThreads / BLOCKSIZE;
 	NumBlocks = max(min(MAXBLOCKS, numBlocks - numBlocks % 1), 1);
 	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.endSeed - config.generalCfg.seedStart) / (NumBlocks * BLOCKSIZE) + 1);
@@ -201,8 +197,10 @@ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig co
 	uint8_t* threadMemBlock = dPointers.dArena + arenaPitch * (memIdx * BLOCKSIZE + hwIdx);
 	uint8_t* outputPtr = dPointers.uOutput + config.memSizes.outputSize * (memIdx * BLOCKSIZE + hwIdx);
 	SpanRet ret = EvaluateSpan(config, KIO_params(ioPtr)[hwIdx], threadMemBlock, outputPtr);
-	memcpy(&KIO_ret(ioPtr)[hwIdx], &ret, sizeof(SpanRet));
-	//dAtomicAdd((int*)dPointers.numActiveThreads, -1);
+
+	for (uint64_t i = 0; i < sizeof(SpanRet) / sizeof(uint64_t); i++)
+		((uint64_t*)&KIO_ret(ioPtr)[hwIdx])[i] = ((uint64_t*)&ret)[i];
+	//memcpy(&KIO_ret(ioPtr)[hwIdx], &ret, sizeof(SpanRet));
 }
 
 void DispatchJob(Worker& worker, SpanParams* spans) {

@@ -2,6 +2,7 @@
 
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
+#include "../include/pngutils.h"
 
 #include <cstdio>
 #include <fstream>
@@ -61,9 +62,10 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		}
 #endif
 
-		//CheckMountains(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
-		//CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
-		//threadSync();
+		CheckMountains(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		CheckNightmareSpawnWands(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		threadSync();
 
 		SpawnableBlock result = ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
 		threadSync();
@@ -93,6 +95,9 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	uint32_t checkedSeeds = 0;
 	uint32_t passedSeeds = 0;
 
+	int dbg_seed_loop_ctr = 1;
+	int dbg_seed_loop_max = 1;
+
 	uint32_t currentSeed = config.generalCfg.seedStart;
 	int index = 0;
 	int stoppedBlocks = 0;
@@ -101,6 +106,8 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 
 	std::vector<Worker> workers(NumWorkers);
 	SpanParams* params = (SpanParams*)malloc(WorkerAppetite * sizeof(SpanParams));
+	bool* stopped = (bool*)malloc(NumWorkers);
+	memset(stopped, false, NumWorkers);
 	uint8_t* hOutput = (uint8_t*)malloc(NumWorkers * WorkerAppetite * config.memSizes.outputSize);
 
 	//initial dispatch
@@ -110,29 +117,32 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	}
 	for (int i = 0; i < NumWorkers; i++)
 	{
-		if (currentSeed < config.generalCfg.endSeed)
+		if (currentSeed < config.generalCfg.seedEnd)
 		{
 			for (int j = 0; j < WorkerAppetite; j++)
 			{
-				if (currentSeed >= config.generalCfg.endSeed)
+				if (currentSeed >= config.generalCfg.seedEnd)
 				{
 					params[j] = { 0, 0 };
 					continue;
 				}
 				uint32_t nextSeed = currentSeed;
-#ifdef REALTIME_SEEDS
-				uint8_t* output = pointers.hPointers.hOutput + (index * BLOCKSIZE + inputIdx) * config.memSizes.outputSize;
+				uint8_t* output = hOutput + (i * WorkerAppetite + j) * config.memSizes.outputSize;
 				int _ = 0;
 				writeInt(output, _, currentSeed);
-				nextSeed = GenerateSeed(startTime + currentSeed);
+#ifdef REALTIME_SEEDS
+				nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
-				uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
+				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
 				params[j] = { (int)nextSeed, (int)length };
 				currentSeed += length;
 			}
 			DispatchJob(workers[i], params);
 		}
-		else stoppedBlocks++;
+		else {
+			stoppedBlocks++;
+			stopped[i] = true;
+		}
 	}
 
 	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
@@ -145,6 +155,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			for (int i = 0; i < NumWorkers; i++)
 				AbortJob(workers[i]);
 			break;
+		}
+		if (currentSeed >= config.generalCfg.seedEnd && dbg_seed_loop_ctr < dbg_seed_loop_max) {
+			dbg_seed_loop_ctr++;
+			currentSeed = config.generalCfg.seedStart;
 		}
 
 		if (index == 0)
@@ -173,7 +187,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				lastDiff = checkedSeeds - lastSeed;
 				lastSeed = checkedSeeds;
 				displayIntervals++;
-				float percentComplete = ((float)(checkedSeeds) / (config.generalCfg.endSeed - config.generalCfg.seedStart));
+				float percentComplete = ((float)(checkedSeeds) / (config.generalCfg.seedEnd - config.generalCfg.seedStart));
 				progress.progressPercent = percentComplete;
 				int seconds = (displayIntervals - 1) * config.outputCfg.printInterval;
 				int minutes = seconds / 60;
@@ -184,7 +198,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			}
 		}
 
-		if (QueryWorker(workers[index]))
+		if (!stopped[index] && QueryWorker(workers[index]))
 		{
 			SpanRet* returns = SubmitJob(workers[index]);
 			returnedBlocksThisIter++;
@@ -212,34 +226,37 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					params[inputIdx++] = { returns[i].seedStart + returns[i].seedCount - returns[i].leftoverSeeds, returns[i].leftoverSeeds };
 				};
 			}
-			if (inputIdx > 0 || currentSeed < config.generalCfg.endSeed)
+			if (inputIdx > 0 || currentSeed < config.generalCfg.seedEnd)
 			{
 				for (int i = 0; i < WorkerAppetite; i++)
 				{
-					if (currentSeed >= config.generalCfg.endSeed || returns[i].seedFound)
+					if (currentSeed >= config.generalCfg.seedEnd || returns[i].seedFound)
 						continue;
 					uint32_t nextSeed = currentSeed;
-#ifdef REALTIME_SEEDS
-					uint8_t* output = pointers.hPointers.hOutput + (index * BLOCKSIZE + inputIdx) * config.memSizes.outputSize;
+					uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 					int _ = 0;
 					writeInt(output, _, currentSeed);
-					nextSeed = GenerateSeed(startTime + currentSeed);
+#ifdef REALTIME_SEEDS
+					nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
-					uint32_t length = min(config.generalCfg.seedBlockSize, config.generalCfg.endSeed - currentSeed);
+					uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
 					params[inputIdx++] = { (int)nextSeed, (int)length };
 					currentSeed += length;
 				}
 				DispatchJob(workers[index], params);
 			}
-			else
+			else {
 				stoppedBlocks++;
+				stopped[index] = true;
+			}
 
 			for (int i = 0; i < WorkerAppetite; i++)
 			{
 				if (!hasOutput[i]) continue;
 				uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 
-				PrintOutputBlock(output, outputFile, config.outputCfg, appendOutput);
+				int time[2] = { times[i], (int)startTime };
+				PrintOutputBlock(output, time, outputFile, config.outputCfg, appendOutput);
 			}
 			free(times);
 			free(hasOutput);
@@ -250,6 +267,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	for (int i = 0; i < NumWorkers; i++) DestroyWorker(workers[i]);
 	workers.clear();
 	free(params);
+	free(stopped);
 	free(hOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();

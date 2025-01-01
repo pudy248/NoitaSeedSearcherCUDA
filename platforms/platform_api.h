@@ -65,7 +65,7 @@ namespace PLATFORM_API
 	//Sets how many worker jobs should be dispatched per second, on average.
 	void SetTargetDispatchRate(int dispatchesPerSecond)
 	{
-		API_INTERNAL::DispatchRate = max(1, dispatchesPerSecond / 20);
+		API_INTERNAL::DispatchRate = std::max(1, dispatchesPerSecond / 20);
 	}
 	//Span evaluation will want to know what to look for, this will provide the relevant information.
 	SearchConfig GetSearchConfig()

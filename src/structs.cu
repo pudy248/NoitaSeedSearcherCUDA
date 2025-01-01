@@ -211,7 +211,7 @@ _universal bool AlchemyRecipe::Equals(AlchemyRecipe reference, AlchemyRecipe tes
 	}
 }
 
-_universal constexpr FungalShift::FungalShift() : from(SS_NONE), to(SD_NONE), fromFlask(false), toFlask(false), minIdx(0), maxIdx(0) { }
+_universal FungalShift::FungalShift() : from(SS_NONE), to(SD_NONE), fromFlask(false), toFlask(false), minIdx(0), maxIdx(0) { }
 _universal FungalShift::FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx)
 {
 	if (_from == SS_FLASK) { from = SS_NONE; fromFlask = true; }

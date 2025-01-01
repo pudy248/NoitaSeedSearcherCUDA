@@ -27,6 +27,7 @@ public:
 	_universal float Next();
 	_universal double NextD();
 	_universal int Random(int a, int b);
+	_universal int RandomD(int a, int b);
 	_universal float ProceduralRandomf(double x, double y, float a, float b);
 	_universal int ProceduralRandomi(double x, double y, int a, int b);
 	_universal _noinline float GetDistribution(float mean, float sharpness, float baseline);
@@ -40,4 +41,4 @@ _compute int random_nexti(float min, float max, NollaPRNG& random, Vec2i& rnd);
 _compute int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, Vec2i& rnd);
 _compute int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, Vec2i& rnd);
 
-_compute int pick_world_seed(uint64_t time);
+int pick_world_seed(uint64_t time);

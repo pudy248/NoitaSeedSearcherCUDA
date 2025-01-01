@@ -9,7 +9,7 @@
 struct GeneralConfig
 {
 	uint32_t seedStart;
-	uint32_t endSeed;
+	uint32_t seedEnd;
 	uint32_t seedBlockSize;
 	bool seedBlockOverride;
 };
@@ -70,6 +70,7 @@ struct PerkConfig
 {
 	bool check;
 	PerkInfo perks[maxPerkFilters];
+	Perk ignore_these[2];
 	uint8_t perksPerMountain[7];
 };
 
@@ -107,6 +108,7 @@ struct SpawnableConfig
 	bool biomePixelScenes;
 	bool biomeEnemies;
 	bool hellShops;
+	bool nightmare;
 
 	bool genPotions;
 	bool genSpells;
@@ -116,6 +118,7 @@ struct SpawnableConfig
 struct FilterConfig
 {
 	bool aggregate;
+	bool upwarp;
 	int itemFilterCount;
 	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
 	int materialFilterCount;
@@ -130,7 +133,11 @@ struct FilterConfig
 
 struct OutputConfig
 {
+	// 0=human-readable, 1=code, 2=binary
+	int outputMode;
+
 	float printInterval;
 	bool printProgressLog;
 	bool printOutputToConsole;
+	bool printOutputToFile;
 };

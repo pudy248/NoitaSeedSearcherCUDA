@@ -3,12 +3,10 @@
 #include "../include/search_structs.h"
 #include "../include/worldgen_structs.h"
 #include "../include/compute.h"
-#include "../include/compute.h"
-
 
 namespace FUNCS_COALMINE
 {
-
+	/*
 	_data BiomeWands wandLevels(
 		{
 			WandLevel(17, UNKNOWN_WAND),
@@ -111,9 +109,9 @@ namespace FUNCS_COALMINE
 		SpawnFunction(0xff0aff, FUNCS_COALMINE::spawn_pixel_scene_01),
 		SpawnFunction(0xff0080, FUNCS_COALMINE::spawn_pixel_scene_02),
 		SpawnFunction(0xc35700, FUNCS_COALMINE::spawn_oiltank),
-	});
+	});*/
 };
-
+/*
 _data static BiomeSpawnFunctions _DefaultFunctions(NULL, {
 	SpawnFunction(0x78ffff, spawnHeart),
 	SpawnFunction(0x55ff8c, spawnChest),
@@ -123,7 +121,7 @@ _data static BiomeSpawnFunctions _DefaultFunctions(NULL, {
 	//SpawnFunction(0x800000, params.spawnBigEnemies),
 	//SpawnFunction(0x808000, spawnHellShop),
 });
-
+*/
 _compute void CopySpawnFuncs()
 {
 	AllSpawnFunctions[0] = &_DefaultFunctions;

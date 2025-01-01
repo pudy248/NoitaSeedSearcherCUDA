@@ -17,34 +17,28 @@ _compute static AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed
 	AlchemyRecipe result;
 	int counter = 0;
 	int failed = 0;
-	while (counter < 3 && failed < 99999)
-	{
-		int r = (int)(prng.Next() * alchemyLiquidCount);
+	while (counter < 3 && failed < 99999) {
+		int r = prng.Random(0, alchemyLiquidCount - 1);
 		Material picked = alchemyLiquids[r];
 		bool duplicate = false;
-		for (int i = 0; i < counter; i++)
-		{
+		for (int i = 0; i < counter; i++) {
 			if (picked == result.mats[i]) duplicate = true;
 		}
 		if (duplicate) failed++;
-		else
-		{
+		else {
 			result.mats[counter++] = picked;
 		}
 	}
 	failed = 0;
-	while (counter < 4 && failed < 99999)
-	{
-		int r = (int)(prng.Next() * alchemySolidCount);
+	while (counter < 4 && failed < 99999) {
+		int r = prng.Random(0, alchemySolidCount - 1);
 		Material picked = alchemySolids[r];
 		bool duplicate = false;
-		for (int i = 0; i < counter; i++)
-		{
+		for (int i = 0; i < counter; i++) {
 			if (picked == result.mats[i]) duplicate = true;
 		}
 		if (duplicate) failed++;
-		else
-		{
+		else {
 			result.mats[counter++] = picked;
 		}
 	}
@@ -53,7 +47,7 @@ _compute static AlchemyRecipe MaterialPicker(NollaPRNG& prng, uint32_t worldSeed
 	prng2.Next();
 	for (int i = 3; i >= 0; i--)
 	{
-		int r = (int)(prng2.Next() * (i + 1));
+		int r = prng2.Random(0, i);
 		Material temp = result.mats[i];
 		result.mats[i] = result.mats[r];
 		result.mats[r] = temp;
@@ -71,61 +65,45 @@ _compute static bool MaterialRefEquals(Material reference, Material test)
 	if (test == MATERIAL_NONE) return false;
 	return reference == test;
 }
-_compute static bool MaterialEquals(Material reference, Material test, bool writeRef, int* ptrs, Material* variables)
+_compute static bool MaterialEquals(Material reference, Material test, int* ptrs, Material* variables)
 {
 	if (reference == MATERIAL_NONE) return true;
 	else if ((int)reference <= MATERIAL_VAR4)
 	{
 		int idx = (int)reference - 1;
-		if (writeRef)
+		bool foundVar = false;
+		for (int i = 0; i < ptrs[idx]; i++)
 		{
-			if (ptrs[idx] >= materialVarEntryCount) printf("Material variable %i space ran out!\n", idx);
-			else variables[idx * materialVarEntryCount + ptrs[idx]++] = test;
-			return true;
+			if (MaterialRefEquals(variables[idx * materialVarEntryCount + i], test))
+				foundVar = true;
 		}
-		else
-		{
-			bool foundVar = false;
-			for (int i = 0; i < ptrs[idx]; i++)
-			{
-				if (MaterialRefEquals(variables[idx * materialVarEntryCount + i], test))
-					foundVar = true;
-			}
-			return foundVar;
-		}
+		return foundVar;
 	}
 
 	if (test == MATERIAL_NONE) return false;
-	/*if ((int)test <= MATERIAL_VAR4)
-	{
-		int idx = (int)test - 1;
-		if (writeRef)
-		{
-			if (ptrs[idx] >= materialVarEntryCount) printf("Material variable %i space ran out!\n", idx);
-			else variables[idx * materialVarEntryCount + ptrs[idx]++] = reference;
-			return true;
-		}
-		else
-		{
-			bool foundVar = false;
-			for (int i = 0; i < ptrs[idx]; i++)
-			{
-				if (MaterialEquals(reference, variables[idx * materialVarEntryCount + i], writeRef, ptrs, variables))
-					foundVar = true;
-			}
-			return foundVar;
-		}
-	}*/
+	return reference == test;
+}
+_compute static bool MaterialSetVars(Material reference, Material test, int* ptrs, Material* variables) {
+	if (reference == MATERIAL_NONE) return true;
+	else if ((int)reference <= MATERIAL_VAR4) {
+		int idx = (int)reference - 1;
+		if (ptrs[idx] >= materialVarEntryCount) printf("Material variable %i space ran out!\n", idx);
+		else variables[idx * materialVarEntryCount + ptrs[idx]++] = test;
+		return true;
+	}
 
+	if (test == MATERIAL_NONE) return false;
 	return reference == test;
 }
 
 _compute static bool FungalShiftEquals(FungalShift reference, FungalShift test, int ptrs[4], Material vars[materialVarEntryCount * 4])
 {
+	if (reference.to == SD_FL_GOLD || reference.to == SD_FL_GRASS_HOLY)
+		return (test.randomRoll == 1) && test.toFlask && MaterialEquals((Material)reference.from, (Material)test.from, ptrs, vars);
 	if (reference.fromFlask && !test.fromFlask) return false;
 	if (reference.toFlask && !test.toFlask) return false;
-	if (!MaterialEquals((Material)reference.from, (Material)test.from, false, ptrs, vars)) return false;
-	if (!MaterialEquals((Material)reference.to, (Material)test.to, false, ptrs, vars)) return false;
+	if (!MaterialEquals((Material)reference.from, (Material)test.from, ptrs, vars)) return false;
+	if (!MaterialEquals((Material)reference.to, (Material)test.to, ptrs, vars)) return false;
 	return true;
 }
 
@@ -260,15 +238,17 @@ _compute static bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c)
 	for (int i = 0; i < maxFungalShifts; i++)
 	{
 		random.SetRandomSeedInt(89346, 42345 + i);
-		Vec2i rnd = { 9123,58925 + i };
+		Vec2i rnd = { 9123,42345 + i };
 		generatedShifts[i].from = fungalMaterialsFrom[pick_random_from_table_weighted(fungalProbsFrom, fungalSumFrom, fungalMaterialsFromCount, random, rnd)];
 		generatedShifts[i].to = fungalMaterialsTo[pick_random_from_table_weighted(fungalProbsTo, fungalSumTo, fungalMaterialsToCount, random, rnd)];
 		if (random_nexti(1, 100, random, rnd) <= 75)
 		{
 			if (random_nexti(1, 100, random, rnd) <= 50)
 				generatedShifts[i].fromFlask = true;
-			else
+			else {
+				generatedShifts[i].randomRoll = random_nexti(1, 1000, random, rnd);
 				generatedShifts[i].toFlask = true;
+			}
 		}
 	}
 
@@ -282,9 +262,8 @@ _compute static bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c)
 		{
 			for (int j = c.shifts[i].minIdx; j < c.shifts[i].maxIdx; j++)
 			{
-				if (MaterialEquals((Material)c.shifts[i].from, (Material)generatedShifts[j].from, false, ptrs, variables))
-					MaterialEquals((Material)c.shifts[i].to, (Material)generatedShifts[j].to, true, ptrs, variables);
-				//this has side effects when the bool is true, it looks kinda funny out of context tho
+				if (MaterialEquals((Material)c.shifts[i].from, (Material)generatedShifts[j].from, ptrs, variables))
+					MaterialSetVars((Material)c.shifts[i].to, (Material)generatedShifts[j].to, ptrs, variables);
 			}
 		}
 	}
@@ -333,9 +312,11 @@ _compute static bool CheckPerks(NollaPRNG& random, PerkConfig c)
 	int perkDeckIdx = 0;
 	for (int i = 0; i < maxPerkCount; i++) perkDeck[i] = PERK_NONE;
 
-
 	for (int i = 0; i < perkCount; i++)
 	{
+		if (i + 1 == c.ignore_these[0] || i + 1 == c.ignore_these[1]) {
+			continue;
+		}
 		PerkData perkData = perkAttrs[i];
 		if (perkData.not_default) continue;
 

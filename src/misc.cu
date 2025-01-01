@@ -21,7 +21,7 @@ _universal int readInt(const uint8_t* ptr, int& offset)
 	int tmp;
 	memcpy(&tmp, ptr + offset, 4);
 	offset += 4;
-	return tmp;
+	return (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | (ptr[0]);
 }
 _universal void writeInt(MemSpan ptr, int& offset, int val)
 {
@@ -29,6 +29,10 @@ _universal void writeInt(MemSpan ptr, int& offset, int val)
 		printf("writeByte(): Ran out of space.\n");
 	memcpy(ptr.ptr + offset, &val, 4);
 	offset += 4;
+	ptr[0] = val;
+	ptr[1] = val >> 8;
+	ptr[2] = val >> 16;
+	ptr[3] = val >> 24;
 }
 _universal void incrInt(int* ptr)
 {
@@ -65,7 +69,7 @@ _universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr)
 _universal WandData readMisalignedWand(const WandData* wPtr)
 {
 	WandData w = {};
-	memcpy(&w, wPtr, 37);
+	cMemcpyU(&w, wPtr, 37);
 	return w;
 }
 
@@ -103,7 +107,7 @@ _universal static uint64_t SetRandomSeedHelper(double r)
 
 	uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
 	uint64_t a = (uint64_t)j << 0x20 | j;
-	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
+	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
 _universal static uint64_t SetRandomSeedHelperInt(int64_t r)
@@ -120,7 +124,7 @@ _universal static uint64_t SetRandomSeedHelperInt(int64_t r)
 
 	uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
 	uint64_t a = (uint64_t)j << 0x20 | j;
-	int64_t b = ((~a & h) | (f << (-0x433) & a)) * c;
+	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
 _universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
@@ -157,7 +161,12 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 	double y_ = y + c;
 
 	double r = x_ * 134217727.0;
-	uint64_t e = SetRandomSeedHelper(r);
+	// Apparently equivalent?
+	// Seems to be correct for the inputs that get generated anyway.
+	uint32_t e = (uint32_t)(int64_t)r; //SetRandomSeedHelper(r);
+	// Debug, remove later
+	if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("e %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
+
 
 	uint64_t _x = *(uint64_t*)&x_ & 0x7fffffffffffffff;
 	uint64_t _y = *(uint64_t*)&y_ & 0x7fffffffffffffff;
@@ -174,7 +183,8 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 		r = y_;
 	}
 
-	uint64_t f = SetRandomSeedHelper(r);
+	uint32_t f = (uint32_t)(int64_t)r; //SetRandomSeedHelper(r);
+	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("f %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
 
 	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
 
@@ -288,7 +298,17 @@ _universal int NollaPRNG::Random(int a, int b)
 		v4 += 0x7fffffff;
 	}
 	Seed = v4;
-	return a + (int)(((uint64_t)(b + 1 - a) * (uint64_t)Seed) >> 31);
+	//return a + (int)(((b - a + 1) * (uint64_t)(Seed)) >> 31);
+	return a + (int)(((double)(b - a + 1) * (double)Seed * 4.656612875e-10));
+	//return a + (int)(((float)(b + 1 - a) * (float)Seed * 4.656612875e-10f));
+}
+_universal int NollaPRNG::RandomD(int a, int b) {
+	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
+	if (v4 < 0) {
+		v4 += 0x7fffffff;
+	}
+	Seed = v4;
+	return a + (int)(((double)(b - a + 1) * (double)Seed * 4.656612875e-10));
 }
 _universal float NollaPRNG::ProceduralRandomf(double x, double y, float a, float b)
 {
@@ -386,7 +406,7 @@ _compute int pick_random_from_table_weighted(const float* probs, float sum, int 
 	return 0;
 }
 
-_compute int pick_world_seed(uint64_t time)
+int pick_world_seed(uint64_t time)
 {
 	if (time > 0x7fffffff)
 		time >>= 1;
@@ -413,7 +433,7 @@ _compute int pick_world_seed(uint64_t time)
 	return out;
 }
 
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size)
+_compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size)
 {
 	uint8_t* ptr = arena.ptr + arena.offset;
 	arena.offset += size;
