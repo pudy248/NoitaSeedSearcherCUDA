@@ -154,9 +154,6 @@ namespace DATA_SCRIPTS
 				printf("%i,\n", counters[t]);
 			}
 			printf("};\n\n");
-		}
-	}
-}
 
 			printf("_data const static int spellProbs_%i_Counts[] = {\n", tier);
 			for (int t = 0; t < 8; t++)
@@ -171,7 +168,7 @@ int main()
 {
 	int biomeCount = 0;
 	int maxMapArea = 0;
-	//InstantiateBiome("resources/wang_tiles/coalmine.png", config.biomeScopes, biomeCount, maxMapArea);
+	InstantiateBiome("resources/wang_tiles/coalmine.png", config.biomeScopes, biomeCount, maxMapArea);
 	config.biomeCount = biomeCount;
 
 	config.memSizes = {
@@ -203,10 +200,10 @@ int main()
 		false, //shop wands
 		false, //eye rooms
 		false, //upwarp check
-		false, //biome chests
+		true, //biome chests
 		false, //biome pedestals
 		false, //biome altars
-		false, //biome pixelscenes
+		true, //biome pixelscenes
 		false, //enemies
 		false, //hell shops
 		false, //nightmare
@@ -216,12 +213,12 @@ int main()
 	};
 
 	config.filterCfg = {
-		false, 0, {}, 0, {}, 0, {}, 0, {}, false, 27
+		false, false, 1, {ItemFilter({SAMPO})}, 0, {}, 0, {}, 0, {}, false, 27
 	};
 
 	config.precheckCfg = {
 		{false, CART_NONE},
-		{true, GOLD}, // flask
+		{false, GOLD}, // flask
 		{false, SPELL_NONE, SPELL_NONE},
 		{false, MATERIAL_NONE},
 		{false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
@@ -232,7 +229,7 @@ int main()
 		}, {PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, { 3, 3, 3, 3, 3, 3, 3 }},
 	};
 
-	config.outputCfg = { 1.f, true, false };
+	config.outputCfg = { 0, 1.f, true, false, true };
 
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;

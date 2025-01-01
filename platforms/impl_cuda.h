@@ -138,7 +138,7 @@ void AllocateComputeMemory() {
 	int numThreads = std::min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart), freeMem / memPerThread);
 	int numBlocks = numThreads / BLOCKSIZE;
 	NumBlocks = max(min(MAXBLOCKS, numBlocks - numBlocks % 1), 1);
-	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.endSeed - config.generalCfg.seedStart) / (NumBlocks * BLOCKSIZE) + 1);
+	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart) / (NumBlocks * BLOCKSIZE) + 1);
 
 	SetWorkerCount(NumBlocks);
 	SetWorkerAppetite(BLOCKSIZE);
@@ -188,8 +188,8 @@ void DestroyWorker(Worker& worker) {
 	if (worker.stream != NULL) checkCudaErrors(cudaStreamDestroy(worker.stream));
 }
 
+//__maxnreg__(128)
 __global__
-__maxnreg__(128)
 void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig config, int memIdx, int BLOCKSIZE) {
 	//dAtomicAdd((int*)dPointers.numActiveThreads, 1);
 	uint32_t hwIdx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -213,7 +213,11 @@ bool QueryWorker(Worker& worker) {
 	cudaError e = cudaEventQuery(worker.event);
 	if (e == cudaSuccess) return true;
 	else if (e == cudaErrorNotReady) return false;
-	else checkCudaErrors(e);
+	else
+	{
+		checkCudaErrors(e);
+		return true;
+	}
 }
 SpanRet* SubmitJob(Worker& worker) {
 	checkCudaErrors(cudaStreamSynchronize(worker.stream));

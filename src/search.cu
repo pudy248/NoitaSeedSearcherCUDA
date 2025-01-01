@@ -845,29 +845,31 @@ _compute void CheckEyeRooms(const SpawnParams& params)
 	}
 }
 
-_compute void CheckNightmareSpawnWands(int seed, SpawnableConfig* sCfg, uint8_t* bytes, int& offset, int& sCount) {
+_compute void CheckNightmareSpawnWands(const SpawnParams& params) {
 	int wx = 703;
 	float width = 132.f / 3;
 	int wy = -94;
 	int wtiers[] = {2, 2, 3, 1, 2, 3};
 	int wtypes[] = { WAND_T2, WAND_T2B, WAND_T3, WAND_T1NS, WAND_T2NS, WAND_T3NS };
-	if (sCfg->nightmare) {
-		writeInt(bytes, offset, wx);
-		writeInt(bytes, offset, wy);
-		writeByte(bytes, offset, TYPE_NIGHTMARE_WAND);
-		int countOffset = offset;
-		offset += 4;
+	if (params.sCfg.nightmare) {
+		writeInt(params.bytes, params.offset, wx);
+		writeInt(params.bytes, params.offset, wy);
+		writeByte(params.bytes, params.offset, TYPE_NIGHTMARE_WAND);
+		int countOffset = params.offset;
+		params.offset += 4;
 		for (int i = 0; i < 3; i++) {
-			Wand w = GetWandWithLevel(seed, wx + width * i, wy, wtiers[0], false, false);
-			writeByte(bytes, offset, DATA_WAND);
-			cMemcpyU(bytes + offset, &w.capacity, 37);
-			offset += 37;
-			cMemcpyU(bytes + offset, w.spells, w.spellCount * 3);
-			offset += w.spellCount * 3;
+			Wand w = GetWandWithLevel(params.seed, wx + width * i, wy, wtiers[0], false, false);
+			writeByte(params.bytes, params.offset, DATA_WAND);
+			if (!params.bytes.is_safe(params.offset + 36 + w.spellCount * 3))
+				printf("CheckNightmareSpawnWands(): Ran out of output space.\n");
+			cMemcpyU(params.bytes.ptr + params.offset, &w.capacity, 37);
+			params.offset += 37;
+			cMemcpyU(params.bytes.ptr + params.offset, w.spells, w.spellCount * 3);
+			params.offset += w.spellCount * 3;
 
 		}
-		writeInt(bytes, countOffset, offset - countOffset - 4);
-		sCount += 1;
+		writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
+		params.sCount += 1;
 	}
 }
 

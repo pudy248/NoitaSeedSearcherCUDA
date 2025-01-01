@@ -161,7 +161,7 @@ _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, S
 	}
 	if (sf.consecutive) foundCount = largestChain;
 }
-_compute static bool WandFilterPassed(uint32_t seed, Spawnable* s, int count, int howBig)
+_compute static bool WandFilterPassed(Spawnable* s, int count, int howBig)
 {
 	for (int n = 0; n < count; n++)
 	{
@@ -400,7 +400,7 @@ _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg
 			if (failed) continue;
 
 			if (fCfg.checkBigWands)
-				if (!WandFilterPassed(b.seed, s, fCfg.howBig)) continue;
+				if (!WandFilterPassed(s, sDat.count, fCfg.howBig)) continue;
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}

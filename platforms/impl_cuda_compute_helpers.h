@@ -11,7 +11,7 @@ _compute void dAtomicAdd(int* ptr, int val)
 	atomicAdd(ptr, val);
 }
 #define __cMemoryGranularity uint32_t
-_compute void cMemcpy(void* dest, void* source, size_t size)
+_universal void cMemcpy(void* dest, const void* source, size_t size)
 {
 	size_t sizeDiv = size / sizeof(__cMemoryGranularity);
 	for (int i = 0; i < sizeDiv; i++) ((__cMemoryGranularity*)dest)[i] = ((__cMemoryGranularity*)source)[i];
@@ -19,11 +19,11 @@ _compute void cMemcpy(void* dest, void* source, size_t size)
 	//memcpy(dest, source, size);
 	//cudaMemcpyAsync(dest, source, size, cudaMemcpyDeviceToDevice);
 };
-_compute void cMemcpyU(void* dest, void* source, size_t size)
+_universal void cMemcpyU(void* dest, const void* source, size_t size)
 {
 	memcpy(dest, source, size);
 };
-_compute void cMemset(void* dest, int val, size_t size)
+_universal void cMemset(void* dest, int val, size_t size)
 {
 	size_t sizeDiv = size / sizeof(__cMemoryGranularity);
 	for (int i = 0; i < sizeDiv; i++) ((__cMemoryGranularity*)dest)[i] = val;

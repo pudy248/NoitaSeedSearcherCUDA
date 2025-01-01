@@ -7,6 +7,8 @@
 #include "../include/configuration.h"
 #include "../include/worldgen_structs.h"
 
+#include <algorithm>
+
 struct SearchConfig
 {
 	MemSizeConfig memSizes;

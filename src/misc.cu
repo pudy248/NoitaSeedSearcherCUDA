@@ -21,7 +21,7 @@ _universal int readInt(const uint8_t* ptr, int& offset)
 	int tmp;
 	memcpy(&tmp, ptr + offset, 4);
 	offset += 4;
-	return (ptr[3] << 24) | (ptr[2] << 16) | (ptr[1] << 8) | (ptr[0]);
+	return tmp;
 }
 _universal void writeInt(MemSpan ptr, int& offset, int val)
 {
@@ -29,10 +29,6 @@ _universal void writeInt(MemSpan ptr, int& offset, int val)
 		printf("writeByte(): Ran out of space.\n");
 	memcpy(ptr.ptr + offset, &val, 4);
 	offset += 4;
-	ptr[0] = val;
-	ptr[1] = val >> 8;
-	ptr[2] = val >> 16;
-	ptr[3] = val >> 24;
 }
 _universal void incrInt(int* ptr)
 {
@@ -433,7 +429,7 @@ int pick_world_seed(uint64_t time)
 	return out;
 }
 
-_compute uint8_t* ArenaAlloc(MemoryArena& arena, uint64_t size)
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size)
 {
 	uint8_t* ptr = arena.ptr + arena.offset;
 	arena.offset += size;

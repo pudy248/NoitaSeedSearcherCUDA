@@ -3,7 +3,6 @@
 #include "../include/primitives.h"
 #include "../include/worldgen_structs.h"
 #include "../include/noita_random.h"
-#undef max
 #include <cstdio>
 #include <vector>
 
@@ -29,11 +28,12 @@ _compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int 
 _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params);
 _compute void CheckMountains(const SpawnParams& params);
 _compute void CheckEyeRooms(const SpawnParams& params);
+_compute void CheckNightmareSpawnWands(const SpawnParams& params);
 _compute SpawnableBlock ParseSpawnableBlock(const uint8_t* block, MemSpan spawnables_block, const SpawnableConfig& sCfg, int seed, int sCount);
 _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write);
 _compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b);
 
-void PrintOutputBlock(const uint8_t* output, FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*));
+void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*));
 
 struct OutputProgressData
 {

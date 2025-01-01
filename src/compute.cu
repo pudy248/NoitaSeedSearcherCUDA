@@ -61,10 +61,10 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 			threadSync();
 		}
 #endif
-
-		CheckMountains(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
-		CheckEyeRooms(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
-		CheckNightmareSpawnWands(currentSeed, &config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount);
+		SpawnParams p = { currentSeed, *config.biomeScopes[0], config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount };
+		CheckMountains(p);
+		CheckEyeRooms(p);
+		CheckNightmareSpawnWands(p);
 		threadSync();
 
 		SpawnableBlock result = ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
@@ -127,10 +127,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					continue;
 				}
 				uint32_t nextSeed = currentSeed;
+#ifdef REALTIME_SEEDS
 				uint8_t* output = hOutput + (i * WorkerAppetite + j) * config.memSizes.outputSize;
 				int _ = 0;
 				writeInt(output, _, currentSeed);
-#ifdef REALTIME_SEEDS
 				nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
 				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
@@ -233,10 +233,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					if (currentSeed >= config.generalCfg.seedEnd || returns[i].seedFound)
 						continue;
 					uint32_t nextSeed = currentSeed;
+#ifdef REALTIME_SEEDS
 					uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 					int _ = 0;
 					writeInt(output, _, currentSeed);
-#ifdef REALTIME_SEEDS
 					nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
 					uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);

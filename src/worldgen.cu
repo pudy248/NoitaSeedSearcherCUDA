@@ -96,11 +96,11 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 			}
 			printf("\n");
 		}
-#ifndef SEEDS_AS_TRIES
+#ifdef SEEDS_AS_TRIES
+		isValid(b, miscMem, visited);
+#else
 		if (isValid(b, miscMem, visited))
 			break;
-#else
-		isValid(b, miscMem, visited);
 #endif
 	}
 	//printf("%i: %i\n", worldSeed, tries);
