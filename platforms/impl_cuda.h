@@ -7,6 +7,7 @@
 #include "../include/pngutils.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
+#include "../include/wak.h"
 
 #include <iostream>
 
@@ -95,14 +96,14 @@ struct Worker {
 //CUDA doesn't actually require much instantiation. Most of this is just debug info and error handling.
 void InitializePlatform() {
 	int devCount;
-	cudaGetDeviceCount(&devCount);
+	checkCudaErrors(cudaGetDeviceCount(&devCount));
 	if (devCount == 0) {
 		fprintf(stderr, "No CUDA-capable devices detected! Ensure that the CUDA drivers are installed and that your GPU has compute capability >=2.0");
 		exit(EXIT_FAILURE);
 	}
 
 	int device;
-	cudaGetDevice(&device);
+	checkCudaErrors(cudaGetDevice(&device));
 
 	cudaDeviceProp properties;
 	checkCudaErrors(cudaGetDeviceProperties_v2(&properties, 0));
@@ -112,7 +113,7 @@ void InitializePlatform() {
 #endif
 	printf("Running with CUDA backend using device %i: %s.\n", device, properties.name);
 
-	cudaSetDeviceFlags(cudaDeviceMapHost);
+	checkCudaErrors(cudaSetDeviceFlags(cudaDeviceMapHost));
 
 	memIdxCtr = 0;
 }
@@ -127,7 +128,7 @@ void AllocateComputeMemory() {
 	//Determine how many workers we have space for.
 	uint64_t freeMem;
 	uint64_t physicalMem;
-	cudaMemGetInfo(&freeMem, &physicalMem);
+	checkCudaErrors(cudaMemGetInfo(&freeMem, &physicalMem));
 	printf("Memory free: %lli of %lli bytes\n", freeMem, physicalMem);
 	freeMem *= 0.9f; //leave a bit of extra
 	freeMem = std::min(freeMem, config.memSizes.memoryCap);
@@ -166,8 +167,10 @@ void AllocateComputeMemory() {
 	uint8_t* dOverlayMem; //It's probably fine to forget this pointer since we can copy it back from the coalmine_overlay global.
 	checkCudaErrors(cudaMalloc((void**)&dOverlayMem, 3 * 256 * 103));
 	uint8_t* hPtr = (uint8_t*)malloc(3 * 256 * 103);
-	ReadImage("resources/wang_tiles/coalmine_overlay.png", hPtr);
+	ReadBufferImage((uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), hPtr, false);
 	checkCudaErrors(cudaMemcpy(dOverlayMem, hPtr, 3 * 256 * 103, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaDeviceSynchronize());
+	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0));
 	free(hPtr);
 
@@ -178,20 +181,18 @@ void FreeComputeMemory() {
 	//Device reset fixes all woes.
 }
 
-Worker CreateWorker() {
-	Worker w;
-	w.memIdx = memIdxCtr++;
-	checkCudaErrors(cudaStreamCreateWithFlags(&w.stream, cudaStreamNonBlocking));
+Worker* CreateWorker() {
+	Worker* w = new Worker;
+	w->memIdx = memIdxCtr++;
+	checkCudaErrors(cudaStreamCreateWithFlags(&w->stream, cudaStreamNonBlocking));
 	return w;
 }
 void DestroyWorker(Worker& worker) {
 	if (worker.stream != NULL) checkCudaErrors(cudaStreamDestroy(worker.stream));
 }
 
-//__maxnreg__(128)
 __global__
 void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig config, int memIdx, int BLOCKSIZE) {
-	//dAtomicAdd((int*)dPointers.numActiveThreads, 1);
 	uint32_t hwIdx = blockIdx.x * blockDim.x + threadIdx.x;
 	uint8_t* ioPtr = KIO_idx(dPointers.uIO, memIdx);
 	uint8_t* threadMemBlock = dPointers.dArena + arenaPitch * (memIdx * BLOCKSIZE + hwIdx);
@@ -230,27 +231,21 @@ void AbortJob(Worker& worker) {
 	worker.stream = NULL;
 }
 
-void* UploadToDevice(const void* hostMem, size_t size)
-{
-	void* dPtr;
-	checkCudaErrors(cudaMalloc(&dPtr, size));
-	checkCudaErrors(cudaMemcpy(dPtr, hostMem, size, cudaMemcpyHostToDevice));
-	return dPtr;
+void* UploadToDevice(const void* hMem, size_t size) {
+	void* dMem;
+	checkCudaErrors(cudaMalloc(&dMem, size));
+	checkCudaErrors(cudaMemcpy(dMem, hMem, size, cudaMemcpyHostToDevice));
+	return dMem;
 }
-
-__global__ static void __SetSpawnFuncs(void* uPtr, Biome b)
-{
-	CopySpawnFuncs();
-	memcpy(uPtr, AllSpawnFunctions[b], sizeof(BiomeSpawnFunctions));
+__global__ static void _GSetBiomeData() {
+	SetBiomeData();
 }
-BiomeSpawnFunctions* GetSpawnFunc(Biome b)
-{
-	BiomeSpawnFunctions* hPtr, *dPtr, *rPtr = (BiomeSpawnFunctions*)malloc(sizeof(BiomeSpawnFunctions));
-	checkCudaErrors(cudaHostAlloc(&hPtr, sizeof(BiomeSpawnFunctions), cudaHostAllocMapped));
-	checkCudaErrors(cudaHostGetDevicePointer((void**)&dPtr, hPtr, 0));
-	__SetSpawnFuncs<<<1,1>>>(dPtr, b);
+void HSetBiomeData() {
+	_GSetBiomeData << <1, 1 >> > ();
 	checkCudaErrors(cudaDeviceSynchronize());
-	memcpy(rPtr, hPtr, sizeof(BiomeSpawnFunctions));
-	checkCudaErrors(cudaFreeHost(hPtr));
-	return rPtr;
+
+	SetBiomePixelScenes();
+}
+void HSetBiomeData2(BiomePixelScenes* l) {
+	checkCudaErrors(cudaMemcpyToSymbol(AllPixelSceneLists, l, sizeof(HostPixelSceneLists)));
 }

@@ -24,7 +24,7 @@ _compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size);
 _compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth);
 _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer);
 
-template <bool skip_coalmine = false, bool skip_fill = false>
+template <int coalmine_mode = 1, bool skip_fill = false>
 _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl);
 _universal uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b);
 _universal int GetWidthFromPix(int a, int b);
@@ -42,7 +42,6 @@ constexpr uint32_t COLOR_BLACK = 0x000000U;
 constexpr uint32_t COLOR_WHITE = 0xffffffU;
 constexpr uint32_t COLOR_YELLOW = 0xffff00U;
 constexpr uint32_t COLOR_COFFEE = 0xc0ffeeU;
-constexpr uint32_t COLOR_FROZEN_VAULT_MINT = 0xcff7c8U;
 constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80U;
 
 _compute uint8_t* coalmine_overlay;

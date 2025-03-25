@@ -742,7 +742,7 @@ _compute _noinline static Wand GetWand(uint32_t seed, double x, double y, int co
 	GetBestSprite(random, wand);
 	wand.spellCount = 0;
 #ifdef DO_SPELLGEN
-	AddRandomCards(&wand, seed, x, y, level, &random);
+	AddRandomCards(&wand, seed, x, y, level, random);
 #endif
 	return wand;
 }
@@ -754,7 +754,7 @@ _compute _noinline static Wand GetWandBetter(uint32_t seed, double x, double y, 
 	GetBestSprite(random, wand);
 	wand.spellCount = 0;
 #ifdef DO_SPELLGEN
-	AddRandomCardsBetter(&wand, seed, x, y, level, &random);
+	AddRandomCardsBetter(&wand, seed, x, y, level, random);
 #endif
 	return wand;
 }
@@ -816,4 +816,51 @@ _compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int 
 			return GetWand(seed, x, y, 200, 11, false);
 		}
 	return GetWand(seed, x, y, 10, 1, false);
+}
+
+
+_compute _noinline static Wand GetWandGivenSeed(uint32_t seed, int cost, int level, bool force_unshuffle) {
+	NollaPRNG random = NollaPRNG(seed);
+	Wand wand = GetWandStats(cost, level, force_unshuffle, random);
+	GetBestSprite(random, wand);
+	wand.spellCount = 0;
+	AddRandomCards(&wand, seed, 0, 0, level, random);
+	return wand;
+}
+_compute Wand GetWandWithLevelGivenSeed(uint32_t seed, int level, bool nonshuffle) {
+	if (nonshuffle)
+		switch (level) {
+		case 1:
+			return GetWandGivenSeed(seed, 25, 1, true);
+		case 2:
+			return GetWandGivenSeed(seed, 40, 2, true);
+		case 3:
+			return GetWandGivenSeed(seed, 60, 3, true);
+		case 4:
+			return GetWandGivenSeed(seed, 80, 4, true);
+		case 5:
+			return GetWandGivenSeed(seed, 100, 5, true);
+		case 6:
+			return GetWandGivenSeed(seed, 120, 6, true);
+		default:
+			return GetWandGivenSeed(seed, 180, 11, true);
+		}
+	else
+		switch (level) {
+		case 1:
+			return GetWandGivenSeed(seed, 30, 1, false);
+		case 2:
+			return GetWandGivenSeed(seed, 40, 2, false);
+		case 3:
+			return GetWandGivenSeed(seed, 60, 3, false);
+		case 4:
+			return GetWandGivenSeed(seed, 80, 4, false);
+		case 5:
+			return GetWandGivenSeed(seed, 100, 5, false);
+		case 6:
+			return GetWandGivenSeed(seed, 120, 6, false);
+		default:
+			return GetWandGivenSeed(seed, 200, 11, false);
+		}
+	return GetWandGivenSeed(seed, 10, 1, false);
 }

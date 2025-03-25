@@ -31,7 +31,7 @@ struct WangSpawn
 	uint8_t y;
 	WangFuncIndex i;
 };
-constexpr int _WangTileMaxSpawns = 4;
+constexpr int _WangTileMaxSpawns = 6;
 struct WangTile
 {
 	bool should_block;
@@ -44,12 +44,13 @@ struct WangTileset
 	char is_corner;
 	int num_vary[2];
 	int num_color[6];
+	int max_colors;
 	int short_side_len;
 	int widthH, heightH, widthV, heightV;
 	WangTile hTiles[72];
 	WangTile vTiles[72];
-	uint16_t hIndices[64];
-	uint16_t vIndices[64];
+	uint16_t hIndices[729];
+	uint16_t vIndices[729];
 	uint8_t* tileData;
 	uint32_t tdStride;
 	_universal uint32_t h_tile_at(int tx, int ty, int xoff, int yoff) const;
@@ -88,27 +89,62 @@ struct SpawnParams
 	bool(*spawnItem)(int x, int y, const SpawnParams& params);
 };
 
-struct SpawnFunction
+struct BiomeSpawnColors
 {
-	uint32_t color;
-	void(*func)(int, int, const SpawnParams&);
+	int count;
+	uint32_t colors[10];
 
-	_compute constexpr SpawnFunction() : color(0), func(NULL) {}
-	_compute constexpr SpawnFunction(uint32_t _c, void(*_fn)(int, int, const SpawnParams&)) : color(_c), func(_fn) {}
+	constexpr BiomeSpawnColors() = default;
+	constexpr BiomeSpawnColors(std::initializer_list<uint32_t> list);
 };
 
 struct BiomeSpawnFunctions
 {
 	int count;
 	void(*setSharedFuncs)(SpawnParams& params);
-	SpawnFunction funcs[10];
+	void(*funcs[10])(int, int, const SpawnParams&);
 
-	_compute constexpr BiomeSpawnFunctions() : count(0), setSharedFuncs(NULL), funcs() {}
-	_compute constexpr BiomeSpawnFunctions(void(*_fn)(SpawnParams& params), std::initializer_list<SpawnFunction> list) : count(list.size()), setSharedFuncs(_fn), funcs()
-	{
-		for (int i = 0; i < list.size(); i++) funcs[i] = list.begin()[i];
-	}
+	constexpr BiomeSpawnFunctions() = default;
+	_compute constexpr BiomeSpawnFunctions(void(*_fn)(SpawnParams& params), std::initializer_list<void(*)(int, int, const SpawnParams&)> list);
 };
 
-_data BiomeSpawnFunctions* AllSpawnFunctions[30];
-_data BiomeWands* AllWandLevels[30];
+struct PixelSceneSpawn {
+	int i;
+	short x;
+	short y;
+	constexpr PixelSceneSpawn() = default;
+	_universal constexpr PixelSceneSpawn(int _t, short _x, short _y);
+};
+struct PixelSceneData {
+	PixelScene scene;
+	float prob;
+	const char* path;
+	short materialCount;
+	Material materials[20];
+	short spawnCount;
+	PixelSceneSpawn spawns[8];
+
+	constexpr PixelSceneData() = default;
+	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, const char* _path);
+	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, const char* _path, std::initializer_list<Material> _mats);
+};
+struct PixelSceneList {
+	int count;
+	float probSum;
+	PixelSceneData scenes[20];
+	constexpr PixelSceneList() = default;
+	_universal constexpr PixelSceneList(std::initializer_list<PixelSceneData> list);
+};
+struct BiomePixelScenes {
+	int count;
+	PixelSceneList lists[10];
+	constexpr BiomePixelScenes() = default;
+	_universal constexpr BiomePixelScenes(std::initializer_list<PixelSceneList> list);
+};
+
+BiomeSpawnColors HostSpawnColors[B_BIOME_COUNT];
+BiomePixelScenes HostPixelSceneLists[B_BIOME_COUNT];
+
+_data BiomeWands AllWandLevels[B_BIOME_COUNT];
+_data BiomeSpawnFunctions AllSpawnFunctions[B_BIOME_COUNT];
+_data BiomePixelScenes AllPixelSceneLists[B_BIOME_COUNT];

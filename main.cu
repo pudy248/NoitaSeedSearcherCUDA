@@ -1,41 +1,51 @@
 ﻿#include "platforms/platform_implementation.h"
 #include "platforms/platform_api.h"
 using namespace API_INTERNAL;
-#include "src/platform_implementation_src.cu"
+#include "src/platform_implementation_src.cpp"
 
 //#include "gui/guiMain.h"
 #include "include/configuration.h"
 #include "include/compute.h"
+#include "include/wak.h"
 
-#include "src/structs.cu"
-#include "src/misc.cu"
-#include "src/compute.cu"
-#include "src/precheck.cu"
-#include "src/hbwang.cu"
-#include "src/biome_impl.cu"
-#include "src/worldgen.cu"
-#include "src/pathfinding.cu"
-#include "src/wandgen.cu"
-#include "src/search.cu"
-#include "src/filter.cu"
-#include "src/output.cu"
+#include <atomic>
+std::atomic<uint64_t> globalChestCounter = 0;
+std::atomic<uint64_t> globalHeartCounter = 0;
+std::atomic<uint64_t> globalItemCounter = 0;
+std::atomic<uint64_t> globalWandCounter = 0;
+
+#include "src/structs.cpp"
+#include "src/misc.cpp"
+#include "src/compute.cpp"
+#include "src/precheck.cpp"
+#include "src/hbwang.cpp"
+#include "src/biome_impl.cpp"
+#include "src/worldgen.cpp"
+#include "src/pathfinding.cpp"
+#include "src/wandgen.cpp"
+#include "src/search.cpp"
+#include "src/filter.cpp"
+#include "src/output.cpp"
+#include "src/wak.cpp"
 #define PNG_IMPL
 #include "include/pngutils.h"
 
 #include <chrono>
+#include <filesystem>
 
 OutputProgressData d;
 
 void appendOutput(char* s, char* c)
 {
 #ifdef SPAWNABLE_OUTPUT
-	printf("%i (checked %i): %s", d.elapsedMillis, d.searchedSeeds, c);
+	//printf("%i (checked %i): %s", d.elapsedMillis, d.searchedSeeds, c);
 #else
 	//printf("%i: %s (checked %i)\n", d.elapsedMillis, s, d.searchedSeeds);
 #endif
 }
 
-namespace DATA_SCRIPTS
+#if 0
+namespace HELPERS
 {
 	static void GenerateSpellData()
 	{
@@ -163,79 +173,154 @@ namespace DATA_SCRIPTS
 			printf("};\n\n");
 		}
 	}
+
+#if 0
+	constexpr uint64_t MAX_CNT = 100000000;
+	__device__ int counter = 0;
+	__global__ void CountForEach(int n) {
+		uint64_t start = blockDim.x * blockIdx.x + threadIdx.x;
+		uint64_t stride = gridDim.x * blockDim.x;
+		for (uint64_t i = start; i < MAX_CNT; i += stride) {
+			Wand w = GetWandWithLevelGivenSeed(i, n, false);
+			if (w.alwaysCast.s == SPELL_REGENERATION_FIELD)
+				dAtomicAdd(&counter, 1);
+		}
+	}
+
+	static void HCountForEach() {
+		for (int i = 1; i <= 6; i++) {
+			int hCtr;
+			CountForEach << <30, 64 >> > (i);
+			checkCudaErrors(cudaDeviceSynchronize());
+			checkCudaErrors(cudaMemcpyFromSymbol(&hCtr, counter, 4));
+			printf("%i %f\n", hCtr, (double)hCtr / MAX_CNT);
+		}
+	}
+#endif
 }
+#endif
+
 int main()
 {
+	read_wak(find_wak().c_str());
+
+	InitializePlatform();
+	HSetBiomeData();
+
 	int biomeCount = 0;
 	int maxMapArea = 0;
-	InstantiateBiome("resources/wang_tiles/coalmine.png", config.biomeScopes, biomeCount, maxMapArea);
+	
+	InstantiateBiome(B_CRYPT, config.biomeScopes, biomeCount, maxMapArea);
+
 	config.biomeCount = biomeCount;
 
 	config.memSizes = {
-			40_GB,
+			.memoryCap = 40_GB,
 
-	#ifdef DO_WORLDGEN
-			(size_t)maxMapArea * 3 + 512, // output
-	#else
-			(size_t)512,
-	#endif
-			(size_t)maxMapArea * 2, // map
-			(size_t)maxMapArea * 2, // misc
-			(size_t)maxMapArea + 256, // visited
-			(size_t)2048, // spawnables
+#ifdef IMAGE_OUTPUT
+			.outputSize = (size_t)maxMapArea * 3 + 512, // output
+#else
+			.outputSize = (size_t)512,
+#endif
+			.mapDataSize = (size_t)maxMapArea * 2,
+			.miscMemSize = (size_t)maxMapArea * 2,
+			.visitedMemSize = (size_t)maxMapArea + 256,
+			.spawnableMemSize = (size_t)12288,
 	};
-	config.generalCfg = { 1, INT_MAX, biomeCount ? 1u : 256u, false };
+	config.generalCfg = {
 #ifdef SEEDS_AS_TRIES
-	config.generalCfg.seedStart = 1;
-	config.generalCfg.endSeed = 100;
+		.seedStart = 1,
+		.seedEnd = 100,
+#else
+		.seedStart = 1,
+		.seedEnd = INT_MAX,
 #endif
 #ifdef REALTIME_SEEDS
-	config.generalCfg.seedBlockSize = 1;
+		.seedBlockSize = 1;
+		.seedBlockOverride = true
+#else
+		.seedBlockSize = biomeCount ? 1u : 256u, 
+		.seedBlockOverride = false
 #endif
-	config.spawnableCfg = {
-		{0, 0}, {0, 0}, 0, 0,
-		false, //greed
-		false, //pacifist
-		false, //shop spells
-		false, //shop wands
-		false, //eye rooms
-		false, //upwarp check
-		true, //biome chests
-		false, //biome pedestals
-		false, //biome altars
-		true, //biome pixelscenes
-		false, //enemies
-		false, //hell shops
-		false, //nightmare
-		false, //potion contents
-		false, //chest spells
-		false, //wand stats
 	};
 
-	config.filterCfg = {
-		false, false, 1, {ItemFilter({SAMPO})}, 0, {}, 0, {}, 0, {}, false, 27
-	};
-
+	// Runs before generation, once
 	config.precheckCfg = {
-		{false, CART_NONE},
-		{false, GOLD}, // flask
-		{false, SPELL_NONE, SPELL_NONE},
-		{false, MATERIAL_NONE},
-		{false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
-		{false, {}},
-		{false, {FungalShift(SS_DIAMOND, SD_FLASK, 0, 1), FungalShift(SS_FLASK, SD_DIAMOND, 1, 2)}},
-		{false, {
+		.cart = {false, CART_NONE},
+		.flask = {false, GOLD}, // flask
+		.wands = {false, SPELL_NONE, SPELL_NONE},
+		.rain = {false, MATERIAL_NONE},
+		.alchemy = {false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
+		.biomes = {false, {}},
+		.fungal = {false, {FungalShift(SS_STEAM, SD_FLASK, 0, 1)}},
+		.perks = {false, {
 			{PERK_ANGRY_GHOST, false, 0, 3},
 		}, {PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, { 3, 3, 3, 3, 3, 3, 3 }},
+		.precheckUpwarps = false,
 	};
 
-	config.outputCfg = { 0, 1.f, true, false, true };
+	// Runs once per biome
+	config.spawnableCfg = {
+		.pwCenter = {0, 0},
+		.pwWidth = {0, 0},
+		.minHMidx = 0,
+		.maxHMidx = 0,
+		.greedCurse = false,
+		.pacifist = false,
+		.shopSpells = false,
+		.shopWands = false,
+		.eyeRooms = false,
+		.biomeChests = false,
+		.biomePedestals = false,
+		.biomeAltars = true,
+		.biomePixelSceneIndexing = true,
+		.biomePixelSceneSearch = false,
+		.biomeEnemies = false,
+		.hellShops = false,
+		.nightmare = false,
+		.genPotions = false,
+		.genSpells = false,
+		.genWands = false,
+	};
+
+	// Runs after all biomes generated, once
+	config.filterCfg = {
+		.aggregate = false,
+		.itemFilterCount = 0,
+		.itemFilters = {ItemFilter({SAMPO, TRUE_ORB}, 1)},
+		.materialFilterCount = 0,
+		.materialFilters = {},
+		.spellFilterCount = 1,
+		.spellFilters = {SpellFilter({SPELL_NUKE_GIGA})},
+		.pixelSceneFilterCount = 0,
+		.pixelSceneFilters = {PixelSceneFilter({PS_CRYPT_POLYMORPHROOM}, 100)},
+		.wandStats = false,
+		.wandStatThreshold = 27,
+	};
+
+	config.outputCfg = {
+		.outputMode = 0, 
+		.printInterval = 5.f,
+		.printProgressLog = true, 
+		.printOutputToConsole = true,
+		.printOutputToFile = true
+	};
 
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
 	config.memSizes.spawnableMemSize *= max(1, biomeCount);
 
+	AllocateComputeMemory();
 	SearchMain(d, appendOutput);
+	FreeComputeMemory();
+	
+	DestroyPlatform();
+
+	int chunkCount = 26;
+	printf("C %f\n", (double)globalChestCounter.load() / 100000 / chunkCount);
+	printf("H %f\n", (double)globalHeartCounter.load() / 100000 / chunkCount);
+	printf("I %f\n", (double)globalItemCounter.load() / 100000 / chunkCount);
+	printf("W %f\n", (double)globalWandCounter.load() / 100000 / chunkCount);
 
 	//SfmlMain();
 	return 0;

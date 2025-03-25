@@ -75,7 +75,7 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 	WorldgenPRNG rng = GetRNG(worldSeed, scope.bSec.map_w);
 	//if (scope.bSec.isNightmare) rng.Next();
 
-	WangTileIndex* idxs = (WangTileIndex*)res.ptr;
+	WangTileIndex* idxs = (WangTileIndex*)res.ptr + scope.bSec.wang_w;
 	GeneratedBiome b = { scope, idxs, 0 };
 
 	int tries = 0;
@@ -84,18 +84,17 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 		tries++;
 		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 		stbhw_generate_image(idxs, scope, scope.bSec.map_w, scope.bSec.map_h + 4, rng2);
-
-		if (0) {
-			printf("SEED %i, TRY %i\n", worldSeed, tries);
-			for (int y = 0; y < scope.bSec.wang_h; y++) {
-				for (int x = 0; x < scope.bSec.wang_w; x++) {
-					WangTileIndex tile = idxs[y * scope.bSec.wang_w + x];
-					printf(tile & 0x8000 ? "%s-- " : "%s%02i ", tile & 0x4000 ? "V" : "H", tile & 0x3fff);
-				}
-				printf("\n");
+#if 0
+		printf("SEED %i, TRY %i\n", worldSeed, tries);
+		for (int y = -1; y < scope.bSec.wang_h; y++) {
+			for (int x = 0; x < scope.bSec.wang_w; x++) {
+				WangTileIndex tile = idxs[y * scope.bSec.wang_w + x];
+				printf(tile & 0x8000 ? "%s-- " : "%s%02i ", tile & 0x4000 ? "V" : "H", tile & 0x3fff);
 			}
 			printf("\n");
 		}
+		printf("\n");
+#endif
 #ifdef SEEDS_AS_TRIES
 		isValid(b, miscMem, visited);
 #else
@@ -103,8 +102,8 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 			break;
 #endif
 	}
-	//printf("%i: %i\n", worldSeed, tries);
-	//if (!has_path) memset(map, 0, 3 * scope.bSec.map_w * scope.bSec.map_h);
+	if (tries > 20)
+		printf("Seed %i: %i tries\n", worldSeed, tries);
 
 #ifdef IMAGE_OUTPUT
 	if (!output.is_safe(3 * scope.bSec.map_w * scope.bSec.map_h + 11))
@@ -114,7 +113,7 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 	uint8_t* img = output.ptr + 12;
 	for (int y = 0; y < scope.bSec.map_h; y++) {
 		for (int x = 0; x < scope.bSec.map_w; x++) {
-			uint32_t c = get_pixel<true, false>(b, {}, x, y, scope.ts.short_side_len);
+			uint32_t c = get_pixel<1, false>(b, {}, x, y, scope.ts.short_side_len);
 			if (visited.ptr[y * scope.bSec.map_w + x] == 2 && !false)
 				c = 0xff00ffU;
 			int i = (y * scope.bSec.map_w + x) * 3;
@@ -126,4 +125,50 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 #endif
 
 	return b;
+}
+
+void UploadBiomeData() {
+	for (int i = 0; i < B_BIOME_COUNT; i++) {
+		for (int j = 0; j < HostPixelSceneLists[i].count; j++) {
+			for (int k = 0; k < HostPixelSceneLists[i].lists[j].count; k++) {
+				PixelSceneData& d = HostPixelSceneLists[i].lists[j].scenes[k];
+				d.spawnCount = 0;
+				if (!d.path) continue;
+
+				const uint8_t* png = (const uint8_t*)get_wak_file(d.path).data();
+				Vec2i dims = GetBufferImageDimensions(png);
+				uint8_t* buf = (uint8_t*)malloc(3 * dims.x * dims.y);
+				ReadBufferImage(png, buf, false);
+
+#ifdef DEBUG_SPAWN_PIXELS
+				printf("\n%s\n", d.path);
+#endif
+				for (int16_t y = 0; y < dims.y; y++) {
+					for (int16_t x = 0; x < dims.x; x++) {
+						uint32_t pix = (buf[3 * (y * dims.x + x)] << 16) + (buf[3 * (y * dims.x + x) + 1] << 8) + buf[3 * (y * dims.x + x) + 2];
+						for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
+							if (pix == HostSpawnColors[0].colors[z]) {
+								d.spawns[d.spawnCount++] = { z, x, y };
+#ifdef DEBUG_SPAWN_PIXELS
+								printf("PS Spawn (%i, %i): Global %i\n", x, y, z);
+#endif
+							}
+						}
+						for (int16_t z = 0; z < HostSpawnColors[i].count; z++) {
+							if (pix == HostSpawnColors[i].colors[z]) {
+								//d.spawns[d.spawnCount++] = { (int16_t)(HostSpawnColors[0].count + z), x, y };
+#ifdef DEBUG_SPAWN_PIXELS
+								printf("PS Spawn (%i, %i): Biome %i\n", x, y, z);
+#endif
+								printf("WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n", d.path, x, y, HostSpawnColors[0].count + z);
+							}
+						}
+					}
+				}
+				free(buf);
+			}
+		}
+	}
+
+	HSetBiomeData2(HostPixelSceneLists);
 }

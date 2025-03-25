@@ -2,12 +2,12 @@
 #include "../platforms/platform_implementation.h"
 
 #include "../include/search_structs.h"
+#include "../include/pngutils.h"
 #include "../include/misc_funcs.h"
 #include "../data/uiNames.h"
 
-#include "../data/uiNames.h"
-
 #include <iostream>
+#include <filesystem>
 
 _compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b)
 {
@@ -48,6 +48,9 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 	int w = readInt(output, memOffset);
 	int h = readInt(output, memOffset);
 	char buffer[30];
+#ifndef __CUDA_ARCH__
+	std::filesystem::create_directory("outputs");
+#endif
 	sprintf(buffer, "outputs/%i.png", seed);
 	WriteImage(buffer, output + memOffset, w, h);
 #else
@@ -66,7 +69,7 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 			Spawnable s = *sPtr;
 			Vec2i chunkCoords = GetLocalPos(s.x, s.y);
 
-			sprintfc(seedInfo, "%s(%i", SpawnableTypeNames[s.sType - TYPE_CHEST], s.x);
+			sprintfc(seedInfo, "%s at (%i", SpawnableTypeNames[s.sType - TYPE_CHEST], s.x);
 			if (abs(chunkCoords.x - 35) > 35) {
 				int pwPos = abs((int)rintf((chunkCoords.x - 35) / 70.0f));
 				sprintfc(seedInfo, s.x > 0 ? "[E%i]" : "[W%i]", pwPos);
@@ -76,7 +79,7 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 				int pwPos = abs((int)rintf((chunkCoords.y - 24) / 48.0f));
 				sprintfc(seedInfo, s.y > 0 ? "[H%i]" : "[S%i]", pwPos);
 			}
-			sprintfc(seedInfo, ") - %ib[", s.count);
+			sprintfc(seedInfo, ") - [");
 
 			for (int n = 0; n < s.count; n++) {
 				Item item = *(&sPtr->contents + n);
@@ -133,7 +136,10 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 	}
 	//else seedInfo[bufOffset++] = '\n';
 	seedInfo[bufOffset++] = '\0';
-	if (outputCfg.printOutputToFile) fprintf(outputFile, "%s", seedInfo);
+	if (outputCfg.printOutputToFile) {
+		fprintf(outputFile, "%s", seedInfo);
+		fflush(outputFile);
+	}
 	if (outputCfg.printOutputToConsole) printf("%s", seedInfo);
 #else
 #ifdef REALTIME_SEEDS

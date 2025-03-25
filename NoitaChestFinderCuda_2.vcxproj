@@ -31,7 +31,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.props" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.8.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -59,6 +59,8 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <CodeGeneration>compute_75,sm_75</CodeGeneration>
       <GenerateLineInfo>true</GenerateLineInfo>
+      <AdditionalOptions>--std c++20 %(AdditionalOptions)</AdditionalOptions>
+      <SplitCompile>ExtendedMaxThreads</SplitCompile>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -69,6 +71,11 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -85,6 +92,10 @@
       <GenerateLineInfo>true</GenerateLineInfo>
       <HostDebugInfo>true</HostDebugInfo>
       <Optimization>O3</Optimization>
+      <RuntimeChecks>Default</RuntimeChecks>
+      <ExtensibleWholeProgramCompilation>true</ExtensibleWholeProgramCompilation>
+      <SplitCompile>ExtendedMaxThreads</SplitCompile>
+      <AdditionalOptions>--std c++20 %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
     <ProjectReference>
       <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
@@ -94,43 +105,44 @@
     <CudaCompile Include="main.cu" />
     <ClInclude Include="include\gui_primitives.h" />
     <ClInclude Include="include\gui_structs.h" />
-    <ClInclude Include="src\compute.cu">
+    <ClInclude Include="include\wak.h" />
+    <ClInclude Include="src\compute.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\filter.cu">
+    <ClInclude Include="src\filter.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\hbwang.cu">
+    <ClInclude Include="src\hbwang.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\misc.cu">
+    <ClInclude Include="src\misc.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\output.cu">
+    <ClInclude Include="src\output.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\precheck.cu">
+    <ClInclude Include="src\precheck.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\search.cu">
+    <ClInclude Include="src\search.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\structs.cu">
+    <ClInclude Include="src\structs.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\wandgen.cu">
+    <ClInclude Include="src\wandgen.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\worldgen.cu">
+    <ClInclude Include="src\worldgen.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\platform_implementation_src.cu">
+    <ClInclude Include="src\platform_implementation_src.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\biome_impl.cu">
+    <ClInclude Include="src\biome_impl.cpp">
       <FileType>Document</FileType>
     </ClInclude>
-    <ClInclude Include="src\pathfinding.cu">
+    <ClInclude Include="src\pathfinding.cpp">
       <FileType>Document</FileType>
     </ClInclude>
   </ItemGroup>
@@ -172,8 +184,11 @@
   <ItemGroup>
     <ClInclude Include="src\gui.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\wak.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.1.targets" />
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.8.targets" />
   </ImportGroup>
 </Project>

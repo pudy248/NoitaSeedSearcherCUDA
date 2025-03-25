@@ -159,9 +159,9 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 	double r = x_ * 134217727.0;
 	// Apparently equivalent?
 	// Seems to be correct for the inputs that get generated anyway.
-	uint32_t e = (uint32_t)(int64_t)r; //SetRandomSeedHelper(r);
+	uint32_t e = SetRandomSeedHelper(r);
 	// Debug, remove later
-	if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("e %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
+	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("e %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
 
 
 	uint64_t _x = *(uint64_t*)&x_ & 0x7fffffffffffffff;
@@ -179,7 +179,7 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 		r = y_;
 	}
 
-	uint32_t f = (uint32_t)(int64_t)r; //SetRandomSeedHelper(r);
+	uint32_t f = SetRandomSeedHelper(r);
 	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("f %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
 
 	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
@@ -437,13 +437,9 @@ _compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size)
 }
 _compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth)
 {
-	uint8_t* ptr = arena.ptr + arena.offset;
-	uint64_t ptrAddr = (uint64_t)ptr;
-	int alignment = ptrAddr % alignmentWidth;
-	arena.offset += alignmentWidth - alignment;
-	uint8_t* alignedPtr = arena.ptr + arena.offset;
-	arena.offset += size;
-	return { alignedPtr, size };
+	uint64_t alignedAddr = ((uint64_t)arena.ptr + arena.offset + alignmentWidth - 1) & ~(alignmentWidth - 1);
+	arena.offset = alignedAddr - (uint64_t)arena.ptr + size;
+	return { (uint8_t*)alignedAddr, size };
 }
 _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer)
 {

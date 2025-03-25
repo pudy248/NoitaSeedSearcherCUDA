@@ -115,40 +115,40 @@
     <ClInclude Include="include\pngutils.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="src\compute.cu">
+    <ClInclude Include="src\compute.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\platform_implementation_src.cu">
+    <ClInclude Include="src\platform_implementation_src.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\biome_impl.cu">
+    <ClInclude Include="src\biome_impl.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\filter.cu">
+    <ClInclude Include="src\filter.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\hbwang.cu">
+    <ClInclude Include="src\hbwang.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\misc.cu">
+    <ClInclude Include="src\misc.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\output.cu">
+    <ClInclude Include="src\output.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\precheck.cu">
+    <ClInclude Include="src\precheck.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\search.cu">
+    <ClInclude Include="src\search.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\structs.cu">
+    <ClInclude Include="src\structs.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\wandgen.cu">
+    <ClInclude Include="src\wandgen.cpp">
       <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="src\worldgen.cu">
+    <ClInclude Include="src\worldgen.cpp">
       <Filter>src</Filter>
     </ClInclude>
     <ClInclude Include="include\gui_primitives.h">
@@ -158,6 +158,15 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="src\gui.cpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pathfinding.cpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="include\wak.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\wak.cpp">
       <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>

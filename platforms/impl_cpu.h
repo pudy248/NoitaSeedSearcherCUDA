@@ -2,6 +2,10 @@
 #include "platform.h"
 #include <thread>
 #include <cstdlib>
+#ifdef WIN32
+#define NOMINMAX
+#include "Windows.h"
+#endif
 #ifdef _MSC_VER
 #include <intrin.h>
 #else
@@ -11,6 +15,7 @@
 #include "../include/pngutils.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
+#include "../include/wak.h"
 
 
 int NumThreads;
@@ -84,14 +89,14 @@ void AllocateComputeMemory()
 
 	SetWorkerCount(NumThreads);
 	SetWorkerAppetite(1);
-	SetTargetDispatchRate(5);
+	SetTargetDispatchRate(2);
 	printf("Creating %i threads\n", NumThreads);
 
 	hostPtrs.arena = (uint8_t*)malloc(GetMinimumSpanMemory() * NumThreads);
 	hostPtrs.output = (uint8_t*)malloc(GetMinimumOutputMemory() * NumThreads);
 
 	coalmine_overlay = (uint8_t*)malloc(3 * 256 * 103);
-	ReadImage("resources/wang_tiles/coalmine_overlay.png", coalmine_overlay);
+	ReadBufferImage((uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay, false);
 
 	printf("Allocated %lluKB of host memory\n", ((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
 }
@@ -102,20 +107,29 @@ void FreeComputeMemory()
 	free(coalmine_overlay);
 }
 
-Worker CreateWorker()
+Worker* CreateWorker()
 {
-	Worker w;
-	w.memIdx = memIdxCtr++;
-	w.returned = false;
+	Worker* w = new Worker;
+	w->memIdx = memIdxCtr++;
+	w->returned = false;
 	return w;
 }
 void DestroyWorker(Worker& worker)
 {
 	if (worker.thread.joinable()) worker.thread.join();
 }
-
 void ThreadMain(SpanParams params, Worker* worker)
 {
+	// These should be not taking up all of your system's resources :)
+#ifdef WIN32
+	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+#else
+	int policy;
+	sched_param params;
+	pthread_getschedparam(pthread_self(), &policy, &params);
+	params.sched_priority = sched_get_priority_min(policy);
+	pthread_setschedparam(pthread_self(), policy, &params);
+#endif
 	worker->ret = EvaluateSpan(GetSearchConfig(), params, hostPtrs.arena + GetMinimumSpanMemory() * worker->memIdx, hostPtrs.output + GetMinimumOutputMemory() * worker->memIdx);
 	worker->ret.outputPtr = hostPtrs.output + GetMinimumOutputMemory() * worker->memIdx;
 	worker->returned = true;
@@ -141,16 +155,15 @@ void AbortJob(Worker& worker)
 	worker.thread.join();
 }
 
-void* UploadToDevice(const void* hostMem, size_t size)
-{
-	void* ptr = malloc(size);
-	memcpy(ptr, hostMem, size);
-	return ptr;
+void* UploadToDevice(const void* hMem, size_t size) {
+	void* dMem = malloc(size);
+	memcpy(dMem, hMem, size);
+	return dMem;
 }
-BiomeSpawnFunctions* GetSpawnFunc(Biome b)
-{
-	CopySpawnFuncs();
-	BiomeSpawnFunctions* r = (BiomeSpawnFunctions*)malloc(sizeof(BiomeSpawnFunctions));
-	memcpy(r, AllSpawnFunctions[b], sizeof(BiomeSpawnFunctions));
-	return r;
+void HSetBiomeData() {
+	SetBiomeData();
+	SetBiomePixelScenes();
+}
+void HSetBiomeData2(BiomePixelScenes* l) {
+	memcpy(AllPixelSceneLists, l , sizeof(HostPixelSceneLists));
 }

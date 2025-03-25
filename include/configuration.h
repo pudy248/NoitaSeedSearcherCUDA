@@ -100,12 +100,12 @@ struct SpawnableConfig
 	bool shopWands;
 
 	bool eyeRooms;
-	bool staticUpwarps;
 
 	bool biomeChests;
 	bool biomePedestals;
 	bool biomeAltars;
-	bool biomePixelScenes;
+	bool biomePixelSceneIndexing;
+	bool biomePixelSceneSearch;
 	bool biomeEnemies;
 	bool hellShops;
 	bool nightmare;
@@ -118,7 +118,6 @@ struct SpawnableConfig
 struct FilterConfig
 {
 	bool aggregate;
-	bool upwarp;
 	int itemFilterCount;
 	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
 	int materialFilterCount;
@@ -127,8 +126,8 @@ struct FilterConfig
 	SpellFilter spellFilters[TOTAL_FILTER_COUNT];
 	int pixelSceneFilterCount;
 	PixelSceneFilter pixelSceneFilters[TOTAL_FILTER_COUNT];
-	bool checkBigWands;
-	int howBig;
+	bool wandStats;
+	int wandStatThreshold;
 };
 
 struct OutputConfig

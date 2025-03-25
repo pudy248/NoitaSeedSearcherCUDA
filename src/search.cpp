@@ -116,6 +116,7 @@ _compute static Spell MakeRandomUtility(NollaPRNG& random)
 
 _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicSign, const SpawnParams& params)
 {
+	globalChestCounter++;
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
 	writeInt(params.bytes, params.offset, y);
@@ -183,7 +184,7 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 		}
 		else if (rnd <= 50)
 		{
-			rnd = random.Random(1, 100);
+			rnd = random.Random(0, 100);
 			if (rnd <= 94)
 				createPotion(roundRNGPos(x) + 510, y + 683, POTION_NORMAL, params);
 			else if (rnd <= 98) writeByte(params.bytes, params.offset, POWDER);
@@ -197,10 +198,10 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 		else if (rnd <= 54)
 		{
 			rnd = random.Random(0, 100);
-			if (rnd == 99)
-				writeByte(params.bytes, params.offset, Item::REFRESH_MIMIC);
-			else
+			if (rnd <= 98)
 				writeByte(params.bytes, params.offset, Item::SPELL_REFRESH);
+			else
+				writeByte(params.bytes, params.offset, Item::REFRESH_MIMIC);
 		}
 		else if (rnd <= 60)
 		{
@@ -231,16 +232,16 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 
 			for (int i = 0; i < amount; i++)
 			{
-				random.Next();
 				Spell s = MakeRandomCard(random);
 				if (params.sCfg.genSpells)
 				{
 					writeByte(params.bytes, params.offset, DATA_SPELL);
 					writeShort(params.bytes, params.offset, s);
 				}
+				else {
+					writeByte(params.bytes, params.offset, RANDOM_SPELL);
+				}
 			}
-			if (!params.sCfg.genSpells)
-				writeByte(params.bytes, params.offset, RANDOM_SPELL);
 		}
 		else if (rnd <= 84)
 		{
@@ -283,7 +284,7 @@ _compute _noinline static void CheckGreatChestLoot(int x, int y, bool hasMimicSi
 		writeByte(params.bytes, params.offset, MIMIC_SIGN);
 
 	NollaPRNG random = NollaPRNG(params.seed);
-	random.SetRandomSeed(roundRNGPos(x), y);
+	random.SetRandomSeedInt(roundRNGPos(x), y);
 
 	int count = 1;
 
@@ -354,6 +355,7 @@ _compute _noinline static void CheckGreatChestLoot(int x, int y, bool hasMimicSi
 }
 _compute _noinline static void CheckItemPedestalLoot(int x, int y, const SpawnParams& params)
 {
+	globalItemCounter++;
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
 	writeInt(params.bytes, params.offset, y);
@@ -362,9 +364,17 @@ _compute _noinline static void CheckItemPedestalLoot(int x, int y, const SpawnPa
 	params.offset += 4;
 
 	NollaPRNG random = NollaPRNG(params.seed);
-	random.SetRandomSeed(x + 425, y - 243);
+	random.SetRandomSeedInt(x, y);
+	int rnd = random.Random(1, 1000);
+	if (rnd > 995 && y >= 512 * 3) {
+		writeByte(params.bytes, params.offset, MIMIC_POTION);
+		writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
+		return;
+	}
 
-	int rnd = random.Random(1, 91);
+	random.SetRandomSeedInt(x + 425, y - 243);
+
+	rnd = random.Random(1, 91);
 
 	if (rnd <= 65)
 		createPotion(x, y - 2, POTION_NORMAL, params);
@@ -398,6 +408,7 @@ _compute _noinline static void CheckItemPedestalLoot(int x, int y, const SpawnPa
 }
 _compute _noinline static void CheckUtilityBoxLoot(int x, int y, const SpawnParams& params)
 {
+	globalChestCounter++;
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
 	writeInt(params.bytes, params.offset, y);
@@ -479,6 +490,7 @@ _compute void spawnHeart(int x, int y, const SpawnParams& params)
 
 	if (r > heart_spawn_percent)
 	{
+		globalHeartCounter++;
 		params.sCount++;
 		writeInt(params.bytes, params.offset, x);
 		writeInt(params.bytes, params.offset, y);
@@ -551,11 +563,12 @@ _compute void spawnWand(int x, int y, const SpawnParams& params)
 {
 	if (!params.sCfg.biomeAltars) return;
 	if (!params.spawnItem(x, y, params)) return;
+	globalWandCounter++;
 
 	NollaPRNG random = NollaPRNG(params.seed);
 	int nx = x - 5;
 	int ny = y - 14;
-	BiomeWands wandSet = *AllWandLevels[params.currentBiome.bSec.b];
+	BiomeWands wandSet = AllWandLevels[params.currentBiome.bSec.b];
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
 	float r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
@@ -577,71 +590,64 @@ _compute void spawnWand(int x, int y, const SpawnParams& params)
 	}
 }
 
-_compute static void LoadPixelScene(int x, int y, PixelSceneList list, const SpawnParams& params)
+_compute static void LoadPixelScene(int x, int y, const PixelSceneList& list, const SpawnParams& params)
 {
 	NollaPRNG random = NollaPRNG(params.seed);
-	float rnd2 = random.ProceduralRandomf(x, y, 0, list.probSum);
-
 	PixelSceneData pickedScene;
 	Material pickedMat = MATERIAL_NONE;
-	for (int i = 0; i < list.count; i++)
-	{
-		if (rnd2 <= list.scenes[i].prob)
-		{
-			pickedScene = list.scenes[i];
-			break;
+	if (list.count > 1) {
+		float rnd2 = random.ProceduralRandomf(x, y, 0, list.probSum);
+
+		for (int i = 0; i < list.count; i++) {
+			if (rnd2 <= list.scenes[i].prob) {
+				pickedScene = list.scenes[i];
+				break;
+			}
+			rnd2 -= list.scenes[i].prob;
 		}
-		rnd2 -= list.scenes[i].prob;
 	}
-	if (pickedScene.materialCount > 0)
-	{
-		int idx = (int)rintf(random.ProceduralRandomf(x + 11, y - 21, 0, pickedScene.materialCount - 1));
-		pickedMat = pickedScene.materials[idx];
+	else pickedScene = list.scenes[0];
+
+	if (!pickedScene.scene)
+		return;
+
+	if (params.sCfg.biomePixelSceneSearch) {
+		if (pickedScene.materialCount > 0) {
+			int idx = (int)rintf(random.ProceduralRandomf(x + 11, y - 21, 0, pickedScene.materialCount - 1));
+			pickedMat = pickedScene.materials[idx];
+		}
+
+		params.sCount++;
+		writeInt(params.bytes, params.offset, x);
+		writeInt(params.bytes, params.offset, y);
+		writeByte(params.bytes, params.offset, TYPE_PIXEL_SCENE);
+		writeInt(params.bytes, params.offset, 5);
+		writeByte(params.bytes, params.offset, DATA_PIXEL_SCENE);
+		writeShort(params.bytes, params.offset, pickedScene.scene);
+		writeShort(params.bytes, params.offset, pickedMat);
 	}
 
-
-	params.sCount++;
-	writeInt(params.bytes, params.offset, x);
-	writeInt(params.bytes, params.offset, y);
-	writeByte(params.bytes, params.offset, TYPE_PIXEL_SCENE);
-	writeInt(params.bytes, params.offset, 5);
-	writeByte(params.bytes, params.offset, DATA_PIXEL_SCENE);
-	writeShort(params.bytes, params.offset, pickedScene.scene);
-	writeShort(params.bytes, params.offset, pickedMat);
-
-	for (int i = 0; i < pickedScene.spawnCount; i++)
+	for (int idx = 0; idx < pickedScene.spawnCount; idx++)
 	{
-		PixelSceneSpawn spawn = pickedScene.spawns[i];
+		PixelSceneSpawn spawn = pickedScene.spawns[idx];
 		Vec2i chunk = GetLocalPos(x + spawn.x, y + spawn.y);
 		Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
 		if (cBiome != params.currentBiome.bSec.b)
 			continue;
 
-		switch (spawn.spawnType)
-		{
-		case PSST_SmallEnemy:
-			//if (params.sCfg.biomeEnemies)
-				//spawnSmallEnemies(x + spawn.x, y + spawn.y, params);
+		// Can't use colors! Even though we do the lookups using colors. Will have to fix for biome-specific spawns in pixel scenes...
+		switch (spawn.i) {
+		case 0:
+			spawnHeart(x + spawn.x, y + spawn.y, params);
 			break;
-		case PSST_LargeEnemy:
-			//if (params.sCfg.biomeEnemies)
-			//	spawnBigEnemies(x + spawn.x, y + spawn.y, params);
+		case 1:
+			spawnChest(x + spawn.x, y + spawn.y, params);
 			break;
-		case PSST_SpawnHeart:
-			if (params.sCfg.biomeChests)
-				spawnHeart(x + spawn.x, y + spawn.y, params);
+		case 2:
+			spawnPotion(x + spawn.x, y + spawn.y, params);
 			break;
-		case PSST_SpawnChest:
-			if (params.sCfg.biomeChests)
-				spawnChest(x + spawn.x, y + spawn.y, params);
-			break;
-		case PSST_SpawnItem:
-			if (params.sCfg.biomeAltars)
-				spawnWand(x + spawn.x, y + spawn.y, params);
-			break;
-		case PSST_SpawnFlask:
-			if (params.sCfg.biomePedestals)
-				spawnPotion(x + spawn.x, y + spawn.y, params);
+		case 3:
+			spawnWand(x + spawn.x, y + spawn.y, params);
 			break;
 		}
 	}
@@ -850,7 +856,7 @@ _compute void CheckNightmareSpawnWands(const SpawnParams& params) {
 	float width = 132.f / 3;
 	int wy = -94;
 	int wtiers[] = {2, 2, 3, 1, 2, 3};
-	int wtypes[] = { WAND_T2, WAND_T2B, WAND_T3, WAND_T1NS, WAND_T2NS, WAND_T3NS };
+	//int wtypes[] = { WAND_T2, WAND_T2B, WAND_T3, WAND_T1NS, WAND_T2NS, WAND_T3NS };
 	if (params.sCfg.nightmare) {
 		writeInt(params.bytes, params.offset, wx);
 		writeInt(params.bytes, params.offset, wy);
@@ -875,8 +881,8 @@ _compute void CheckNightmareSpawnWands(const SpawnParams& params) {
 
 _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params)
 {
-	BiomeSpawnFunctions* funcs = AllSpawnFunctions[params.currentBiome.bSec.b];
-	funcs->setSharedFuncs(params);
+	BiomeSpawnFunctions& funcs = AllSpawnFunctions[params.currentBiome.bSec.b];
+	funcs.setSharedFuncs(params);
 
 	for (int y = -1; y < params.currentBiome.bSec.wang_h; y++)
 	{
@@ -891,17 +897,20 @@ _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params)
 													  : s.scope.ts.hTiles[tile & 0x3fff];
 			for (int sIdx = 0; t.spawns[sIdx].i >= 0 && sIdx < _WangTileMaxSpawns; sIdx++)
 			{
+				auto spawn = t.spawns[sIdx].i >= funcs.count
+					? AllSpawnFunctions[0].funcs[t.spawns[sIdx].i - funcs.count]
+					: funcs.funcs[t.spawns[sIdx].i];
+
 				int px = tx + t.spawns[sIdx].x;
 				int py = ty + t.spawns[sIdx].y;
 				py -= 4;
 				if (px < 0 || py < 0 || px >= s.scope.bSec.map_w || py >= s.scope.bSec.map_h) continue;
-				if (get_pixel<false, true>(s, {}, px, py, s.scope.ts.short_side_len) == COLOR_WHITE) continue;
+				// Solid ground blocks all spawns
+				if (params.currentBiome.bSec.b == B_COALMINE && coalmine_overlay[3 * (py * 256 + px) + 1] == 0x42) continue;
+				//Erase zone blocks only pixel scene spawns? Identifiable by being in the corner of a tile
+				if (params.currentBiome.bSec.b == B_COALMINE && t.spawns[sIdx].x == 0 && t.spawns[sIdx].y == 0 && coalmine_overlay[3 * (py * 256 + px) + 2] == 0x42) continue;
 				Vec2i global = GetGlobalPos(params.currentBiome.bSec.worldX, params.currentBiome.bSec.worldY, px * 10, py * 10);
 
-				auto func = t.spawns[sIdx].i >= AllSpawnFunctions[0]->count
-					? funcs->funcs[t.spawns[sIdx].i - AllSpawnFunctions[0]->count].func
-					: AllSpawnFunctions[0]->funcs[t.spawns[sIdx].i].func;
-				
 				Vec2i chunk = GetLocalPos(global.x, global.y);
 				Biome cBiome = biomeMap[chunk.y * 70 + chunk.x];
 				if (cBiome != params.currentBiome.bSec.b)
@@ -912,7 +921,7 @@ _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params)
 					for (int pwX = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x; pwX <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pwX++)
 					{
 						Vec2i gp = GetGlobalPos(params.currentBiome.bSec.worldX + 70 * pwX, params.currentBiome.bSec.worldY + 48 * pwY, px * 10, py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
-						func(gp.x, gp.y, params);
+						spawn(gp.x, gp.y, params);
 
 						if (!params.bytes.is_safe(max(0, params.offset - 1)))
 							printf("CheckSpawnables(): Ran out of output space.\n");

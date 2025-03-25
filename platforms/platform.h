@@ -28,12 +28,13 @@ void DestroyPlatform();
 void AllocateComputeMemory();
 void FreeComputeMemory();
 
-//Generates compute-accessible data from host pointers.
-void* UploadToDevice(const void* hostMem, size_t size);
-BiomeSpawnFunctions* GetSpawnFunc(Biome b);
+void* UploadToDevice(const void* hMem, size_t size);
+// Wacky workarounds to CUDA device pointers being inaccessible in some cases from host code
+void HSetBiomeData();
+void HSetBiomeData2(BiomePixelScenes* l);
 
 //Creates or destroys a persistent worker that can recieve jobs.
-Worker CreateWorker();
+Worker* CreateWorker();
 void DestroyWorker(Worker& worker);
 
 ////////////////////////////////////

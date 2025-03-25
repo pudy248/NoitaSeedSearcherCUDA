@@ -1,5 +1,6 @@
 #include "../platforms/platform_implementation.h"
 #include "../include/search_structs.h"
+#include "../include/worldgen_structs.h"
 
 #include <cstdint>
 #include <cstring>
@@ -126,56 +127,6 @@ PixelSceneFilter::PixelSceneFilter(std::initializer_list<PixelScene> _pixelScene
 	checkMats = true;
 }
 
-_universal constexpr PixelSceneSpawn::PixelSceneSpawn() : spawnType(), x(), y() {}
-_universal constexpr PixelSceneSpawn::PixelSceneSpawn(PixelSceneSpawnType _t, short _x, short _y) : spawnType(_t), x(_x), y(_y) {}
-
-_universal constexpr PixelSceneData::PixelSceneData()
-	: scene(PS_NONE), prob(0), materialCount(0), spawnCount(0), materials(), spawns()
-{
-}
-_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob)
-	: scene(_scene), prob(_prob), materialCount(0), spawnCount(0), materials(), spawns()
-{
-}
-_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats)
-	: scene(_scene), prob(_prob), materialCount(), spawnCount(0), materials(), spawns()
-{
-	scene = _scene;
-	prob = _prob;
-	materialCount = _mats.size();
-	for (int i = 0; i < materialCount; i++) materials[i] = _mats.begin()[i];
-}
-_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<PixelSceneSpawn> _spawns)
-	: scene(_scene), prob(_prob), materialCount(0), spawnCount(), materials(), spawns()
-{
-	scene = _scene;
-	prob = _prob;
-	spawnCount = _spawns.size();
-	for (int i = 0; i < spawnCount; i++) spawns[i] = _spawns.begin()[i];
-}
-_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, std::initializer_list<PixelSceneSpawn> _spawns)
-	: scene(_scene), prob(_prob), materialCount(), spawnCount(), materials(), spawns()
-{
-	scene = _scene;
-	prob = _prob;
-	materialCount = _mats.size();
-	spawnCount = _spawns.size();
-	for (int i = 0; i < materialCount; i++) materials[i] = _mats.begin()[i];
-	for (int i = 0; i < spawnCount; i++) spawns[i] = _spawns.begin()[i];
-}
-
-_universal constexpr PixelSceneList::PixelSceneList() : count(), probSum(), scenes() {}
-_universal constexpr PixelSceneList::PixelSceneList(int _c, std::initializer_list<PixelSceneData> list) : count(_c), probSum(), scenes()
-{
-	float pSum = 0;
-	for (int i = 0; i < list.size(); i++)
-	{
-		pSum += list.begin()[i].prob;
-		scenes[i] = list.begin()[i];
-	}
-	probSum = pSum;
-}
-
 _universal AlchemyRecipe::AlchemyRecipe() {}
 _universal AlchemyRecipe::AlchemyRecipe(Material mat1, Material mat2, Material mat3)
 {
@@ -220,4 +171,41 @@ _universal FungalShift::FungalShift(ShiftSource _from, ShiftDest _to, int _minId
 	else { to = _to; toFlask = false; }
 	minIdx = _minIdx;
 	maxIdx = _maxIdx;
+}
+
+// Worldgen structs
+constexpr BiomeSpawnColors::BiomeSpawnColors(std::initializer_list<uint32_t> list)
+	: count(list.size()), colors() {
+	for (int i = 0; i < list.size(); i++)
+		colors[i] = list.begin()[i];
+}
+
+_compute constexpr BiomeSpawnFunctions::BiomeSpawnFunctions(void(*_fn)(SpawnParams& params), std::initializer_list<void(*)(int, int, const SpawnParams&)> list)
+	: count(list.size()), setSharedFuncs(_fn), funcs() {
+	for (int i = 0; i < list.size(); i++)
+		funcs[i] = list.begin()[i];
+}
+_universal constexpr PixelSceneSpawn::PixelSceneSpawn(int _t, short _x, short _y) : i(_t), x(_x), y(_y) {}
+
+_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob, const char* _path)
+	: scene(_scene), prob(_prob), path(_path), materialCount(0), materials(), spawnCount(0), spawns() {}
+_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob, const char* _path, std::initializer_list<Material> _mats)
+	: scene(_scene), prob(_prob), path(_path), materialCount(_mats.size()), materials(), spawnCount(0), spawns() {
+	for (int i = 0; i < materialCount; i++)
+		materials[i] = _mats.begin()[i];
+}
+
+_universal constexpr PixelSceneList::PixelSceneList(std::initializer_list<PixelSceneData> list)
+	: count(list.size()), probSum(), scenes() {
+	for (int i = 0; i < list.size(); i++) {
+		probSum += list.begin()[i].prob;
+		scenes[i] = list.begin()[i];
+	}
+}
+
+_universal constexpr BiomePixelScenes::BiomePixelScenes(std::initializer_list<PixelSceneList> list)
+	: count(list.size()), lists(/*list.size() ? (PixelSceneList*)malloc(sizeof(PixelSceneList) * list.size()) : 0*/) {
+	for (int i = 0; i < list.size(); i++) {
+		lists[i] = list.begin()[i];
+	}
 }

@@ -170,38 +170,6 @@ struct WandSpaceDat
 	float reload_time;
 };
 
-struct PixelSceneSpawn
-{
-	PixelSceneSpawnType spawnType;
-	short x;
-	short y;
-	_universal constexpr PixelSceneSpawn();
-	_universal constexpr PixelSceneSpawn(PixelSceneSpawnType _t, short _x, short _y);
-};
-struct PixelSceneData
-{
-	PixelScene scene;
-	float prob;
-	short materialCount;
-	short spawnCount;
-	Material materials[11];
-	PixelSceneSpawn spawns[10];
-
-	_universal constexpr PixelSceneData();
-	_universal constexpr PixelSceneData(PixelScene _scene, float _prob);
-	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats);
-	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<PixelSceneSpawn> _spawns);
-	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, std::initializer_list<Material> _mats, std::initializer_list<PixelSceneSpawn> _spawns);
-};
-struct PixelSceneList
-{
-	int count;
-	float probSum;
-	PixelSceneData scenes[20];
-	_universal constexpr PixelSceneList();
-	_universal constexpr PixelSceneList(int _c, std::initializer_list<PixelSceneData> list);
-};
-
 /*
 struct EnemyData
 {

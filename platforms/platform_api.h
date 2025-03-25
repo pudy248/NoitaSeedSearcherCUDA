@@ -79,7 +79,7 @@ namespace PLATFORM_API
 	{
 		SearchConfig config = GetSearchConfig();
 #ifdef DO_WORLDGEN
-		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.mapDataSize + config.memSizes.miscMemSize + config.memSizes.visitedMemSize + config.memSizes.spawnableMemSize + 16 * TOTAL_FILTER_COUNT;
+		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.mapDataSize + config.memSizes.miscMemSize + config.memSizes.visitedMemSize + config.memSizes.spawnableMemSize + config.memSizes.spawnableMemSize / 4 + 16 * TOTAL_FILTER_COUNT + 512;
 #else
 		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.spawnableMemSize;
 #endif

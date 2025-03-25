@@ -3,12 +3,14 @@
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
 #include "../include/pngutils.h"
+#include "../include/primitives.h"
 
 #include <cstdio>
 #include <fstream>
 #include <chrono>
 #include <cstring>
 #include <vector>
+#include <cstdint>
 
 _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span, void* threadMemBlock, void* outputPtr)
 {
@@ -24,10 +26,12 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		seedPassed &= PrecheckSeed(currentSeed, config.precheckCfg);
 		if (!seedPassed) continue;
 
-		if (config.spawnableCfg.staticUpwarps)
+		if (config.precheckCfg.precheckUpwarps)
 		{
-			MemSpan upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
-			MemSpan miscMem2 = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
+			bool tmp = config.spawnableCfg.biomeChests;
+			config.spawnableCfg.biomeChests = true;
+			MemSpan upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 8);
+			MemSpan miscMem2 = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT + 128, 8);
 			int offset = 0;
 			int _ = 0;
 			spawnChest(315, 17, { currentSeed, {}, config.spawnableCfg, upwarps, offset, _ });
@@ -35,10 +39,19 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 			spawnChest(75, 117, { currentSeed, {}, config.spawnableCfg, upwarps, offset, _ });
 			Spawnable* spawnables[] = { (Spawnable*)upwarps.ptr, (Spawnable*)ptr1.ptr };
 			SpawnableBlock b = { currentSeed, 2, spawnables };
+			config.spawnableCfg.biomeChests = tmp;
 
-			seedPassed &= SpawnablesPassed(b, config.filterCfg, { 0, 0 }, miscMem2, false);
+			seedPassed &= SpawnablesPassed(b, config.filterCfg, output, miscMem2, true, true);
 			ArenaSetOffset(arena, upwarps.ptr);
 			if (!seedPassed) continue;
+
+			if (!config.spawnableCfg.biomeChests) {
+				memcpy(output.ptr, &currentSeed, 4);
+				memcpy((uint8_t*)outputPtr, output.ptr, config.memSizes.outputSize);
+
+				int extraSeeds = span.seedStart + span.seedCount - currentSeed - 1;
+				return { span.seedStart, span.seedCount, true, extraSeeds };
+			}
 		}
 
 		int spawnableCount = 0;
@@ -46,21 +59,23 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 		MemSpan mapMem = ArenaAlloc(arena, config.memSizes.mapDataSize, 8);
 		MemSpan visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
 		MemSpan spawnableDat = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
-		MemSpan spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize / 16, 4);
+		MemSpan spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize / 4, 4);
 		MemSpan miscMem = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
-		MemSpan miscMem2 = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT, 4);
+		MemSpan miscMem2 = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT + 128, 4);
 
 #ifdef DO_WORLDGEN
 		for (int biomeNum = 0; biomeNum < config.biomeCount; biomeNum++)
 		{
 			GeneratedBiome b = GenerateMap(currentSeed, *config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			threadSync();
-			CopySpawnFuncs();
+#ifndef SEEDS_AS_TRIES
 			SpawnParams p = { currentSeed, *config.biomeScopes[biomeNum], config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount };
 			CheckSpawnables(b, p);
 			threadSync();
+#endif
 		}
 #endif
+#ifndef SEEDS_AS_TRIES
 		SpawnParams p = { currentSeed, *config.biomeScopes[0], config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount };
 		CheckMountains(p);
 		CheckEyeRooms(p);
@@ -69,9 +84,8 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(SearchConfig config, SpanParams span
 
 		SpawnableBlock result = ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
 		threadSync();
-		seedPassed &= SpawnablesPassed(result, config.filterCfg, output, miscMem2, true);
+		seedPassed &= SpawnablesPassed(result, config.filterCfg, output, miscMem2, true, config.precheckCfg.precheckUpwarps);
 
-#ifndef SEEDS_AS_TRIES
 		if (!seedPassed) continue;
 #endif
 		memcpy(output.ptr, &currentSeed, 4);
@@ -104,7 +118,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 
 	int returnedBlocksThisIter = 0;
 
-	std::vector<Worker> workers(NumWorkers);
+	std::vector<Worker*> workers;
 	SpanParams* params = (SpanParams*)malloc(WorkerAppetite * sizeof(SpanParams));
 	bool* stopped = (bool*)malloc(NumWorkers);
 	memset(stopped, false, NumWorkers);
@@ -113,7 +127,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	//initial dispatch
 	for (int i = 0; i < NumWorkers; i++)
 	{
-		workers[i] = CreateWorker();
+		workers.emplace_back(CreateWorker());
 	}
 	for (int i = 0; i < NumWorkers; i++)
 	{
@@ -130,14 +144,14 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 #ifdef REALTIME_SEEDS
 				uint8_t* output = hOutput + (i * WorkerAppetite + j) * config.memSizes.outputSize;
 				int _ = 0;
-				writeInt(output, _, currentSeed);
+				writeInt({ output, 4 }, _, currentSeed);
 				nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
 				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
 				params[j] = { (int)nextSeed, (int)length };
 				currentSeed += length;
 			}
-			DispatchJob(workers[i], params);
+			DispatchJob(*workers[i], params);
 		}
 		else {
 			stoppedBlocks++;
@@ -153,7 +167,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 		if (progress.abort)
 		{
 			for (int i = 0; i < NumWorkers; i++)
-				AbortJob(workers[i]);
+				AbortJob(*workers[i]);
 			break;
 		}
 		if (currentSeed >= config.generalCfg.seedEnd && dbg_seed_loop_ctr < dbg_seed_loop_max) {
@@ -192,15 +206,17 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				int seconds = (displayIntervals - 1) * config.outputCfg.printInterval;
 				int minutes = seconds / 60;
 				int hours = minutes / 60;
-				if (config.outputCfg.printProgressLog)
-					printf("[%02ih %02im %02is]: %2.3f%% complete. Searched %i (+%i this interval), found %i valid seeds. %i\n",
-						hours, minutes % 60, seconds % 60, percentComplete * 100, checkedSeeds, lastDiff, passedSeeds, currentSeed);
+				if (config.outputCfg.printProgressLog) {
+					printf("[%02ih %02im %02is]: %2.3f%% complete. Searched %i seeds (+%i this interval), found %i valid seeds.\n",
+						hours, minutes % 60, seconds % 60, percentComplete * 100, checkedSeeds, lastDiff, passedSeeds);
+					fflush(stdout);
+				}
 			}
 		}
 
-		if (!stopped[index] && QueryWorker(workers[index]))
+		if (!stopped[index] && QueryWorker(*workers[index]))
 		{
-			SpanRet* returns = SubmitJob(workers[index]);
+			SpanRet* returns = SubmitJob(*workers[index]);
 			returnedBlocksThisIter++;
 
 			int* times = (int*)malloc(4 * WorkerAppetite);
@@ -236,14 +252,14 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 #ifdef REALTIME_SEEDS
 					uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 					int _ = 0;
-					writeInt(output, _, currentSeed);
+					writeInt({ output, 4}, _, currentSeed);
 					nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
 					uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
 					params[inputIdx++] = { (int)nextSeed, (int)length };
 					currentSeed += length;
 				}
-				DispatchJob(workers[index], params);
+				DispatchJob(*workers[index], params);
 			}
 			else {
 				stoppedBlocks++;
@@ -264,7 +280,10 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 		}
 		index = (index + 1) % NumWorkers;
 	}
-	for (int i = 0; i < NumWorkers; i++) DestroyWorker(workers[i]);
+	for (int i = 0; i < NumWorkers; i++) {
+		DestroyWorker(*workers[i]);
+		delete workers[i];
+	}
 	workers.clear();
 	free(params);
 	free(stopped);
@@ -282,7 +301,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 
 void InstantiateSector(BiomeWangScope** scopes, int& biomeCount, int& maxMapArea, const char* path, BiomeSector partialSector)
 {
-	Vec2i tileDims = GetImageDimensions(path);
+	Vec2i tileDims = GetBufferImageDimensions((uint8_t*)get_wak_file(path).c_str());
 
 	partialSector.tiles_w = tileDims.x;
 	partialSector.tiles_h = tileDims.y;
@@ -290,17 +309,14 @@ void InstantiateSector(BiomeWangScope** scopes, int& biomeCount, int& maxMapArea
 	partialSector.map_h = GetWidthFromPix(partialSector.worldY, partialSector.worldY + partialSector.worldH);
 
 	uint8_t* hTileData = (uint8_t*)malloc(3 * tileDims.x * tileDims.y);
-	ReadImage(path, hTileData);
-	BiomeSpawnFunctions* fns[2] = { GetSpawnFunc(B_NONE), GetSpawnFunc(partialSector.b) };
+	ReadBufferImage((uint8_t*)get_wak_file(path).c_str(), hTileData, false);
 
 	BiomeWangScope scope;
-	scope.ts = stbhw_build_tileset_from_image(hTileData, fns, 3 * tileDims.x, tileDims.x, tileDims.y);
+	scope.ts = stbhw_build_tileset_from_image(hTileData, partialSector.b, 3 * tileDims.x, tileDims.x, tileDims.y);
 	partialSector.wang_w = (partialSector.map_w + scope.ts.short_side_len - 1) / scope.ts.short_side_len;
 	partialSector.wang_h = (partialSector.map_h + scope.ts.short_side_len + 3) / scope.ts.short_side_len;
 	maxMapArea = max(maxMapArea, (int)(partialSector.map_w * partialSector.map_h));
 
-	free(fns[0]);
-	free(fns[1]);
 	scope.ts.tileData = (uint8_t*)UploadToDevice(scope.ts.tileData, 3 * tileDims.x * tileDims.y);
 	scope.bSec = partialSector;
 	free(hTileData);
@@ -308,86 +324,75 @@ void InstantiateSector(BiomeWangScope** scopes, int& biomeCount, int& maxMapArea
 
 	scopes[biomeCount++] = dScope;
 }
-void InstantiateBiome(const char* path, BiomeWangScope** ss, int& bC, int& mA)
+void InstantiateBiome(int biome, BiomeWangScope** ss, int& bC, int& mA)
 {
-	{
-		if (strcmp(path, "resources/wang_tiles/coalmine.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_COALMINE, 34, 14, 5, 2 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/coalmine_alt.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_COALMINE_ALT, 32, 15, 2, 1 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/excavationsite.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_EXCAVATIONSITE, 31, 17, 8, 2 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/fungicave.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_FUNGICAVE, 28, 17, 3, 1 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/snowcave.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_SNOWCAVE, 30, 20, 10, 3 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/snowcastle.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_SNOWCASTLE, 31, 24, 7, 2 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/rainforest.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_RAINFOREST, 30, 27, 9, 2 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/rainforest_open.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_RAINFOREST_OPEN, 30, 28, 9, 2 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/rainforest_dark.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_RAINFOREST_DARK, 25, 26, 5, 8 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/vault.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_VAULT, 29, 31, 11, 3 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/crypt.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_CRYPT, 26, 35, 14, 4 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/wandcave.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_WANDCAVE, 47, 35, 4, 4 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/vault_frozen.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_VAULT_FROZEN, 12, 15, 7, 5 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/wizardcave.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_WIZARDCAVE, 53, 40, 6, 6 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/fungiforest.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_FUNGIFOREST, 59, 16, 7, 9 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/robobase.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_ROBOBASE, 59, 29, 7, 9 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/liquidcave.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_LIQUIDCAVE, 26, 14, 5, 2 });
-		}
-		else if (strcmp(path, "resources/wang_tiles/meat.png") == 0)
-		{
-			InstantiateSector(ss, bC, mA, path, { B_MEAT, 62, 38, 4, 8 });
-		}
-
-		else
-		{
-			printf("Invalid biome path: %s\n", path);
-		}
+	switch (biome) {
+	case B_COALMINE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/coalmine.png", { B_COALMINE, 34, 14, 5, 2 });
+		break;
+	case B_COALMINE_ALT:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/coalmine_alt.png", { B_COALMINE_ALT, 32, 15, 2, 1 });
+		break;
+	case B_EXCAVATIONSITE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/excavationsite.png", { B_EXCAVATIONSITE, 31, 17, 8, 2 });
+		break;
+	case B_FUNGICAVE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/fungicave.png", { B_FUNGICAVE, 28, 17, 3, 2 });
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/fungicave.png", { B_FUNGICAVE, 34, 28, 1, 1 });
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/fungicave.png", { B_FUNGICAVE, 39, 31, 1, 1 });
+		break;
+	case B_SNOWCAVE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/snowcave.png", { B_SNOWCAVE, 30, 20, 10, 3 });
+		break;
+	case B_SNOWCASTLE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/snowcastle.png", { B_SNOWCASTLE, 31, 24, 7, 2 });
+		break;
+	case B_RAINFOREST:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/rainforest.png", { B_RAINFOREST, 30, 27, 9, 2 });
+		break;
+	case B_RAINFOREST_OPEN:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/rainforest_open.png", { B_RAINFOREST_OPEN, 30, 28, 9, 2 });
+		break;
+	case B_RAINFOREST_DARK:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/rainforest_dark.png", { B_RAINFOREST_DARK, 25, 26, 5, 8 });
+		break;
+	case B_VAULT:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/vault.png", { B_VAULT, 29, 31, 11, 3 });
+		break;
+	case B_CRYPT:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/crypt.png", { B_CRYPT, 26, 35, 14, 4 });
+		break;
+	case B_WANDCAVE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", { B_WANDCAVE, 27, 21, 3, 1 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", { B_WANDCAVE, 47, 35, 4, 4 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", { B_WANDCAVE, 41, 36, 6, 1 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", { B_WANDCAVE, 53, 36, 2, 2 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", { B_WANDCAVE, 53, 39, 5, 1 });
+		break;
+	case B_VAULT_FROZEN:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/vault_frozen.png", { B_VAULT_FROZEN, 12, 15, 7, 5 });
+		break;
+	case B_WIZARDCAVE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", { B_WIZARDCAVE, 23, 25, 3, 2 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", { B_WIZARDCAVE, 47, 36, 2, 2 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", { B_WIZARDCAVE, 51, 36, 8, 3 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", { B_WIZARDCAVE, 59, 39, 1, 1 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", { B_WIZARDCAVE, 53, 40, 6, 6 });
+		break;
+	case B_FUNGIFOREST:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/fungiforest.png", { B_FUNGIFOREST, 59, 16, 7, 9 });
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/fungiforest.png", { B_FUNGIFOREST, 58, 35, 4, 6 });
+		break;
+	case B_ROBOBASE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/robobase.png", { B_ROBOBASE, 59, 29, 7, 9 });
+		break;
+	case B_LIQUIDCAVE:
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/liquidcave.png", { B_LIQUIDCAVE, 26, 14, 5, 2 });
+		break;
+	case B_MEAT:
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/meat.png", { B_MEAT, 47, 25, 3, 7 });
+		InstantiateSector(ss, bC, mA, "data/wang_tiles/meat.png", { B_MEAT, 62, 38, 4, 8 });
+		break;
 	}
 }
 
@@ -395,11 +400,11 @@ void SearchMain(OutputProgressData& progress, void(*appendOutput)(char*, char*))
 {
 	std::chrono::steady_clock::time_point time1 = std::chrono::steady_clock::now();
 
-	InitializePlatform();
-	AllocateComputeMemory();
+	UploadBiomeData();
+
 	FILE* f = fopen("output.txt", "wb");
 
-	time_t startTime = time(NULL);
+	time_t startTime = time(NULL) - 100000;
 	Vec2i seedCounts = OutputLoop(f, startTime, progress, appendOutput);
 
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
@@ -407,7 +412,5 @@ void SearchMain(OutputProgressData& progress, void(*appendOutput)(char*, char*))
 
 	printf("Search finished in %ims. Checked %i seeds, found %i valid seeds.\n", (int)(duration.count() / 1000000), seedCounts.x, seedCounts.y);
 
-	FreeComputeMemory();
-	DestroyPlatform();
 	fclose(f);
 }

@@ -233,26 +233,26 @@ _compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneF
 	}
 }
 
-_compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write)
+_compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write, bool upwarps)
 {
 	int relevantSpawnableCount = 0;
 	MemoryArena localArena = { tmp.ptr, 0 };
-	int* itemsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
-	int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
-	int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
-	int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
-	Spawnable** relevantSpawnables = (Spawnable**)ArenaAlloc(localArena, 0).ptr;
 
-	if (!tmp.is_safe(localArena.offset - 1))
-		printf("SpawnablesPassed(): tmp ran out of space.\n");
+	Spawnable** relevantSpawnables = (Spawnable**)ArenaAlloc(localArena, 512).ptr;
 
 	if (fCfg.aggregate)
 	{
+
+		int* itemsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+		int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+		int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+		int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+
 		for (int i = 0; i < fCfg.itemFilterCount; i++) itemsPassed[i] = 0;
 		for (int i = 0; i < fCfg.materialFilterCount; i++) materialsPassed[i] = 0;
 		for (int i = 0; i < fCfg.spellFilterCount; i++) spellsPassed[i] = 0;
 		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++) pixelScenesPassed[i] = 0;
-
+		
 		for (int j = 0; j < b.count; j++)
 		{
 			Spawnable* s = b.spawnables[j];
@@ -260,7 +260,7 @@ _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg
 
 			Spawnable sDat = readMisalignedSpawnable(s);
 
-			bool failed = fCfg.upwarp;
+			bool failed = upwarps;
 			if (failed) {
 				if (sDat.x == 315 && sDat.y == 17) failed = false;
 				if (sDat.x == 75 && sDat.y == 117) failed = false;
@@ -331,9 +331,7 @@ _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg
 				failed = true;
 
 		if (failed)
-		{
 			return false;
-		}
 	}
 	else
 	{
@@ -344,7 +342,7 @@ _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg
 
 			Spawnable sDat = readMisalignedSpawnable(s);
 
-			bool failed = fCfg.upwarp;
+			bool failed = upwarps;
 			if (failed) {
 				if (sDat.x == 315 && sDat.y == 17) failed = false;
 				if (sDat.x == 75 && sDat.y == 117) failed = false;
@@ -399,13 +397,13 @@ _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg
 			}
 			if (failed) continue;
 
-			if (fCfg.checkBigWands)
-				if (!WandFilterPassed(s, sDat.count, fCfg.howBig)) continue;
+			if (fCfg.wandStats)
+				if (!WandFilterPassed(s, sDat.count, fCfg.wandStatThreshold)) continue;
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
-		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount + fCfg.checkBigWands) > 0)
+		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount + fCfg.wandStats) > 0)
 			return false;
 	}
 #ifndef IMAGE_OUTPUT
