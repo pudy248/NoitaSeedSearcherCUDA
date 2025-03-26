@@ -4,6 +4,7 @@
 #include "../include/noita_random.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
+#include "../data/uiNames.h"
 
 
 #define BIOME_PATH_FIND_WORLD_POS_MIN_X 159
@@ -102,8 +103,8 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 			break;
 #endif
 	}
-	if (tries > 20)
-		printf("Seed %i: %i tries\n", worldSeed, tries);
+	//if (tries > 60)
+	//	printf("Seed %i: %i tries\n", worldSeed, tries);
 
 #ifdef IMAGE_OUTPUT
 	if (!output.is_safe(3 * scope.bSec.map_w * scope.bSec.map_h + 11))
@@ -128,7 +129,7 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 }
 
 void UploadBiomeData() {
-	for (int i = 0; i < B_BIOME_COUNT; i++) {
+	for (int i = 1; i < B_BIOME_COUNT; i++) {
 		for (int j = 0; j < HostPixelSceneLists[i].count; j++) {
 			for (int k = 0; k < HostPixelSceneLists[i].lists[j].count; k++) {
 				PixelSceneData& d = HostPixelSceneLists[i].lists[j].scenes[k];
@@ -156,11 +157,12 @@ void UploadBiomeData() {
 						}
 						for (int16_t z = 0; z < HostSpawnColors[i].count; z++) {
 							if (pix == HostSpawnColors[i].colors[z]) {
-								//d.spawns[d.spawnCount++] = { (int16_t)(HostSpawnColors[0].count + z), x, y };
+								d.spawns[d.spawnCount++] = { (int16_t)(HostSpawnColors[0].count + z), x, y };
 #ifdef DEBUG_SPAWN_PIXELS
 								printf("PS Spawn (%i, %i): Biome %i\n", x, y, z);
 #endif
-								printf("WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n", d.path, x, y, HostSpawnColors[0].count + z);
+								if (HostSpawnColors[i].colors[z] != 0x00ff00)
+									printf("WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n", d.path, x, y, z);
 							}
 						}
 					}

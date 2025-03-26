@@ -89,7 +89,7 @@ void AllocateComputeMemory()
 
 	SetWorkerCount(NumThreads);
 	SetWorkerAppetite(1);
-	SetTargetDispatchRate(2);
+	SetTargetDispatchRate(5);
 	printf("Creating %i threads\n", NumThreads);
 
 	hostPtrs.arena = (uint8_t*)malloc(GetMinimumSpanMemory() * NumThreads);

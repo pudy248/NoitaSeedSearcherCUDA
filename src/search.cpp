@@ -562,27 +562,24 @@ _compute void spawnPotion(int x, int y, const SpawnParams& params)
 _compute void spawnWand(int x, int y, const SpawnParams& params)
 {
 	if (!params.sCfg.biomeAltars) return;
-	if (!params.spawnItem(x, y, params)) return;
 	globalWandCounter++;
 
 	NollaPRNG random = NollaPRNG(params.seed);
-	int nx = x - 5;
-	int ny = y - 14;
 	BiomeWands wandSet = AllWandLevels[params.currentBiome.bSec.b];
 	int sum = 0;
 	for (int i = 0; i < wandSet.count; i++) sum += wandSet.levels[i].prob;
-	float r = random.ProceduralRandomf(nx, ny, 0, 1) * sum;
+	float r = random.ProceduralRandomf(x - 5, y, 0, 1) * sum;
 	for (int i = 0; i < wandSet.count; i++)
 	{
 		if (r <= wandSet.levels[i].prob)
 		{
 			params.sCount++;
-			writeInt(params.bytes, params.offset, nx + 5);
-			writeInt(params.bytes, params.offset, ny + 5);
+			writeInt(params.bytes, params.offset, x);
+			writeInt(params.bytes, params.offset, y + 5);
 			writeByte(params.bytes, params.offset, TYPE_WAND_PEDESTAL);
 			int countOffset = params.offset;
 			params.offset += 4;
-			createWand(nx + 5, ny + 5, wandSet.levels[i].id, false, params);
+			createWand(x, y + 5, wandSet.levels[i].id, false, params);
 			writeInt(params.bytes, countOffset, params.offset - countOffset - 4);
 			return;
 		}
@@ -593,7 +590,7 @@ _compute void spawnWand(int x, int y, const SpawnParams& params)
 _compute static void LoadPixelScene(int x, int y, const PixelSceneList& list, const SpawnParams& params)
 {
 	NollaPRNG random = NollaPRNG(params.seed);
-	PixelSceneData pickedScene;
+	PixelSceneData pickedScene = {};
 	Material pickedMat = MATERIAL_NONE;
 	if (list.count > 1) {
 		float rnd2 = random.ProceduralRandomf(x, y, 0, list.probSum);
@@ -882,7 +879,8 @@ _compute void CheckNightmareSpawnWands(const SpawnParams& params) {
 _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params)
 {
 	BiomeSpawnFunctions& funcs = AllSpawnFunctions[params.currentBiome.bSec.b];
-	funcs.setSharedFuncs(params);
+	if (funcs.init)
+		funcs.init(params);
 
 	for (int y = -1; y < params.currentBiome.bSec.wang_h; y++)
 	{

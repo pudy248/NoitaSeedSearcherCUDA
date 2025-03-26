@@ -83,10 +83,6 @@ struct SpawnParams
 	MemSpan bytes;
 	int& offset;
 	int& sCount;
-
-	void(*spawnSmallEnemies)(int x, int y, const SpawnParams& params);
-	void(*spawnBigEnemies)(int x, int y, const SpawnParams& params);
-	bool(*spawnItem)(int x, int y, const SpawnParams& params);
 };
 
 struct BiomeSpawnColors
@@ -101,7 +97,7 @@ struct BiomeSpawnColors
 struct BiomeSpawnFunctions
 {
 	int count;
-	void(*setSharedFuncs)(SpawnParams& params);
+	void(*init)(SpawnParams& params);
 	void(*funcs[10])(int, int, const SpawnParams&);
 
 	constexpr BiomeSpawnFunctions() = default;
@@ -142,8 +138,8 @@ struct BiomePixelScenes {
 	_universal constexpr BiomePixelScenes(std::initializer_list<PixelSceneList> list);
 };
 
-BiomeSpawnColors HostSpawnColors[B_BIOME_COUNT];
-BiomePixelScenes HostPixelSceneLists[B_BIOME_COUNT];
+BiomeSpawnColors HostSpawnColors[B_BIOME_COUNT] = {};
+BiomePixelScenes HostPixelSceneLists[B_BIOME_COUNT] = {};
 
 _data BiomeWands AllWandLevels[B_BIOME_COUNT];
 _data BiomeSpawnFunctions AllSpawnFunctions[B_BIOME_COUNT];

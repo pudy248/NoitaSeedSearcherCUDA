@@ -42,7 +42,7 @@ _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int 
 	int off_y = y - ty * ssl;
 
 	if constexpr (!skip_fill) {
-		while (1) {
+		while (s.scope.bSec.b == B_COALMINE || s.scope.bSec.b == B_EXCAVATIONSITE) {
 			if (!(x - off_x >= 0 && y - off_y - 4 >= 0 && (v ? s.scope.ts.vTiles : s.scope.ts.hTiles)[tile].should_block))
 				break;
 			//if (s.scope.bSec.b == B_COALMINE && coalmine_overlay[((y - off_y - 4) * 256 + x - off_x) * 3 + 1] > 0x10)

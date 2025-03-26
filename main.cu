@@ -210,7 +210,8 @@ int main()
 	int biomeCount = 0;
 	int maxMapArea = 0;
 	
-	InstantiateBiome(B_CRYPT, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_RAINFOREST, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_RAINFOREST_OPEN, config.biomeScopes, biomeCount, maxMapArea);
 
 	config.biomeCount = biomeCount;
 
@@ -250,7 +251,7 @@ int main()
 		.flask = {false, GOLD}, // flask
 		.wands = {false, SPELL_NONE, SPELL_NONE},
 		.rain = {false, MATERIAL_NONE},
-		.alchemy = {false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MUD, WATER, SOIL}},
+		.alchemy = {false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE}},
 		.biomes = {false, {}},
 		.fungal = {false, {FungalShift(SS_STEAM, SD_FLASK, 0, 1)}},
 		.perks = {false, {
@@ -272,8 +273,8 @@ int main()
 		.eyeRooms = false,
 		.biomeChests = false,
 		.biomePedestals = false,
-		.biomeAltars = true,
-		.biomePixelSceneIndexing = true,
+		.biomeAltars = false,
+		.biomePixelSceneIndexing = false,
 		.biomePixelSceneSearch = false,
 		.biomeEnemies = false,
 		.hellShops = false,
@@ -290,8 +291,8 @@ int main()
 		.itemFilters = {ItemFilter({SAMPO, TRUE_ORB}, 1)},
 		.materialFilterCount = 0,
 		.materialFilters = {},
-		.spellFilterCount = 1,
-		.spellFilters = {SpellFilter({SPELL_NUKE_GIGA})},
+		.spellFilterCount = 0,
+		.spellFilters = {SpellFilter({SPELL_NUKE_GIGA}, 1)},
 		.pixelSceneFilterCount = 0,
 		.pixelSceneFilters = {PixelSceneFilter({PS_CRYPT_POLYMORPHROOM}, 100)},
 		.wandStats = false,
@@ -302,8 +303,8 @@ int main()
 		.outputMode = 0, 
 		.printInterval = 5.f,
 		.printProgressLog = true, 
-		.printOutputToConsole = true,
-		.printOutputToFile = true
+		.printOutputToConsole = false,
+		.printOutputToFile = false
 	};
 
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
@@ -315,12 +316,6 @@ int main()
 	FreeComputeMemory();
 	
 	DestroyPlatform();
-
-	int chunkCount = 26;
-	printf("C %f\n", (double)globalChestCounter.load() / 100000 / chunkCount);
-	printf("H %f\n", (double)globalHeartCounter.load() / 100000 / chunkCount);
-	printf("I %f\n", (double)globalItemCounter.load() / 100000 / chunkCount);
-	printf("W %f\n", (double)globalWandCounter.load() / 100000 / chunkCount);
 
 	//SfmlMain();
 	return 0;

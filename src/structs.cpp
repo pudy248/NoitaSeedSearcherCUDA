@@ -181,7 +181,7 @@ constexpr BiomeSpawnColors::BiomeSpawnColors(std::initializer_list<uint32_t> lis
 }
 
 _compute constexpr BiomeSpawnFunctions::BiomeSpawnFunctions(void(*_fn)(SpawnParams& params), std::initializer_list<void(*)(int, int, const SpawnParams&)> list)
-	: count(list.size()), setSharedFuncs(_fn), funcs() {
+	: count(list.size()), init(_fn), funcs() {
 	for (int i = 0; i < list.size(); i++)
 		funcs[i] = list.begin()[i];
 }

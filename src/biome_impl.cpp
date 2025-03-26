@@ -13,10 +13,10 @@
 // Update SetBiomeData
 
 static BiomeSpawnColors DefaultSpawnColors({
-	0x78ffff, 0x55ff8c, 0x50a000, 0x00ff00
+	0x78ffff, 0x55ff8c, 0x50a000
 });
 _data static BiomeSpawnFunctions DefaultSpawnFunctions(NULL, {
-	spawnHeart, spawnChest, spawnPotion, spawnWand
+	spawnHeart, spawnChest, spawnPotion
 });
 
 _compute static void load_random_pixel_scene(int x, int y, const SpawnParams& params, int index) {
@@ -107,23 +107,20 @@ namespace FUNCS_COALMINE {
 			load_random_pixel_scene(x, y, params, 2);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x, y, 0, 1);
-		if (r < 0.47) return false;
+		if (r < 0.47) return;
 		r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-		return r >= 0.755;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r < 0.755) return;
+		spawnWand(x + 5, y - 9, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080, 0xc35700, 0x4e175e
+		0x00ff00, 0xff0aff, 0xff0080, 0xc35700, 0x4e175e
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
-		spawn_pixel_scene_01, spawn_pixel_scene_02, load_oiltank, load_oiltank_alt
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02, load_oiltank, load_oiltank_alt
 	});
 };
 
@@ -163,21 +160,19 @@ namespace FUNCS_COALMINE_ALT {
 		load_random_pixel_scene(x, y, params, 1);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x, y, 0, 1);
-		if (r < 0.47) return false;
+		if (r < 0.47) return;
 		r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-		return r >= 0.725;
-	}
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r < 0.725) return;
+		spawnWand(x + 5, y - 9, params);
 	}
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080
+		0x00ff00, 0xff0aff, 0xff0080
 		});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
-		spawn_pixel_scene_01, spawn_pixel_scene_02
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02
 	});
 };
 
@@ -275,20 +270,18 @@ namespace FUNCS_EXCAVATIONSITE {
 	}
 
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.431, y + 10.5257, 0, 1);
-		return r >= 0.725;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r < 0.725) return;
+		spawnWand(x, y - 14, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080, 0x00ac64, 0x00ac6e, 0x7868ff, 0x70d79e, 0x70d79f, 0x70d7a0, 0x70d7a1, 0xb09016
-		});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+		0x00ff00, 0xff0aff, 0xff0080, 0x00ac64, 0x00ac6e, 0x7868ff, 0x70d79e, 0x70d79f, 0x70d7a0, 0x70d7a1, 0xb09016
+	});
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_02,
 		spawn_pixel_scene_04,
@@ -409,21 +402,19 @@ namespace FUNCS_SNOWCAVE {
 			load_random_pixel_scene(x - 252, y - 12, params, 5);
 	}
 
-
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r < 0.45;
-	}
+		if (r >= 0.45) return;
+		spawnWand(x - 5, y - 14, params);
+	}		
 
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xc800ff, 0xff0080, 0x00ac33, 0x00ac64, 0x4691c7, 0x3691d7, 0x7285c4, 0x9472c4
+		0x00ff00, 0xff0aff, 0xc800ff, 0xff0080, 0x00ac33, 0x00ac64, 0x4691c7, 0x3691d7, 0x7285c4, 0x9472c4
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_01_alt,
 		spawn_pixel_scene_02,
@@ -477,19 +468,18 @@ namespace FUNCS_SNOWCASTLE {
 			load_random_pixel_scene(x, y, params, 1);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.2;
+		if (r >= 0.2) return;
+		spawnWand(x + 5, y - 5, params);
 	}
 
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080
+		0x00ff00, 0xff0aff, 0xff0080
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_02,
 	});
@@ -530,20 +520,18 @@ namespace FUNCS_RAINFOREST {
 		load_random_pixel_scene(x, y, params, 1);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.27;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r >= 0.27) return;
+		spawnWand(x, y - 14, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080
-		});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+		0x00ff00, 0xff0aff, 0xff0080
+	});
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_02,
 	});
@@ -583,20 +571,18 @@ namespace FUNCS_RAINFOREST_OPEN {
 		load_random_pixel_scene(x, y, params, 1);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.27;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r <= 0.27) return;
+		spawnWand(x, y - 14, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080
+		0x00ff00, 0xff0aff, 0xff0080
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_02,
 	});
@@ -651,20 +637,18 @@ namespace FUNCS_VAULT {
 		load_random_pixel_scene(x, y, params, 3);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r < 0.93;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r >= 0.93) return;
+		spawnWand(x + 5, y - 6, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080, 0x692e94, 0x822e5b
+		0x00ff00, 0xff0aff, 0xff0080, 0x692e94, 0x822e5b
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_02,
 		spawn_pixel_scene_wide,
@@ -721,20 +705,18 @@ namespace FUNCS_CRYPT {
 		load_random_pixel_scene(x, y, params, 5);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.38;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r <= 0.38) return;
+		spawnWand(x, y - 14, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0x00ac33, 0x97ab00, 0xc9d959
+		0x00ff00, 0xff0aff, 0x00ac33, 0x97ab00, 0xc9d959
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_03,
 		spawn_pixel_scene_05,
@@ -750,18 +732,15 @@ namespace FUNCS_FUNGICAVE {
 		WandLevel(0.5f, WAND_T1NS),
 	});
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.06;
+		if (r <= 0.06) return;
+		spawnWand(x, y - 14, params);
 	}
 
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
-
-	static BiomeSpawnColors Colors({});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {});
+	static BiomeSpawnColors Colors({ 0x00ff00 });
+	_data static BiomeSpawnFunctions Funcs(NULL, { spawn_item });
 };
 
 namespace FUNCS_FUNGIFOREST {
@@ -773,18 +752,15 @@ namespace FUNCS_FUNGIFOREST {
 		WandLevel(5, WAND_T5B),
 	});
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.06;
+		if (r <= 0.06) return;
+		spawnWand(x, y - 14, params);
 	}
 
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
-
-	static BiomeSpawnColors Colors({ });
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, { });
+	static BiomeSpawnColors Colors({ 0x00ff00 });
+	_data static BiomeSpawnFunctions Funcs(NULL, { spawn_item });
 };
 
 namespace FUNCS_RAINFOREST_DARK {
@@ -817,20 +793,18 @@ namespace FUNCS_RAINFOREST_DARK {
 		load_random_pixel_scene(x, y, params, 1);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.27;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
+		if (r <= 0.27) return;
+		spawnWand(x, y - 14, params);
 	}
 
 	static BiomeSpawnColors Colors({
-		0xff0aff, 0xff0080
+		0x00ff00, 0xff0aff, 0xff0080
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
+		spawn_item,
 		spawn_pixel_scene_01,
 		spawn_pixel_scene_02,
 	});
@@ -846,18 +820,15 @@ namespace FUNCS_WIZARDCAVE {
 		WandLevel(2, WAND_T6NS),
 	});
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r > 0.38;
+		if (r <= 0.38) return;
+		spawnWand(x, y - 14, params);
 	}
 
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
-
-	static BiomeSpawnColors Colors({ });
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, { });
+	static BiomeSpawnColors Colors({ 0x00ff00 });
+	_data static BiomeSpawnFunctions Funcs(NULL, { spawn_item });
 };
 
 namespace FUNCS_LIQUIDCAVE {
@@ -874,17 +845,10 @@ namespace FUNCS_LIQUIDCAVE {
 		load_random_pixel_scene(x, y, params, 0);
 	}
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
-		return false;
-	}
-
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
 	static BiomeSpawnColors Colors({
 		0xff0aff
 	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
+	_data static BiomeSpawnFunctions Funcs(NULL, {
 		spawn_pixel_scene_01,
 	});
 
@@ -900,18 +864,16 @@ namespace FUNCS_ROBOBASE {
 		WandLevel(2, WAND_T4NS),
 	});
 
-	_compute bool spawn_item(int x, int y, const SpawnParams& params) {
+	_compute void spawn_item(int x, int y, const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-		return r < 0.93;
+		if (r <= 0.93) return;
+		spawnWand(x + 5, y - 6, params);
 	}
 
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = spawn_item;
-	}
 
-	static BiomeSpawnColors Colors({ });
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, { });
+	static BiomeSpawnColors Colors({ 0x00ff00 });
+	_data static BiomeSpawnFunctions Funcs(NULL, { spawn_item });
 };
 
 namespace FUNCS_VAULT_FROZEN {
@@ -927,24 +889,13 @@ namespace FUNCS_VAULT_FROZEN {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 		if (r < 0.83)
-			spawnWand(x, y, params);
+			spawnWand(x + 5, y - 6, params);
 		else if (r < 0.93)
 			CheckUtilityBoxLoot(x, y, params);
 	}
 
-	_compute bool thunk(int x, int y, const SpawnParams& params) {
-		return true;
-	}
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = thunk;
-	}
-
-	static BiomeSpawnColors Colors({
-		0x00ff00
-	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
-		spawn_item
-	});
+	static BiomeSpawnColors Colors({ 0x00ff00 });
+	_data static BiomeSpawnFunctions Funcs(NULL, { spawn_item });
 };
 
 namespace FUNCS_MEAT {
@@ -961,24 +912,13 @@ namespace FUNCS_MEAT {
 		NollaPRNG random(params.seed);
 		float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
 		if (r < 0.3)
-			spawnWand(x, y, params);
+			spawnWand(x - 5, y - 14, params);
 		else if (r < 0.55)
 			CheckUtilityBoxLoot(x, y, params);
 	}
 
-	_compute bool thunk(int x, int y, const SpawnParams& params) {
-		return true;
-	}
-	_compute void SetFunctionPointers(SpawnParams& params) {
-		params.spawnItem = thunk;
-	}
-
-	static BiomeSpawnColors Colors({
-		0x00ff00 
-	});
-	_data static BiomeSpawnFunctions Funcs(SetFunctionPointers, {
-		spawn_item
-	});
+	static BiomeSpawnColors Colors({ 0x00ff00 });
+	_data static BiomeSpawnFunctions Funcs(NULL, { spawn_item });
 };
 
 
@@ -1007,6 +947,7 @@ _compute void SetBiomeData() {
 }
 void SetBiomePixelScenes() {
 	HostSpawnColors[0] = DefaultSpawnColors;
+	HostPixelSceneLists[0] = {};
 	_SetBiomeDataHelper2(COALMINE);
 	_SetBiomeDataHelper2(COALMINE_ALT);
 	_SetBiomeDataHelper2(EXCAVATIONSITE);
