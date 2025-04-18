@@ -1,7 +1,7 @@
 #pragma once
-#include "../platforms/platform_implementation.h"
 #include "../include/enums.h"
 #include "../include/search_structs.h"
+#include "../platforms/platform_implementation.h"
 #include <cstdint>
 
 _universal uint8_t readByte(const uint8_t* ptr, int& offset);
@@ -15,8 +15,7 @@ _universal int readMisaligned(const int* ptr);
 _universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr);
 _universal WandData readMisalignedWand(const WandData* wPtr);
 
-struct MemoryArena
-{
+struct MemoryArena {
 	uint8_t* ptr;
 	uint64_t offset;
 };

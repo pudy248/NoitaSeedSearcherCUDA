@@ -4,17 +4,15 @@
 #include <cstdint>
 #include <initializer_list>
 
-struct AlchemyRecipe
-{
-	Material mats[4] = { MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE };
+struct AlchemyRecipe {
+	Material mats[4] = {MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE};
 
 	_universal AlchemyRecipe();
 	_universal AlchemyRecipe(Material mat1, Material mat2, Material mat3);
 	_universal bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered);
 };
 
-struct FungalShift
-{
+struct FungalShift {
 	ShiftSource from;
 	ShiftDest to;
 	bool fromFlask;
@@ -26,8 +24,7 @@ struct FungalShift
 	_universal FungalShift(ShiftSource _from, ShiftDest _to, int _minIdx, int _maxIdx);
 };
 
-struct PerkData
-{
+struct PerkData {
 	bool stackable;
 	bool stackable_rare;
 	uint8_t stackable_max;
@@ -36,8 +33,7 @@ struct PerkData
 	uint8_t stackable_how_often_reappears;
 };
 
-struct PerkInfo
-{
+struct PerkInfo {
 	Perk p;
 	bool lottery;
 	int minPosition;
@@ -45,8 +41,7 @@ struct PerkInfo
 };
 
 #pragma pack(push, 1)
-struct Spawnable
-{
+struct Spawnable {
 	int x;
 	int y;
 	SpawnableMetadata sType;
@@ -55,37 +50,32 @@ struct Spawnable
 };
 #pragma pack(pop)
 
-struct SpawnableBlock
-{
+struct SpawnableBlock {
 	int seed;
 	int count;
 	Spawnable** spawnables;
 };
 
 #pragma pack(push, 1)
-struct LabelledSpell
-{
+struct LabelledSpell {
 	SpawnableMetadata d;
 	Spell s;
 };
 #pragma pack(pop)
 
-struct SpellData
-{
+struct SpellData {
 	Spell s;
 	ActionType type;
 	double spawn_probabilities[11];
 	const char* name;
 };
 
-struct SpellProb
-{
+struct SpellProb {
 	double p;
 	Spell s;
 };
 
-struct Wand
-{
+struct Wand {
 	int level;
 	bool isBetter;
 	float cost;
@@ -110,8 +100,7 @@ struct Wand
 };
 
 #pragma pack(push, 1)
-struct WandData
-{
+struct WandData {
 	float capacity;
 	int multicast;
 	int mana;
@@ -127,26 +116,24 @@ struct WandData
 };
 #pragma pack(pop)
 
-struct WandLevel
-{
+struct WandLevel {
 	float prob;
 	Item id;
 	_universal constexpr WandLevel() : prob(), id() {}
 	_universal constexpr WandLevel(float _p, Item _w) : prob(_p), id(_w) {}
 };
-struct BiomeWands
-{
+struct BiomeWands {
 	int count;
 	WandLevel levels[6];
 
 	_universal constexpr BiomeWands() : count(), levels() {}
 	_universal constexpr BiomeWands(std::initializer_list<WandLevel> list) : count(list.size()), levels() {
-		for (int i = 0; i < list.size(); i++) levels[i] = list.begin()[i];
+		for (int i = 0; i < list.size(); i++)
+			levels[i] = list.begin()[i];
 	}
 };
 
-struct WandSprite
-{
+struct WandSprite {
 	const char* name;
 	int fileNum;
 	int8_t grip_x;
@@ -160,8 +147,7 @@ struct WandSprite
 	int8_t spread_degrees;
 	int8_t reload_time;
 };
-struct WandSpaceDat
-{
+struct WandSpaceDat {
 	float fire_rate_wait;
 	float actions_per_round;
 	bool shuffle_deck_when_empty;
@@ -201,8 +187,7 @@ struct EnemyList
 
 #define FILTER_OR_COUNT 5
 #define TOTAL_FILTER_COUNT 10
-struct ItemFilter
-{
+struct ItemFilter {
 	Item items[FILTER_OR_COUNT];
 	int duplicates;
 
@@ -210,8 +195,7 @@ struct ItemFilter
 	ItemFilter(std::initializer_list<Item> _items);
 	ItemFilter(std::initializer_list<Item> _items, int _dupes);
 };
-struct MaterialFilter
-{
+struct MaterialFilter {
 	Material materials[FILTER_OR_COUNT];
 	int duplicates;
 
@@ -219,12 +203,11 @@ struct MaterialFilter
 	MaterialFilter(std::initializer_list<Material> _items);
 	MaterialFilter(std::initializer_list<Material> _items, int _dupes);
 };
-struct SpellFilter
-{
+struct SpellFilter {
 	Spell spells[FILTER_OR_COUNT];
 	int duplicates;
 	bool asAlwaysCast;
-	bool consecutive;
+	bool perWand;
 
 	SpellFilter();
 	SpellFilter(std::initializer_list<Spell> _spells);
@@ -232,8 +215,7 @@ struct SpellFilter
 	SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast);
 	SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast, bool _consecutive);
 };
-struct PixelSceneFilter
-{
+struct PixelSceneFilter {
 	PixelScene pixelScenes[FILTER_OR_COUNT];
 	Material materials[FILTER_OR_COUNT];
 	int duplicates;
@@ -243,5 +225,6 @@ struct PixelSceneFilter
 	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes);
 	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, int _dupes);
 	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials);
-	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes);
+	PixelSceneFilter(
+		std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes);
 };

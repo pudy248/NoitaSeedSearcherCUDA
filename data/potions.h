@@ -1,54 +1,20 @@
 #pragma once
-#include "../platforms/platform_implementation.h"
 #include "../include/enums.h"
+#include "../platforms/platform_implementation.h"
 
 _data constexpr int standardMaterialCount = 11;
 _data const Material potionMaterialsStandard[standardMaterialCount] = {
-	LAVA,
-	WATER,
-	BLOOD,
-	ALCOHOL,
-	OIL,
-	SLIME,
-	ACID,
-	RADIOACTIVE_LIQUID,
-	GUNPOWDER_UNSTABLE,
-	LIQUID_FIRE,
-	BLOOD_COLD
-};
+	LAVA, WATER, BLOOD, ALCOHOL, OIL, SLIME, ACID, RADIOACTIVE_LIQUID, GUNPOWDER_UNSTABLE, LIQUID_FIRE, BLOOD_COLD};
 
 _data constexpr int magicMaterialCount = 12;
-_data const Material potionMaterialsMagic[magicMaterialCount] = {
-	MAGIC_LIQUID_UNSTABLE_TELEPORTATION,
-	MAGIC_LIQUID_POLYMORPH,
-	MAGIC_LIQUID_RANDOM_POLYMORPH,
-	MAGIC_LIQUID_BERSERK,
-	MAGIC_LIQUID_CHARM,
-	MAGIC_LIQUID_INVISIBILITY,
-	MATERIAL_CONFUSION,
-	MAGIC_LIQUID_MOVEMENT_FASTER,
-	MAGIC_LIQUID_FASTER_LEVITATION,
-	MAGIC_LIQUID_WORM_ATTRACTOR,
-	MAGIC_LIQUID_PROTECTION_ALL,
-	MAGIC_LIQUID_MANA_REGENERATION
-};
+_data const Material potionMaterialsMagic[magicMaterialCount] = {MAGIC_LIQUID_UNSTABLE_TELEPORTATION,
+	MAGIC_LIQUID_POLYMORPH, MAGIC_LIQUID_RANDOM_POLYMORPH, MAGIC_LIQUID_BERSERK, MAGIC_LIQUID_CHARM,
+	MAGIC_LIQUID_INVISIBILITY, MATERIAL_CONFUSION, MAGIC_LIQUID_MOVEMENT_FASTER, MAGIC_LIQUID_FASTER_LEVITATION,
+	MAGIC_LIQUID_WORM_ATTRACTOR, MAGIC_LIQUID_PROTECTION_ALL, MAGIC_LIQUID_MANA_REGENERATION};
 
 _data constexpr int secretMaterialCount = 13;
-_data const Material potionMaterialsSecret[secretMaterialCount] = {
-	MAGIC_LIQUID_HP_REGENERATION_UNSTABLE,
-	BLOOD_WORM,
-	GOLD,
-	SNOW,
-	GLOWSHROOM,
-	BUSH_SEED,
-	CEMENT,
-	SALT,
-	SODIUM,
-	MUSHROOM_SEED,
-	PLANT_SEED,
-	URINE,
-	PURIFYING_POWDER
-};
+_data const Material potionMaterialsSecret[secretMaterialCount] = {MAGIC_LIQUID_HP_REGENERATION_UNSTABLE, BLOOD_WORM,
+	GOLD, SNOW, GLOWSHROOM, BUSH_SEED, CEMENT, SALT, SODIUM, MUSHROOM_SEED, PLANT_SEED, URINE, PURIFYING_POWDER};
 
 _data constexpr int sandMaterialCount = 87;
 _data const Material potionSands[sandMaterialCount] = {
@@ -143,7 +109,7 @@ _data const Material potionSands[sandMaterialCount] = {
 
 _data constexpr int liquidMaterialCount = 98;
 _data const Material potionLiquids[liquidMaterialCount] = {
-	 WATER,
+	WATER,
 	WATER_TEMP,
 	WATER_ICE,
 	WATER_SWAMP,

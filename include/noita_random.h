@@ -6,8 +6,7 @@
 // Thanks to kaliuresis!
 // Check out his orb atlas repository: https://github.com/kaliuresis/noa
 
-class WorldgenPRNG
-{
+class WorldgenPRNG {
 public:
 	double Seed;
 	_universal WorldgenPRNG(double seed);
@@ -15,8 +14,7 @@ public:
 	_universal double Next();
 };
 
-class NollaPRNG
-{
+class NollaPRNG {
 public:
 	uint32_t world_seed;
 	int Seed;

@@ -1,7 +1,6 @@
 #pragma once
 
-enum Material : short
-{
+enum Material : short {
 	MATERIAL_NONE,
 
 	//VARIABLES
@@ -484,8 +483,7 @@ enum Material : short
 	SPARK_PLAYER,
 	SPARK_TEAL,
 };
-enum Item : unsigned char
-{
+enum Item : unsigned char {
 	ITEM_NONE,
 	GOLD_NUGGETS,
 	CHEST_TO_GOLD,
@@ -554,8 +552,7 @@ enum Item : unsigned char
 	SAMPO,
 	TRUE_ORB,
 };
-enum SpawnableMetadata : unsigned char
-{
+enum SpawnableMetadata : unsigned char {
 	BYTE_NONE,
 	TYPE_CHEST = 128,
 	TYPE_CHEST_GREATER,
@@ -576,22 +573,14 @@ enum SpawnableMetadata : unsigned char
 	DATA_PIXEL_SCENE,
 };
 
-enum CartType : unsigned char
-{
-	CART_NONE,
-	MINECART,
-	WOODCART,
-	SKATEBOARD
-};
-enum AlchemyOrdering
-{
+enum CartType : unsigned char { CART_NONE, MINECART, WOODCART, SKATEBOARD };
+enum AlchemyOrdering {
 	STRICT_ORDERED,
 	ONLY_CONSUMED,
 	UNORDERED,
 };
 
-enum ShiftSource : short
-{
+enum ShiftSource : short {
 	SS_FLASK = -1,
 	SS_NONE = MATERIAL_NONE,
 	SS_VAR1 = MATERIAL_VAR1,
@@ -620,8 +609,7 @@ enum ShiftSource : short
 	SD_FL_GOLD = Material::GOLD,
 	SD_FL_GRASS_HOLY = Material::GRASS_HOLY,
 };
-enum ShiftDest : short
-{
+enum ShiftDest : short {
 	SD_FLASK = -1,
 	SD_NONE = MATERIAL_NONE,
 	SD_VAR1 = MATERIAL_VAR1,
@@ -662,8 +650,7 @@ enum ShiftDest : short
 	SD_CHEESE_STATIC = Material::CHEESE_STATIC,
 };
 
-enum Biome : unsigned char
-{
+enum Biome : unsigned char {
 	B_NONE,
 	B_COALMINE,
 	B_COALMINE_ALT,
@@ -700,8 +687,7 @@ enum Biome : unsigned char
 
 	B_BIOME_COUNT
 };
-enum BiomeModifier : unsigned char
-{
+enum BiomeModifier : unsigned char {
 	BM_NONE,
 	BM_MOIST,
 	BM_FOG_OF_WAR_REAPPEARS,
@@ -727,8 +713,7 @@ enum BiomeModifier : unsigned char
 	BM_WORMY
 };
 
-enum Perk : unsigned char
-{
+enum Perk : unsigned char {
 	PERK_NONE,
 	PERK_CRITICAL_HIT,
 	PERK_BREATH_UNDERWATER,
@@ -838,8 +823,7 @@ enum Perk : unsigned char
 	PERK_MEGA_BEAM_STONE,
 };
 
-enum ActionType
-{
+enum ActionType {
 	PROJECTILE = 0,
 	STATIC_PROJECTILE = 1,
 	MODIFIER = 2,
@@ -849,8 +833,7 @@ enum ActionType
 	UTILITY = 6,
 	PASSIVE = 7
 };
-enum Spell : short
-{
+enum Spell : short {
 	SPELL_NONE,
 	SPELL_BOMB,
 	SPELL_LIGHT_BULLET,
@@ -1275,19 +1258,9 @@ enum Spell : short
 	SPELL_RAINBOW_TRAIL,
 	SPELL_CESSATION,
 };
-enum WandStat
-{
-	RELOAD,
-	CAST_DELAY,
-	SPREAD,
-	SPEED_MULT,
-	CAPACITY,
-	MULTICAST,
-	SHUFFLE
-};
+enum WandStat { RELOAD, CAST_DELAY, SPREAD, SPEED_MULT, CAPACITY, MULTICAST, SHUFFLE };
 
-enum PixelScene : short
-{
+enum PixelScene : short {
 	PS_NONE,
 
 	PS_COALMINE_CARTHILL,
@@ -1327,7 +1300,7 @@ enum PixelScene : short
 	PS_COALMINE_WANDTRAP_H_02,
 	PS_COALMINE_WANDTRAP_H_04,
 	PS_COALMINE_WANDTRAP_H_06,
-	PS_COALMINE_WANDTRAP_H_07, 
+	PS_COALMINE_WANDTRAP_H_07,
 
 	PS_EXCAVATIONSITE_GUNPOWDERPOOL_01,
 	PS_EXCAVATIONSITE_GUNPOWDERPOOL_02,
@@ -1401,7 +1374,7 @@ enum PixelScene : short
 	PS_SNOWCASTLE_SAUNA,
 	PS_SNOWCASTLE_SHAFT,
 	PS_SNOWCASTLE_TELEROOM,
-	
+
 	PS_RAINFOREST_BASE,
 	PS_RAINFOREST_HUT01,
 	PS_RAINFOREST_HUT02,
@@ -1441,8 +1414,7 @@ enum PixelScene : short
 	PS_LIQUIDCAVE_CONTAINER_01,
 };
 
-enum Enemy : short
-{
+enum Enemy : short {
 	ENEMY_NONE,
 	ENEMY_HAMIS,
 	ENEMY_SLIMESHOOTER_WEAK,

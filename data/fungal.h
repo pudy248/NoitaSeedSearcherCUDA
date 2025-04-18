@@ -1,28 +1,11 @@
 #pragma once
-#include "../platforms/platform_implementation.h"
 #include "../include/enums.h"
+#include "../platforms/platform_implementation.h"
 
 _data constexpr int fungalMaterialsFromCount = 18;
-_data const ShiftSource fungalMaterialsFrom[] = {
-	SS_WATER,
-	SS_LAVA,
-	SS_RADIOACTIVE_LIQUID,
-	SS_OIL,
-	SS_BLOOD,
-	SS_FUNGI,
-	SS_BLOOD_WORM,
-	SS_ACID,
-	SS_ACID_GAS,
-	SS_MAGIC_LIQUID_POLYMORPH,
-	SS_MAGIC_LIQUID_BERSERK,
-	SS_DIAMOND,
-	SS_SILVER,
-	SS_STEAM,
-	SS_SAND,
-	SS_SNOW_STICKY,
-	SS_ROCK_STATIC,
-	SS_GOLD
-};
+_data const ShiftSource fungalMaterialsFrom[] = {SS_WATER, SS_LAVA, SS_RADIOACTIVE_LIQUID, SS_OIL, SS_BLOOD, SS_FUNGI,
+	SS_BLOOD_WORM, SS_ACID, SS_ACID_GAS, SS_MAGIC_LIQUID_POLYMORPH, SS_MAGIC_LIQUID_BERSERK, SS_DIAMOND, SS_SILVER,
+	SS_STEAM, SS_SAND, SS_SNOW_STICKY, SS_ROCK_STATIC, SS_GOLD};
 _data constexpr float fungalSumFrom = 11.4503f;
 _data const float fungalProbsFrom[] = {
 	1,

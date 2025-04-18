@@ -1,185 +1,136 @@
-#include "../platforms/platform_implementation.h"
-#include "../include/search_structs.h"
 #include "../include/misc_funcs.h"
 #include "../include/primitives.h"
+#include "../include/search_structs.h"
+#include "../platforms/platform_implementation.h"
 
-#include <cstdio>
 #include <cstdint>
+#include <cstdio>
 
-_compute static void ItemFilterPassed(Spawnable* s, int count, ItemFilter f, int& foundCount)
-{
-	for (int n = 0; n < count; n++)
-	{
+_compute static void ItemFilterPassed(Spawnable* s, int count, ItemFilter f, int& foundCount) {
+	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
-		if (c == DATA_MATERIAL || c == DATA_SPELL)
-		{
+		if (c == DATA_MATERIAL || c == DATA_SPELL) {
 			n += 2;
 			continue;
 		}
-		if (c == DATA_PIXEL_SCENE)
-		{
+		if (c == DATA_PIXEL_SCENE) {
 			n += 4;
 			continue;
-		}
-
-		else if (c == DATA_WAND)
-		{
+		} else if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			n += 37 + dat.spellCount * 3;
-		}
-
-		else
-		{
+		} else {
 			bool iFound = f.items[0] == ITEM_NONE;
-			for (int i = 0; i < FILTER_OR_COUNT; i++)
-			{
-				if (f.items[i] != ITEM_NONE && c == f.items[i])
-				{
+			for (int i = 0; i < FILTER_OR_COUNT; i++) {
+				if (f.items[i] != ITEM_NONE && c == f.items[i]) {
 					iFound = true;
 					break;
 				}
 			}
-			if (iFound) foundCount++;
+			if (iFound)
+				foundCount++;
 		}
 	}
 }
-_compute static void MaterialFilterPassed(Spawnable* s, int count, MaterialFilter mf, int& foundCount)
-{
-	for (int n = 0; n < count; n++)
-	{
+_compute static void MaterialFilterPassed(Spawnable* s, int count, MaterialFilter mf, int& foundCount) {
+	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
-		if (c == DATA_MATERIAL)
-		{
+		if (c == DATA_MATERIAL) {
 			int offset = n + 1;
 			Material m2 = (Material)readShort((uint8_t*)(&s->contents), offset);
 
 			bool mPassed = mf.materials[0] == MATERIAL_NONE;
-			for (int i = 0; i < FILTER_OR_COUNT; i++)
-			{
-				if (mf.materials[i] != MATERIAL_NONE && m2 == mf.materials[i])
-				{
+			for (int i = 0; i < FILTER_OR_COUNT; i++) {
+				if (mf.materials[i] != MATERIAL_NONE && m2 == mf.materials[i]) {
 					mPassed = true;
 					break;
 				}
 			}
-			if (mPassed) foundCount++;
+			if (mPassed)
+				foundCount++;
 
 			n += 2;
 			continue;
-		}
-
-		else if (c == DATA_SPELL)
-		{
+		} else if (c == DATA_SPELL) {
 			n += 2;
 			continue;
-		}
-		if (c == DATA_PIXEL_SCENE)
-		{
+		} else if (c == DATA_PIXEL_SCENE) {
 			n += 4;
 			continue;
-		}
-
-		else if (c == DATA_WAND)
-		{
+		} else if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			n += 37 + dat.spellCount * 3;
+		} else if (c > TRUE_ORB) {
+			printf("Unrecognized byte in filter stream: %i at %i\n", c, n);
 		}
-
 	}
 }
-_compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, SpellFilter sf, int& foundCount)
-{
-	int largestChain = 0;
-	for (int n = 0; n < count; n++)
-	{
+_compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, SpellFilter sf, int& foundCount) {
+	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
-		if (c == DATA_SPELL && !sf.asAlwaysCast)
-		{
+		if (c == DATA_SPELL && !sf.asAlwaysCast && !sf.perWand) {
 			int offset = n + 1;
 			Spell sp2 = (Spell)readShort((uint8_t*)(&s->contents), offset);
 
 			bool foundOnThisSpell = sf.spells[0] == SPELL_NONE;
-			for (int i = 0; i < FILTER_OR_COUNT; i++)
-			{
-				if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i])
-				{
+			for (int i = 0; i < FILTER_OR_COUNT; i++) {
+				if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i]) {
 					foundOnThisSpell = true;
 					break;
 				}
 			}
-			if (foundOnThisSpell) foundCount++;
-			else if (sf.consecutive)
-			{
-				largestChain = max(largestChain, foundCount);
-				foundCount = 0;
-			}
-
+			if (foundOnThisSpell)
+				foundCount++;
 			n += 2;
 			continue;
-		}
-
-		else if (c == DATA_MATERIAL)
-		{
+		} else if (c == DATA_MATERIAL) {
 			n += 2;
 			continue;
-		}
-		if (c == DATA_PIXEL_SCENE)
-		{
+		} else if (c == DATA_PIXEL_SCENE) {
 			n += 4;
 			continue;
-		}
-
-		if (c == DATA_WAND)
-		{
-			n += 35;
-			if (sf.asAlwaysCast)
-			{
-				int offset = n + 1;
-				Spell AC = (Spell)readShort((uint8_t*)(&s->contents), offset);
+		} else if (c == DATA_WAND) {
+			n += 34;
+			int ctr = 0;
+			int offset = n;
+			uint8_t spellCount = readByte((uint8_t*)(&s->contents), offset);
+			for (int j = -1; j < spellCount; j++) {
+				offset++;
+				Spell sp = (Spell)readShort((uint8_t*)(&s->contents), offset);
 				bool foundOnThisSpell = false;
-				for (int i = 0; i < FILTER_OR_COUNT; i++)
-				{
-					if (sf.spells[i] != SPELL_NONE && AC == sf.spells[i])
-					{
+				for (int i = 0; i < FILTER_OR_COUNT; i++) {
+					if (sf.spells[i] != SPELL_NONE && sp == sf.spells[i]) {
 						foundOnThisSpell = true;
 						break;
 					}
 				}
-				if (foundOnThisSpell) foundCount++;
-				else if (sf.consecutive)
-				{
-					largestChain = max(largestChain, foundCount);
-					foundCount = 0;
-				}
-
+				if (foundOnThisSpell)
+					ctr++;
 			}
-			n += 2;
+			foundCount = max(ctr, foundCount);
+			n = offset - 1;
 			continue;
+		} else if (c > TRUE_ORB) {
+			printf("Unrecognized byte in filter stream: %i at %i\n", c, n);
 		}
 	}
-	if (sf.consecutive) foundCount = largestChain;
 }
-_compute static bool WandFilterPassed(Spawnable* s, int count, int howBig)
-{
-	for (int n = 0; n < count; n++)
-	{
+_compute static bool WandFilterPassed(Spawnable* s, int count, int howBig) {
+	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
 
-		if (c == DATA_MATERIAL || c == DATA_SPELL)
-		{
+		if (c == DATA_MATERIAL || c == DATA_SPELL) {
 			n += 2;
 			continue;
 		}
-		if (c == DATA_PIXEL_SCENE)
-		{
+		if (c == DATA_PIXEL_SCENE) {
 			n += 4;
 			continue;
 		}
 
-		if (c == DATA_WAND)
-		{
+		if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			if (dat.capacity >= howBig)
@@ -190,13 +141,10 @@ _compute static bool WandFilterPassed(Spawnable* s, int count, int howBig)
 	}
 	return false;
 }
-_compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneFilter psf, int& foundCount)
-{
-	for (int n = 0; n < count; n++)
-	{
+_compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneFilter psf, int& foundCount) {
+	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
-		if (c == DATA_PIXEL_SCENE)
-		{
+		if (c == DATA_PIXEL_SCENE) {
 			int offset = n + 1;
 			PixelScene ps = (PixelScene)readShort((uint8_t*)(&s->contents), offset);
 			Material m = (Material)readShort((uint8_t*)(&s->contents), offset);
@@ -204,109 +152,103 @@ _compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneF
 			bool psMatch = psf.pixelScenes[0] == PS_NONE;
 			bool mMatch = !psf.checkMats;
 
-			for (int i = 0; i < FILTER_OR_COUNT; i++)
-			{
+			for (int i = 0; i < FILTER_OR_COUNT; i++) {
 				if (psf.pixelScenes[i] != PS_NONE && ps == psf.pixelScenes[i])
 					psMatch = true;
 				if (psf.materials[i] != MATERIAL_NONE && m == psf.materials[i])
 					mMatch = true;
 			}
-			if (psMatch && mMatch) foundCount++;
+			if (psMatch && mMatch)
+				foundCount++;
 
 			n += 4;
 			continue;
 		}
 
-		else if (c == DATA_SPELL || c == DATA_MATERIAL)
-		{
+		else if (c == DATA_SPELL || c == DATA_MATERIAL) {
 			n += 2;
 			continue;
 		}
 
-		else if (c == DATA_WAND)
-		{
+		else if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			n += 37 + dat.spellCount * 3;
 		}
-
 	}
 }
 
-_compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write, bool upwarps)
-{
+_compute bool SpawnablesPassed(
+	const SpawnableBlock& b, const FilterConfig& fCfg, MemSpan output, MemSpan tmp, bool write, bool upwarps) {
 	int relevantSpawnableCount = 0;
-	MemoryArena localArena = { tmp.ptr, 0 };
+	MemoryArena localArena = {tmp.ptr, 0};
 
 	Spawnable** relevantSpawnables = (Spawnable**)ArenaAlloc(localArena, 512).ptr;
 
-	if (fCfg.aggregate)
-	{
-
+	if (fCfg.aggregate) {
 		int* itemsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 		int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 		int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 		int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 
-		for (int i = 0; i < fCfg.itemFilterCount; i++) itemsPassed[i] = 0;
-		for (int i = 0; i < fCfg.materialFilterCount; i++) materialsPassed[i] = 0;
-		for (int i = 0; i < fCfg.spellFilterCount; i++) spellsPassed[i] = 0;
-		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++) pixelScenesPassed[i] = 0;
-		
-		for (int j = 0; j < b.count; j++)
-		{
+		for (int i = 0; i < fCfg.itemFilterCount; i++)
+			itemsPassed[i] = 0;
+		for (int i = 0; i < fCfg.materialFilterCount; i++)
+			materialsPassed[i] = 0;
+		for (int i = 0; i < fCfg.spellFilterCount; i++)
+			spellsPassed[i] = 0;
+		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
+			pixelScenesPassed[i] = 0;
+
+		for (int j = 0; j < b.count; j++) {
 			Spawnable* s = b.spawnables[j];
-			if (s == NULL) continue;
+			if (s == NULL)
+				continue;
 
 			Spawnable sDat = readMisalignedSpawnable(s);
 
 			bool failed = upwarps;
 			if (failed) {
-				if (sDat.x == 315 && sDat.y == 17) failed = false;
-				if (sDat.x == 75 && sDat.y == 117) failed = false;
+				if (sDat.x == 315 && sDat.y == 17)
+					failed = false;
+				if (sDat.x == 75 && sDat.y == 117)
+					failed = false;
 			}
-			if (failed) continue;
+			if (failed)
+				continue;
 			bool added = false;
 
-			for (int i = 0; i < fCfg.itemFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.itemFilterCount; i++) {
 				int prevPassCount = itemsPassed[i];
 				ItemFilterPassed(s, sDat.count, fCfg.itemFilters[i], itemsPassed[i]);
-				if (itemsPassed[i] > prevPassCount && !added)
-				{
+				if (itemsPassed[i] > prevPassCount && !added) {
 					added = true;
 					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
 
-			for (int i = 0; i < fCfg.materialFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.materialFilterCount; i++) {
 				int prevPassCount = materialsPassed[i];
 				MaterialFilterPassed(s, sDat.count, fCfg.materialFilters[i], materialsPassed[i]);
-				if (materialsPassed[i] > prevPassCount && !added)
-				{
+				if (materialsPassed[i] > prevPassCount && !added) {
 					added = true;
 					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
 
-			for (int i = 0; i < fCfg.spellFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.spellFilterCount; i++) {
 				int prevPassCount = spellsPassed[i];
 				SpellFilterPassed(b.seed, s, sDat.count, fCfg.spellFilters[i], spellsPassed[i]);
-				if (spellsPassed[i] > prevPassCount && !added)
-				{
+				if (spellsPassed[i] > prevPassCount && !added) {
 					added = true;
 					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
 
-			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++) {
 				int prevPassCount = pixelScenesPassed[i];
 				PixelSceneFilterPassed(s, sDat.count, fCfg.pixelSceneFilters[i], pixelScenesPassed[i]);
-				if (pixelScenesPassed[i] > prevPassCount && !added)
-				{
+				if (pixelScenesPassed[i] > prevPassCount && !added) {
 					added = true;
 					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
@@ -332,82 +274,82 @@ _compute bool SpawnablesPassed(const SpawnableBlock& b, const FilterConfig& fCfg
 
 		if (failed)
 			return false;
-	}
-	else
-	{
-		for (int j = 0; j < b.count; j++)
-		{
+	} else {
+		for (int j = 0; j < b.count; j++) {
 			Spawnable* s = b.spawnables[j];
-			if (s == NULL) continue;
+			if (s == NULL)
+				continue;
 
 			Spawnable sDat = readMisalignedSpawnable(s);
 
 			bool failed = upwarps;
 			if (failed) {
-				if (sDat.x == 315 && sDat.y == 17) failed = false;
-				if (sDat.x == 75 && sDat.y == 117) failed = false;
+				if (sDat.x == 315 && sDat.y == 17)
+					failed = false;
+				if (sDat.x == 75 && sDat.y == 117)
+					failed = false;
 			}
-			if (failed) continue;
+			if (failed)
+				continue;
 
-			for (int i = 0; i < fCfg.itemFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.itemFilterCount; i++) {
 				int passCount = 0;
 				ItemFilterPassed(s, sDat.count, fCfg.itemFilters[i], passCount);
-				if (passCount < fCfg.itemFilters[i].duplicates)
-				{
+				if (passCount < fCfg.itemFilters[i].duplicates) {
 					failed = true;
 					break;
 				}
 			}
-			if (failed) continue;
+			if (failed)
+				continue;
 
-			for (int i = 0; i < fCfg.materialFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.materialFilterCount; i++) {
 				int passCount = 0;
 				MaterialFilterPassed(s, sDat.count, fCfg.materialFilters[i], passCount);
-				if (passCount < fCfg.materialFilters[i].duplicates)
-				{
+				if (passCount < fCfg.materialFilters[i].duplicates) {
 					failed = true;
 					break;
 				}
 			}
-			if (failed) continue;
+			if (failed)
+				continue;
 
-			for (int i = 0; i < fCfg.spellFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.spellFilterCount; i++) {
 				int passCount = 0;
 				SpellFilterPassed(b.seed, s, sDat.count, fCfg.spellFilters[i], passCount);
-				if (passCount < fCfg.spellFilters[i].duplicates)
-				{
+				if (passCount < fCfg.spellFilters[i].duplicates) {
 					failed = true;
 					break;
 				}
 			}
-			if (failed) continue;
+			if (failed)
+				continue;
 
-			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
-			{
+			for (int i = 0; i < fCfg.pixelSceneFilterCount; i++) {
 				int passCount = 0;
 				PixelSceneFilterPassed(s, sDat.count, fCfg.pixelSceneFilters[i], passCount);
-				if (passCount < fCfg.pixelSceneFilters[i].duplicates)
-				{
+				if (passCount < fCfg.pixelSceneFilters[i].duplicates) {
 					failed = true;
 					break;
 				}
 			}
-			if (failed) continue;
+			if (failed)
+				continue;
 
 			if (fCfg.wandStats)
-				if (!WandFilterPassed(s, sDat.count, fCfg.wandStatThreshold)) continue;
+				if (!WandFilterPassed(s, sDat.count, fCfg.wandStatThreshold))
+					continue;
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
-		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount + fCfg.pixelSceneFilterCount + fCfg.wandStats) > 0)
+		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount +
+											   fCfg.pixelSceneFilterCount + fCfg.wandStats) > 0)
 			return false;
 	}
 #ifndef IMAGE_OUTPUT
-	if (write) WriteOutputBlock(output, { b.seed, relevantSpawnableCount, relevantSpawnables });
+	if (write)
+		WriteOutputBlock(output, {b.seed, relevantSpawnableCount, relevantSpawnables});
 #endif
 	return true;
 }

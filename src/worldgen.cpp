@@ -1,47 +1,39 @@
 #include "../platforms/platform_implementation.h"
 
-#include "../include/worldgen_structs.h"
-#include "../include/noita_random.h"
+#include "../data/uiNames.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
-#include "../data/uiNames.h"
-
+#include "../include/noita_random.h"
+#include "../include/worldgen_structs.h"
 
 #define BIOME_PATH_FIND_WORLD_POS_MIN_X 159
 #define BIOME_PATH_FIND_WORLD_POS_MAX_X 223
 #define WORLD_OFFSET_X 35
 
-_universal static WorldgenPRNG GetRNG(uint32_t world_seed, int map_w)
-{
+_universal static WorldgenPRNG GetRNG(uint32_t world_seed, int map_w) {
 	WorldgenPRNG rng = WorldgenPRNG(world_seed);
 
 	int iters = map_w + world_seed + 11 * (map_w / -11) - 12 * (world_seed / 12);
 
-	if (iters > 0)
-	{
-		do
-		{
+	if (iters > 0) {
+		do {
 			rng.Next();
 			iters -= 1;
 		} while (iters != 0);
 	}
 	return rng;
 }
-_universal static uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x, const uint32_t y)
-{
+_universal static uint32_t getPos(const uint32_t w, const uint32_t s, const uint32_t x, const uint32_t y) {
 	return s * (w * y + x);
 }
-_universal static uint32_t getPixelColor(const uint8_t* map, uint32_t pos)
-{
+_universal static uint32_t getPixelColor(const uint8_t* map, uint32_t pos) {
 	return createRGB(map[pos], map[pos + 1], map[pos + 2]);
 }
-_universal static uint32_t getPixelColor(const uint8_t* map, const uint32_t w, const uint32_t x, const uint32_t y)
-{
+_universal static uint32_t getPixelColor(const uint8_t* map, const uint32_t w, const uint32_t x, const uint32_t y) {
 	uint32_t pos = getPos(w, 3, x, y);
 	return getPixelColor(map, pos);
 }
-_universal static void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
-{
+_universal static void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color) {
 	uint8_t r = ((color >> 16) & 0xff);
 	uint8_t g = ((color >> 8) & 0xff);
 	uint8_t b = ((color) & 0xff);
@@ -49,23 +41,19 @@ _universal static void setPixelColor(uint8_t* map, uint32_t pos, uint32_t color)
 	map[pos + 1] = g;
 	map[pos + 2] = b;
 }
-_universal static void setPixelColor(uint8_t* map, uint32_t w, uint32_t x, uint32_t y, uint32_t color)
-{
+_universal static void setPixelColor(uint8_t* map, uint32_t w, uint32_t x, uint32_t y, uint32_t color) {
 	uint32_t pos = getPos(w, 3, x, y);
 	setPixelColor(map, pos, color);
 }
-_universal static void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32_t color)
-{
-	for (int x = x1; x <= x2; x++)
-	{
-		for (int y = y1; y <= y2; y++)
-		{
+_universal static void fill(uint8_t* map, int w, int x1, int x2, int y1, int y2, uint32_t color) {
+	for (int x = x1; x <= x2; x++) {
+		for (int y = y1; y <= y2; y++) {
 			setPixelColor(map, w, x, y, color);
 		}
 	}
 }
-_compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& scope, MemSpan output, MemSpan res, MemSpan visited, MemSpan miscMem)
-{
+_compute GeneratedBiome GenerateMap(
+	uint32_t worldSeed, const BiomeWangScope& scope, MemSpan output, MemSpan res, MemSpan visited, MemSpan miscMem) {
 #ifdef SEEDS_AS_TRIES
 	int MAX_TRIES = worldSeed;
 	worldSeed = SEEDS_AS_TRIES;
@@ -76,12 +64,12 @@ _compute GeneratedBiome GenerateMap(uint32_t worldSeed, const BiomeWangScope& sc
 	WorldgenPRNG rng = GetRNG(worldSeed, scope.bSec.map_w);
 	//if (scope.bSec.isNightmare) rng.Next();
 
+	memset(res.ptr, 0x80, scope.bSec.wang_w * 2);
 	WangTileIndex* idxs = (WangTileIndex*)res.ptr + scope.bSec.wang_w;
-	GeneratedBiome b = { scope, idxs, 0 };
+	GeneratedBiome b = {scope, idxs, 0};
 
 	int tries = 0;
-	while (tries < MAX_TRIES)
-	{
+	while (tries < MAX_TRIES) {
 		tries++;
 		WorldgenPRNG rng2 = WorldgenPRNG(rng.NextU());
 		stbhw_generate_image(idxs, scope, scope.bSec.map_w, scope.bSec.map_h + 4, rng2);
@@ -134,7 +122,8 @@ void UploadBiomeData() {
 			for (int k = 0; k < HostPixelSceneLists[i].lists[j].count; k++) {
 				PixelSceneData& d = HostPixelSceneLists[i].lists[j].scenes[k];
 				d.spawnCount = 0;
-				if (!d.path) continue;
+				if (!d.path)
+					continue;
 
 				const uint8_t* png = (const uint8_t*)get_wak_file(d.path).data();
 				Vec2i dims = GetBufferImageDimensions(png);
@@ -146,10 +135,11 @@ void UploadBiomeData() {
 #endif
 				for (int16_t y = 0; y < dims.y; y++) {
 					for (int16_t x = 0; x < dims.x; x++) {
-						uint32_t pix = (buf[3 * (y * dims.x + x)] << 16) + (buf[3 * (y * dims.x + x) + 1] << 8) + buf[3 * (y * dims.x + x) + 2];
+						uint32_t pix = (buf[3 * (y * dims.x + x)] << 16) + (buf[3 * (y * dims.x + x) + 1] << 8) +
+									   buf[3 * (y * dims.x + x) + 2];
 						for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
 							if (pix == HostSpawnColors[0].colors[z]) {
-								d.spawns[d.spawnCount++] = { z, x, y };
+								d.spawns[d.spawnCount++] = {z, x, y};
 #ifdef DEBUG_SPAWN_PIXELS
 								printf("PS Spawn (%i, %i): Global %i\n", x, y, z);
 #endif
@@ -157,12 +147,14 @@ void UploadBiomeData() {
 						}
 						for (int16_t z = 0; z < HostSpawnColors[i].count; z++) {
 							if (pix == HostSpawnColors[i].colors[z]) {
-								d.spawns[d.spawnCount++] = { (int16_t)(HostSpawnColors[0].count + z), x, y };
+								d.spawns[d.spawnCount++] = {(int16_t)(HostSpawnColors[0].count + z), x, y};
 #ifdef DEBUG_SPAWN_PIXELS
 								printf("PS Spawn (%i, %i): Biome %i\n", x, y, z);
 #endif
 								if (HostSpawnColors[i].colors[z] != 0x00ff00)
-									printf("WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n", d.path, x, y, z);
+									printf(
+										"WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n",
+										d.path, x, y, z);
 							}
 						}
 					}

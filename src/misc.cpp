@@ -1,58 +1,47 @@
-#include "../platforms/platform_implementation.h"
 #include "../include/misc_funcs.h"
-#include "../include/search_structs.h"
 #include "../include/noita_random.h"
+#include "../include/search_structs.h"
+#include "../platforms/platform_implementation.h"
+#include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <cmath>
 
-_universal uint8_t readByte(const uint8_t* ptr, int& offset)
-{
-	return ptr[offset++];
-}
-_universal void writeByte(MemSpan ptr, int& offset, uint8_t b)
-{
+_universal uint8_t readByte(const uint8_t* ptr, int& offset) { return ptr[offset++]; }
+_universal void writeByte(MemSpan ptr, int& offset, uint8_t b) {
 	if (!ptr.is_safe(offset))
 		printf("writeByte(): Ran out of space.\n");
 	ptr.ptr[offset++] = b;
 }
-_universal int readInt(const uint8_t* ptr, int& offset)
-{
+_universal int readInt(const uint8_t* ptr, int& offset) {
 	int tmp;
 	memcpy(&tmp, ptr + offset, 4);
 	offset += 4;
 	return tmp;
 }
-_universal void writeInt(MemSpan ptr, int& offset, int val)
-{
+_universal void writeInt(MemSpan ptr, int& offset, int val) {
 	if (!ptr.is_safe(offset + 3))
 		printf("writeByte(): Ran out of space.\n");
 	memcpy(ptr.ptr + offset, &val, 4);
 	offset += 4;
 }
-_universal void incrInt(int* ptr)
-{
+_universal void incrInt(int* ptr) {
 	int offsetTmp = 0;
 	int tmp = readInt((const uint8_t*)ptr, offsetTmp);
 	offsetTmp = 0;
-	writeInt({ (uint8_t*)ptr, 4 }, offsetTmp, tmp + 1);
+	writeInt({(uint8_t*)ptr, 4}, offsetTmp, tmp + 1);
 }
-_universal short readShort(const uint8_t* ptr, int& offset)
-{
+_universal short readShort(const uint8_t* ptr, int& offset) {
 	return (readByte(ptr, offset) | (readByte(ptr, offset) << 8));
 }
-_universal void writeShort(MemSpan ptr, int& offset, short s)
-{
+_universal void writeShort(MemSpan ptr, int& offset, short s) {
 	writeByte(ptr, offset, ((short)s) & 0xff);
 	writeByte(ptr, offset, (((short)s) >> 8) & 0xff);
 }
-_universal int readMisaligned(const int* ptr)
-{
+_universal int readMisaligned(const int* ptr) {
 	int offset = 0;
 	return readInt((const uint8_t*)ptr, offset);
 }
-_universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr)
-{
+_universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr) {
 	const uint8_t* ptr = (const uint8_t*)sPtr;
 	Spawnable s;
 	int offset = 0;
@@ -62,36 +51,30 @@ _universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr)
 	s.count = readInt(ptr, offset);
 	return s;
 }
-_universal WandData readMisalignedWand(const WandData* wPtr)
-{
+_universal WandData readMisalignedWand(const WandData* wPtr) {
 	WandData w = {};
 	cMemcpyU(&w, wPtr, 37);
 	return w;
 }
 
-_universal WorldgenPRNG::WorldgenPRNG(double seed)
-{
+_universal WorldgenPRNG::WorldgenPRNG(double seed) {
 	Seed = seed;
 	Next();
 }
-_universal uint32_t WorldgenPRNG::NextU()
-{
+_universal uint32_t WorldgenPRNG::NextU() {
 	Next();
 	return (uint32_t)((Seed * 4.656612875e-10) * 2147483645.0);
 }
-_universal double WorldgenPRNG::Next()
-{
+_universal double WorldgenPRNG::Next() {
 	int v4 = (int)Seed * 0x41a7 + ((int)Seed / 0x1f31d) * -0x7fffffff;
-	if (v4 < 0)
-	{
+	if (v4 < 0) {
 		v4 += 0x7fffffff;
 	}
 	Seed = (double)v4;
 	return Seed / 0x7fffffff;
 }
 
-_universal static uint64_t SetRandomSeedHelper(double r)
-{
+_universal static uint64_t SetRandomSeedHelper(double r) {
 	uint64_t e = *(uint64_t*)&r;
 	e &= 0x7fffffffffffffff;
 
@@ -99,15 +82,14 @@ _universal static uint64_t SetRandomSeedHelper(double r)
 
 	uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
 	uint64_t g = 0x433 - (e >> 0x34);
-	uint64_t h = f >> (int)g;
+	uint64_t h = f >> ((int)g & 63);
 
 	uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
 	uint64_t a = (uint64_t)j << 0x20 | j;
 	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
-_universal static uint64_t SetRandomSeedHelperInt(int64_t r)
-{
+_universal static uint64_t SetRandomSeedHelperInt(int64_t r) {
 	double dr = r;
 	uint64_t e = *(uint64_t*)&dr;
 	e &= 0x7fffffffffffffff;
@@ -116,15 +98,14 @@ _universal static uint64_t SetRandomSeedHelperInt(int64_t r)
 
 	uint64_t f = (e & 0xfffffffffffff) | 0x0010000000000000;
 	uint64_t g = 0x433 - (e >> 0x34);
-	uint64_t h = f >> (int)g;
+	uint64_t h = f >> ((int)g & 63);
 
 	uint32_t j = ~(uint32_t)(0x433 < (((e >> 0x20) & 0xffffffff) >> 0x14) ? 1 : 0) + 1;
 	uint64_t a = (uint64_t)j << 0x20 | j;
 	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
-_universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws)
-{
+_universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws) {
 	uint32_t uVar1;
 	uint32_t uVar2;
 	uint32_t uVar3;
@@ -140,13 +121,11 @@ _universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t
 	return (uVar3 - uVar2) - uVar1 ^ uVar1 >> 0xf;
 }
 
-_universal NollaPRNG::NollaPRNG(uint32_t worldSeed)
-{
+_universal NollaPRNG::NollaPRNG(uint32_t worldSeed) {
 	world_seed = worldSeed;
 	Seed = worldSeed;
 }
-_universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
-{
+_universal _noinline void NollaPRNG::SetRandomSeed(double x, double y) {
 	uint32_t ws = world_seed;
 	uint32_t a = ws ^ 0x93262e6f;
 	uint32_t b = a & 0xfff;
@@ -163,15 +142,11 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 	// Debug, remove later
 	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("e %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
 
-
 	uint64_t _x = *(uint64_t*)&x_ & 0x7fffffffffffffff;
 	uint64_t _y = *(uint64_t*)&y_ & 0x7fffffffffffffff;
-	if (102400.0 <= *(double*)&_y || *(double*)&_x <= 1.0)
-	{
+	if (102400.0 <= *(double*)&_y || *(double*)&_x <= 1.0) {
 		r = y_ * 134217727.0;
-	}
-	else
-	{
+	} else {
 		double y__ = y_ * 3483.328;
 		double t = (double)e;
 		y__ += t;
@@ -191,7 +166,7 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 	//Seed = (int)s;
 
 	//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
-	const uint32_t diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
+	const uint32_t diddle_table[17] = {0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44};
 	constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
 	uint32_t t = g + (g < 2147483648) + (g == 0);
 	t -= g / magic_number;
@@ -203,14 +178,12 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y)
 	Next();
 
 	uint32_t h = ws & 3;
-	while (h > 0)
-	{
+	while (h > 0) {
 		Next();
 		h--;
 	}
 }
-_universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y)
-{
+_universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 	uint32_t ws = world_seed;
 	uint32_t a = ws ^ 0x93262e6f;
 	int b = a & 0xfff;
@@ -225,12 +198,9 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y)
 
 	int _x = abs(x_);
 	int _y = abs(y_);
-	if (102400 <= _y || _x <= 1)
-	{
+	if (102400 <= _y || _x <= 1) {
 		r = y_ * 134217727LLU;
-	}
-	else
-	{
+	} else {
 		double y__ = y_ * 3483.328;
 		double t = (double)e;
 		y__ += t;
@@ -248,7 +218,7 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y)
 	//Seed = (int)s;
 
 	//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
-	const uint32_t diddle_table[17] = { 0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44 };
+	const uint32_t diddle_table[17] = {0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44};
 	constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
 	uint32_t t = g + (g < 2147483648) + (g == 0);
 	t -= g / magic_number;
@@ -260,37 +230,30 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y)
 	Next();
 
 	uint32_t h = ws & 3;
-	while (h > 0)
-	{
+	while (h > 0) {
 		Next();
 		h--;
 	}
 }
-_universal float NollaPRNG::Next()
-{
+_universal float NollaPRNG::Next() {
 	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
-	if (v4 < 0)
-	{
+	if (v4 < 0) {
 		v4 += 0x7fffffff;
 	}
 	Seed = v4;
 	return (float)Seed / 0x7fffffff;
 }
-_universal double NollaPRNG::NextD()
-{
+_universal double NollaPRNG::NextD() {
 	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
-	if (v4 < 0)
-	{
+	if (v4 < 0) {
 		v4 += 0x7fffffff;
 	}
 	Seed = v4;
 	return (double)Seed / 0x7fffffff;
 }
-_universal int NollaPRNG::Random(int a, int b)
-{
+_universal int NollaPRNG::Random(int a, int b) {
 	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
-	if (v4 < 0)
-	{
+	if (v4 < 0) {
 		v4 += 0x7fffffff;
 	}
 	Seed = v4;
@@ -306,35 +269,28 @@ _universal int NollaPRNG::RandomD(int a, int b) {
 	Seed = v4;
 	return a + (int)(((double)(b - a + 1) * (double)Seed * 4.656612875e-10));
 }
-_universal float NollaPRNG::ProceduralRandomf(double x, double y, float a, float b)
-{
+_universal float NollaPRNG::ProceduralRandomf(double x, double y, float a, float b) {
 	SetRandomSeed(x, y);
 	return a + ((b - a) * Next());
 }
-_universal int NollaPRNG::ProceduralRandomi(double x, double y, int a, int b)
-{
+_universal int NollaPRNG::ProceduralRandomi(double x, double y, int a, int b) {
 	SetRandomSeed(x, y);
 	return Random(a, b);
 }
-_universal _noinline float NollaPRNG::GetDistribution(float mean, float sharpness, float baseline)
-{
+_universal _noinline float NollaPRNG::GetDistribution(float mean, float sharpness, float baseline) {
 	int i = 0;
-	do
-	{
+	do {
 		float r1 = Next();
 		float r2 = Next();
 		float div = fabsf(r1 - mean);
-		if (r2 < ((1.0f - div) * baseline))
-		{
+		if (r2 < ((1.0f - div) * baseline)) {
 			return r1;
 		}
-		if (div < 0.5f)
-		{
+		if (div < 0.5f) {
 			// double v11 = sin(((0.5f - mean) + r1) * M_PI);
 			float v11 = sinf(((0.5f - mean) + r1) * 3.14159265f);
 			float v12 = powf(v11, sharpness);
-			if (v12 > r2)
-			{
+			if (v12 > r2) {
 				return r1;
 			}
 		}
@@ -342,10 +298,8 @@ _universal _noinline float NollaPRNG::GetDistribution(float mean, float sharpnes
 	} while (i < 100);
 	return Next();
 }
-_universal int NollaPRNG::RandomDistribution(int min, int max, int mean, float sharpness)
-{
-	if (sharpness == 0)
-	{
+_universal int NollaPRNG::RandomDistribution(int min, int max, int mean, float sharpness) {
+	if (sharpness == 0) {
 		return Random(min, max);
 	}
 
@@ -354,14 +308,11 @@ _universal int NollaPRNG::RandomDistribution(int min, int max, int mean, float s
 	int d = (int)rintf((max - min) * v7);
 	return min + d;
 }
-_universal int NollaPRNG::RandomDistribution(float min, float max, float mean, float sharpness)
-{
+_universal int NollaPRNG::RandomDistribution(float min, float max, float mean, float sharpness) {
 	return (int)RandomDistribution((int)min, (int)max, (int)mean, sharpness);
 }
-_universal float NollaPRNG::RandomDistributionf(float min, float max, float mean, float sharpness)
-{
-	if (sharpness == 0.0f)
-	{
+_universal float NollaPRNG::RandomDistributionf(float min, float max, float mean, float sharpness) {
+	if (sharpness == 0.0f) {
 		float r = Next();
 		return (r * (max - min)) + min;
 	}
@@ -369,41 +320,36 @@ _universal float NollaPRNG::RandomDistributionf(float min, float max, float mean
 	return min + (max - min) * GetDistribution(adjMean, sharpness, 0.005f); // Baseline is always this
 }
 
-_compute float random_next(float min, float max, NollaPRNG& random, Vec2i& rnd)
-{
+_compute float random_next(float min, float max, NollaPRNG& random, Vec2i& rnd) {
 	random.SetRandomSeedInt(rnd.x, rnd.y);
 	float result = min + ((max - min) * random.Next());
 	rnd.y += 1;
 	return result;
 }
-_compute int random_nexti(float min, float max, NollaPRNG& random, Vec2i& rnd)
-{
+_compute int random_nexti(float min, float max, NollaPRNG& random, Vec2i& rnd) {
 	random.SetRandomSeedInt(rnd.x, rnd.y);
 	int result = random.Random(min, max);
 	rnd.y += 1;
 	return result;
 }
-_compute int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, Vec2i& rnd)
-{
-	for (int i = length - 1; i > 0; i--)
-	{
-		if (random_next(0, 1, random, rnd) <= probs[i]) return i;
+_compute int pick_random_from_table_backwards(const float* probs, int length, NollaPRNG& random, Vec2i& rnd) {
+	for (int i = length - 1; i > 0; i--) {
+		if (random_next(0, 1, random, rnd) <= probs[i])
+			return i;
 	}
 	return 0;
 }
-_compute int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, Vec2i& rnd)
-{
+_compute int pick_random_from_table_weighted(const float* probs, float sum, int length, NollaPRNG& random, Vec2i& rnd) {
 	float val = random_next(0, sum, random, rnd);
-	for (int i = 0; i < length; i++)
-	{
-		if (val < probs[i]) return i;
+	for (int i = 0; i < length; i++) {
+		if (val < probs[i])
+			return i;
 		val -= probs[i];
 	}
 	return 0;
 }
 
-int pick_world_seed(uint64_t time)
-{
+int pick_world_seed(uint64_t time) {
 	if (time > 0x7fffffff)
 		time >>= 1;
 	double r = (double)time;
@@ -414,87 +360,72 @@ int pick_world_seed(uint64_t time)
 		r *= 0.5;
 
 	int Seed = (int)r;
-	for (int i = 0; i < 2; i++)
-	{
+	for (int i = 0; i < 2; i++) {
 		Seed = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
-		if (Seed < 0)
-		{
+		if (Seed < 0) {
 			Seed += 0x7fffffff;
 		}
 	}
 	r = Seed;
-	
+
 	r = ((r * 4.656612875e-10) * 2147483646.0);
 	int out = SetRandomSeedHelper(r);
 	return out;
 }
 
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size)
-{
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size) {
 	uint8_t* ptr = arena.ptr + arena.offset;
 	arena.offset += size;
-	return { ptr, size };
+	return {ptr, size};
 }
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth)
-{
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth) {
 	uint64_t alignedAddr = ((uint64_t)arena.ptr + arena.offset + alignmentWidth - 1) & ~(alignmentWidth - 1);
 	arena.offset = alignedAddr - (uint64_t)arena.ptr + size;
-	return { (uint8_t*)alignedAddr, size };
+	return {(uint8_t*)alignedAddr, size};
 }
-_compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer)
-{
+_compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer) {
 	uint64_t offset = endPointer - arena.ptr;
 	arena.offset = offset;
 }
 
-_universal uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b)
-{
-	return (r << 16) | (g << 8) | b;
-}
-_universal int GetWidthFromPix(int a, int b)
-{
-	return ((b * 512) / 10 - (a * 512) / 10);
-}
-_universal Vec2i GetGlobalPos(const int x, const int y, const int px, int py)
-{
+_universal uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b) { return (r << 16) | (g << 8) | b; }
+_universal int GetWidthFromPix(int a, int b) { return ((b * 512) / 10 - (a * 512) / 10); }
+_universal Vec2i GetGlobalPos(const int x, const int y, const int px, int py) {
 	int gx = ((512 * x) / 10 - (512 * 35) / 10) * 10 + px - 5;
 	int gy = ((512 * y) / 10 - (512 * 14) / 10) * 10 + py - 13;
-	return { gx, gy };
+	return {gx, gy};
 }
-_universal Vec2i GetLocalPos(const int gx, int gy)
-{
+_universal Vec2i GetLocalPos(const int gx, int gy) {
 	int x = (((gx + 5) / 10) * 10 + (512 * 35)) / 512;
 	int y = (((gy + 13) / 10) * 10 + (512 * 14)) / 512;
-	return { x, y };
+	return {x, y};
 }
-_compute int roundRNGPos(int num)
-{
-	if (-1000000 < num && num < 1000000) return num;
-	else if (-10000000 < num && num < 10000000) return int(num / 10.0f) * 10;
-	else if (-100000000 < num && num < 100000000) return int(num / 100.0f) * 100;
+_compute int roundRNGPos(int num) {
+	if (-1000000 < num && num < 1000000)
+		return num;
+	else if (-10000000 < num && num < 10000000)
+		return int(num / 10.0f) * 10;
+	else if (-100000000 < num && num < 100000000)
+		return int(num / 100.0f) * 100;
 	return num;
 }
 
-_universal void _itoa_offset(int num, int base, char* buffer, int& offset)
-{
+_universal void _itoa_offset(int num, int base, char* buffer, int& offset) {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
 	bool isNegative = false;
 
-	if (num == 0)
-	{
+	if (num == 0) {
 		buffer[offset++] = '0';
 		return;
 	}
 
-	if (num < 0 && base == 10)
-	{
+	if (num < 0 && base == 10) {
 		isNegative = true;
 		num = -num;
 	}
 
-	while (num != 0)
-	{
+	while (num != 0) {
 		int rem = num % base;
 
 		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
@@ -508,31 +439,28 @@ _universal void _itoa_offset(int num, int base, char* buffer, int& offset)
 	for (int j = i + 1; j < 11; j++)
 		buffer[offset++] = internal_buffer[j];
 }
-_universal void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset)
-{
+_universal void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset) {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
 	bool isNegative = false;
 
-	if (num == 0)
-	{
+	if (num == 0) {
 		buffer[offset++] = '0';
 		return;
 	}
 
-	if (num < 0 && base == 10)
-	{
+	if (num < 0 && base == 10) {
 		isNegative = true;
 		num = -num;
 	}
 
-	while (num != 0 || 10 - i < (fixedPoint + 2))
-	{
+	while (num != 0 || 10 - i < (fixedPoint + 2)) {
 		int rem = num % base;
 
 		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
 
-		if (10 - i == fixedPoint) internal_buffer[i--] = '.';
+		if (10 - i == fixedPoint)
+			internal_buffer[i--] = '.';
 
 		num = num / base;
 	}
@@ -543,20 +471,17 @@ _universal void _itoa_offset_decimal(int num, int base, int fixedPoint, char* bu
 	for (int j = i + 1; j < 11; j++)
 		buffer[offset++] = internal_buffer[j];
 }
-_universal void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset)
-{
+_universal void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset) {
 	char internal_buffer[11]; //ints can't be bigger than this!
 	int i = 10;
 	bool isNegative = false;
 
-	if (num < 0 && base == 10)
-	{
+	if (num < 0 && base == 10) {
 		isNegative = true;
 		num = -num;
 	}
 
-	while (num != 0 || 10 - i < leadingZeroes)
-	{
+	while (num != 0 || 10 - i < leadingZeroes) {
 		int rem = num % base;
 
 		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
@@ -570,11 +495,9 @@ _universal void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* 
 	for (int j = i + 1; j < 11; j++)
 		buffer[offset++] = internal_buffer[j];
 }
-_universal void _putstr_offset(const char* str, char* buffer, int& offset)
-{
+_universal void _putstr_offset(const char* str, char* buffer, int& offset) {
 	int i = 0;
-	while (str[i] != '\0')
-	{
+	while (str[i] != '\0') {
 		buffer[offset++] = str[i++];
 	}
 }

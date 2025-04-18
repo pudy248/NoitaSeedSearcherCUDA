@@ -1,12 +1,10 @@
 #pragma once
 #include "../platforms/platform_implementation.h"
-#include "primitives.h"
 #include "enums.h"
+#include "primitives.h"
 #include "search_structs.h"
 
-
-struct BiomeSector
-{
+struct BiomeSector {
 	Biome b;
 
 	int worldX;
@@ -25,22 +23,19 @@ struct BiomeSector
 typedef int16_t WangTileIndex;
 typedef int16_t WangFuncIndex;
 
-struct WangSpawn
-{
+struct WangSpawn {
 	uint8_t x;
 	uint8_t y;
 	WangFuncIndex i;
 };
 constexpr int _WangTileMaxSpawns = 6;
-struct WangTile
-{
+struct WangTile {
 	bool should_block;
 	char colors[6];
 	WangSpawn spawns[_WangTileMaxSpawns];
 };
 
-struct WangTileset
-{
+struct WangTileset {
 	char is_corner;
 	int num_vary[2];
 	int num_color[6];
@@ -62,21 +57,18 @@ struct MainPathFill {
 	int x1, x2;
 };
 
-struct BiomeWangScope
-{
+struct BiomeWangScope {
 	WangTileset ts;
 	BiomeSector bSec;
 };
 
-struct GeneratedBiome
-{
+struct GeneratedBiome {
 	const BiomeWangScope& scope;
 	WangTileIndex* indices;
 	WangFuncIndex* funcs;
 };
 
-struct SpawnParams
-{
+struct SpawnParams {
 	int seed;
 	const BiomeWangScope& currentBiome;
 	const SpawnableConfig& sCfg;
@@ -85,23 +77,22 @@ struct SpawnParams
 	int& sCount;
 };
 
-struct BiomeSpawnColors
-{
+struct BiomeSpawnColors {
 	int count;
-	uint32_t colors[10];
+	uint32_t colors[12];
 
 	constexpr BiomeSpawnColors() = default;
 	constexpr BiomeSpawnColors(std::initializer_list<uint32_t> list);
 };
 
-struct BiomeSpawnFunctions
-{
+struct BiomeSpawnFunctions {
 	int count;
-	void(*init)(SpawnParams& params);
-	void(*funcs[10])(int, int, const SpawnParams&);
+	void (*init)(SpawnParams& params);
+	void (*funcs[12])(int, int, const SpawnParams&);
 
 	constexpr BiomeSpawnFunctions() = default;
-	_compute constexpr BiomeSpawnFunctions(void(*_fn)(SpawnParams& params), std::initializer_list<void(*)(int, int, const SpawnParams&)> list);
+	_compute consteval BiomeSpawnFunctions(
+		void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list);
 };
 
 struct PixelSceneSpawn {
@@ -122,7 +113,8 @@ struct PixelSceneData {
 
 	constexpr PixelSceneData() = default;
 	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, const char* _path);
-	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, const char* _path, std::initializer_list<Material> _mats);
+	_universal constexpr PixelSceneData(
+		PixelScene _scene, float _prob, const char* _path, std::initializer_list<Material> _mats);
 };
 struct PixelSceneList {
 	int count;

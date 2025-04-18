@@ -1,10 +1,10 @@
 
 #include "../platforms/platform_implementation.h"
 
-#include "../include/worldgen_structs.h"
-#include "../include/noita_random.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
+#include "../include/noita_random.h"
+#include "../include/worldgen_structs.h"
 
 template <int coalmine_mode, bool skip_fill>
 _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl) {
@@ -43,7 +43,8 @@ _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int 
 
 	if constexpr (!skip_fill) {
 		while (s.scope.bSec.b == B_COALMINE || s.scope.bSec.b == B_EXCAVATIONSITE) {
-			if (!(x - off_x >= 0 && y - off_y - 4 >= 0 && (v ? s.scope.ts.vTiles : s.scope.ts.hTiles)[tile].should_block))
+			if (!(x - off_x >= 0 && y - off_y - 4 >= 0 &&
+					(v ? s.scope.ts.vTiles : s.scope.ts.hTiles)[tile].should_block))
 				break;
 			//if (s.scope.bSec.b == B_COALMINE && coalmine_overlay[((y - off_y - 4) * 256 + x - off_x) * 3 + 1] > 0x10)
 			//	break;
@@ -64,23 +65,22 @@ _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int 
 		return s.scope.ts.h_tile_at(tile % s.scope.ts.widthH, tile / s.scope.ts.widthH, off_x, off_y);
 }
 
-_compute static void tryNext(const GeneratedBiome& s, const MainPathFill& f, int x, int y, MemSpan stackCache, int& stackSize, MemSpan visited, int rmw, int rmh, int ssl)
-{
-	if (x >= 0 && y >= 0 && x < rmw && y < rmh)
-	{
-		if (visited.ptr[y * rmw + x]) return;
+_compute static void tryNext(const GeneratedBiome& s, const MainPathFill& f, int x, int y, MemSpan stackCache,
+	int& stackSize, MemSpan visited, int rmw, int rmh, int ssl) {
+	if (x >= 0 && y >= 0 && x < rmw && y < rmh) {
+		if (visited.ptr[y * rmw + x])
+			return;
 		uint32_t c = get_pixel(s, f, x, y, ssl);
 		if (c == COLOR_BLACK || c == COLOR_COFFEE || c == COLOR_HELL_GREEN) {
-			((Vec2i*)stackCache.ptr)[stackSize++] = { x, y };
+			((Vec2i*)stackCache.ptr)[stackSize++] = {x, y};
 			visited.ptr[y * rmw + x] = 2;
-		}
-		else
+		} else
 			visited.ptr[y * rmw + x] = 1;
 	}
 }
 
-_compute bool findPath(const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea, MemSpan visited, int x, int y)
-{
+_compute bool findPath(
+	const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea, MemSpan visited, int x, int y) {
 	int rmw = s.scope.bSec.map_w; //register map width
 	int rmh = s.scope.bSec.map_h; //register map height
 	int ssl = s.scope.ts.short_side_len;
@@ -90,17 +90,15 @@ _compute bool findPath(const GeneratedBiome& s, const MainPathFill& f, MemSpan s
 	int stackSize = 1;
 	Vec2i* stackMem = (Vec2i*)stackMemArea.ptr;
 
-	stackMem[0] = { x , y };
+	stackMem[0] = {x, y};
 
-	while (stackSize > 0 && pathFound != 1)
-	{
+	while (stackSize > 0 && pathFound != 1) {
 		Vec2i n = stackMem[--stackSize];
 		if (n.y == rmh - 1) {
 			pathFound = 1;
 			break;
 		}
-		if (n.x != -1)
-		{
+		if (n.x != -1) {
 			tryNext(s, f, n.x, n.y - 1, stackMemArea, stackSize, visited, rmw, rmh, ssl);
 			tryNext(s, f, n.x - 1, n.y, stackMemArea, stackSize, visited, rmw, rmh, ssl);
 			tryNext(s, f, n.x + 1, n.y, stackMemArea, stackSize, visited, rmw, rmh, ssl);
@@ -112,8 +110,8 @@ _compute bool findPath(const GeneratedBiome& s, const MainPathFill& f, MemSpan s
 	return pathFound;
 }
 
-_compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea, MemSpan visited, uint32_t path_start_x, bool fixed_x)
-{
+_compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea, MemSpan visited,
+	uint32_t path_start_x, bool fixed_x) {
 	if (!visited.is_safe(max(0, s.scope.bSec.map_w * s.scope.bSec.map_h - 1)))
 		printf("findPath(): visited mem too small\n");
 	cMemset(visited.ptr, 0, s.scope.bSec.map_w * s.scope.bSec.map_h);
@@ -121,14 +119,13 @@ _compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, Me
 	if (fixed_x)
 		return findPath(s, f, stackMemArea, visited, path_start_x, 0);
 
-	for (int x = path_start_x; x < s.scope.bSec.map_w; x++)
-	{
+	for (int x = path_start_x; x < s.scope.bSec.map_w; x++) {
 		uint32_t c = get_pixel(s, f, x, 0, s.scope.ts.short_side_len);
 		if (c != COLOR_BLACK && c != COLOR_COFFEE)
 			continue;
 		if (visited.ptr[x])
 			continue;
-		
+
 		cMemset(visited.ptr, 0, s.scope.bSec.map_w * s.scope.bSec.map_h);
 		bool hasPath = findPath(s, f, stackMemArea, visited, x, 0);
 		if (hasPath)
@@ -137,12 +134,12 @@ _compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, Me
 	return false;
 }
 
-_compute bool isValid(const GeneratedBiome& s, MemSpan stackMemArea, MemSpan visited)
-{
+_compute bool isValid(const GeneratedBiome& s, MemSpan stackMemArea, MemSpan visited) {
 	int fill_x_from = (BIOME_PATH_FIND_WORLD_POS_MIN_X - (s.scope.bSec.worldX - WORLD_OFFSET_X) * 512.0) / 10;
 	int fill_x_to = fill_x_from + (BIOME_PATH_FIND_WORLD_POS_MAX_X - BIOME_PATH_FIND_WORLD_POS_MIN_X) / 10;
-	bool active = fill_x_to > 0 && fill_x_from > 0 && s.scope.bSec.map_w > fill_x_from && fill_x_to < s.scope.bSec.map_w + fill_x_from;
-	MainPathFill f = { active, fill_x_from, fill_x_to };
+	bool active = fill_x_to > 0 && fill_x_from > 0 && s.scope.bSec.map_w > fill_x_from &&
+				  fill_x_to < s.scope.bSec.map_w + fill_x_from;
+	MainPathFill f = {active, fill_x_from, fill_x_to};
 
 	uint32_t path_start_x = 0;
 	if (s.scope.bSec.b == B_COALMINE)

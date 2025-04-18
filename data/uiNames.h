@@ -593,31 +593,10 @@ const char* BiomeNames[] = {
 	"Tower Hell",
 };
 
-const char* BiomeModifierNames[] = {
-	"Any Modifier",
-	"Moist",
-	"Darkness",
-	"High Gravity",
-	"Low Gravity",
-	"Ionized",
-	"Hot",
-	"Lucrative",
-	"Extremely Lucrative",
-	"Plant Infested",
-	"Furnished",
-	"Trapped",
-	"Roomy",
-	"Haunted",
-	"Gravity Fields",
-	"Fungal",
-	"Flooded",
-	"Gas Flooded",
-	"Shielded",
-	"Protection Fields",
-	"Ominous",
-	"Invisibility",
-	"Wormy"
-};
+const char* BiomeModifierNames[] = {"Any Modifier", "Moist", "Darkness", "High Gravity", "Low Gravity", "Ionized",
+	"Hot", "Lucrative", "Extremely Lucrative", "Plant Infested", "Furnished", "Trapped", "Roomy", "Haunted",
+	"Gravity Fields", "Fungal", "Flooded", "Gas Flooded", "Shielded", "Protection Fields", "Ominous", "Invisibility",
+	"Wormy"};
 
 const char* PerkNames[] = {
 	"Any Perk",

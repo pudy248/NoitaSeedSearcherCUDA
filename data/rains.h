@@ -1,6 +1,6 @@
 #pragma once
-#include "../platforms/platform_implementation.h"
 #include "../include/enums.h"
+#include "../platforms/platform_implementation.h"
 
 _data constexpr int rainCount = 4;
 _data const Material rainMaterials[rainCount] = {

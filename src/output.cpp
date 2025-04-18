@@ -1,22 +1,20 @@
 #pragma once
 #include "../platforms/platform_implementation.h"
 
-#include "../include/search_structs.h"
-#include "../include/pngutils.h"
-#include "../include/misc_funcs.h"
 #include "../data/uiNames.h"
+#include "../include/misc_funcs.h"
+#include "../include/pngutils.h"
+#include "../include/search_structs.h"
 
-#include <iostream>
 #include <filesystem>
+#include <iostream>
 
-_compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b)
-{
+_compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b) {
 	int offset = 0;
 	writeInt(output, offset, b.seed);
 	writeInt(output, offset, b.count);
 
-	for (int i = 0; i < b.count; i++)
-	{
+	for (int i = 0; i < b.count; i++) {
 		Spawnable* sPtr = b.spawnables[i];
 		Spawnable s = readMisalignedSpawnable(sPtr);
 		writeInt(output, offset, s.x);
@@ -32,14 +30,15 @@ _compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b)
 
 #define sprintfc(buf, ...) bufOffset += sprintf(buf + bufOffset, __VA_ARGS__)
 
-void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConfig outputCfg, void(*appendOutput)(char*, char*))
+void PrintOutputBlock(
+	uint8_t* output, int time[2], FILE* outputFile, OutputConfig outputCfg, void (*appendOutput)(char*, char*))
 //write output
 {
 #ifdef DISABLE_OUTPUT
 	return;
 #endif
 	char* seedNum = (char*)malloc(12);
-	char* seedInfo = (char*)malloc(8192);
+	char* seedInfo = (char*)malloc(16384);
 	int memOffset = 0;
 	int bufOffset = 0;
 	int seed = readInt(output, memOffset);
@@ -60,7 +59,8 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 
 	int sCount = readInt(output, memOffset);
 #ifdef REALTIME_SEEDS
-	sprintfc(seedInfo, "in %i seconds [UNIX %i]\n", time[0], (int)(time[1] + time[0]), pick_world_seed(time[1] + time[0]));
+	sprintfc(
+		seedInfo, "in %i seconds [UNIX %i]\n", time[0], (int)(time[1] + time[0]), pick_world_seed(time[1] + time[0]));
 #endif
 	sprintfc(seedInfo, "%i: ", seed);
 	if (sCount > 0) {
@@ -81,6 +81,16 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 			}
 			sprintfc(seedInfo, ") - [");
 
+#ifdef SPAWNABLE_OUTPUT_BINARY
+			for (int n = 0; n < s.count; n += 16) {
+				sprintfc(seedInfo, "\n%i{", n);
+				for (int m = 0; m < 16 && m + n < s.count; m++) {
+					uint8_t item = *(&sPtr->contents + n + m);
+					sprintfc(seedInfo, " 0x%x", item);
+				}
+				sprintfc(seedInfo, " }");
+			}
+#else
 			for (int n = 0; n < s.count; n++) {
 				Item item = *(&sPtr->contents + n);
 				if (item == DATA_MATERIAL) {
@@ -88,14 +98,12 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 					short m = readShort((uint8_t*)(&sPtr->contents), offset2);
 					sprintfc(seedInfo, "Potion (%s)", MaterialNames[m]);
 					n += 2;
-				}
-				else if (item == DATA_SPELL) {
+				} else if (item == DATA_SPELL) {
 					int offset2 = n + 1;
 					short m = readShort((uint8_t*)(&sPtr->contents), offset2);
 					sprintfc(seedInfo, "%s", SpellNames[m]);
 					n += 2;
-				}
-				else if (item == DATA_PIXEL_SCENE) {
+				} else if (item == DATA_PIXEL_SCENE) {
 					int offset2 = n + 1;
 					short ps = readShort((uint8_t*)(&sPtr->contents), offset2);
 					short m = readShort((uint8_t*)(&sPtr->contents), offset2);
@@ -104,21 +112,21 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 						sprintfc(seedInfo, "[%s]", MaterialNames[m]);
 					}
 					n += 4;
-				}
-				else if (item == DATA_WAND) {
+				} else if (item == DATA_WAND) {
 					n++;
 					WandData dat = *(WandData*)(&sPtr->contents + n);
-					sprintfc(seedInfo, "[%i capacity, %i S/C, %.2fsec CD, %.2fsec RT, %i Mana, %i Regen, %.3fx Speed, %ideg Spread, %s]",
-						(int)dat.capacity, dat.multicast, dat.delay / 60.f, dat.reload / 60.f, dat.mana, dat.regen, dat.speed, dat.spread, dat.shuffle ? "Shuffle" : "Non-shuffle");
-					if (dat.alwaysCast.s) sprintfc(seedInfo, " AC: ");
+					sprintfc(seedInfo,
+						"[%i capacity, %i S/C, %.2fsec CD, %.2fsec RT, %i Mana, %i Regen, %.3fx Speed, %ideg Spread, %s]",
+						(int)dat.capacity, dat.multicast, dat.delay / 60.f, dat.reload / 60.f, dat.mana, dat.regen,
+						dat.speed, dat.spread, dat.shuffle ? "Shuffle" : "Non-shuffle");
+					if (dat.alwaysCast.s)
+						sprintfc(seedInfo, " AC: ");
 
 					n += 33;
 					continue;
-				}
-				else if (GOLD_NUGGETS > item || item > TRUE_ORB) {
+				} else if (GOLD_NUGGETS > item || item > TRUE_ORB) {
 					sprintfc(seedInfo, "0x%x", item);
-				}
-				else {
+				} else {
 					sprintfc(seedInfo, "%s", ItemNames[item]);
 				}
 
@@ -130,6 +138,7 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 					}
 				}
 			}
+#endif
 			sprintfc(seedInfo, "]\n");
 			memOffset += s.count + 13;
 		}
@@ -140,17 +149,25 @@ void PrintOutputBlock(uint8_t* output, int time[2], FILE* outputFile, OutputConf
 		fprintf(outputFile, "%s", seedInfo);
 		fflush(outputFile);
 	}
-	if (outputCfg.printOutputToConsole) printf("%s", seedInfo);
+	if (outputCfg.printOutputToConsole)
+		printf("%s", seedInfo);
 #else
 #ifdef REALTIME_SEEDS
-	sprintfc(seedInfo, "in %i seconds [UNIX %i]: \n", time[0], (int)(time[1] + time[0]), pick_world_seed(time[1] + time[0]));
+	sprintfc(
+		seedInfo, "in %i seconds [UNIX %i]: \n", time[0], (int)(time[1] + time[0]), pick_world_seed(time[1] + time[0]));
 #endif
 	sprintfc(seedInfo, "%s", seedNum);
 	fprintf(outputFile, "%s\n", seedInfo);
-	if (outputCfg.printOutputToConsole) printf("%s\n", seedInfo);
+	if (outputCfg.printOutputToConsole)
+		printf("%s\n", seedInfo);
 #endif
 #endif
-	if (bufOffset > 8192) printf("ERR! Buffer overflow in output with size %i\n", bufOffset);
-	if (appendOutput != NULL) appendOutput(seedNum, seedInfo);
-	else { free(seedNum); free(seedInfo); }
+	if (bufOffset > 16384)
+		printf("ERR! Buffer overflow in output with size %i\n", bufOffset);
+	if (appendOutput != NULL)
+		appendOutput(seedNum, seedInfo);
+	else {
+		free(seedNum);
+		free(seedInfo);
+	}
 }

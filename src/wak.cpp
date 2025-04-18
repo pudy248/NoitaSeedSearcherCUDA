@@ -1,13 +1,13 @@
 #pragma once
-#include <vector>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 #include <string>
-#include <fstream>
 #include <unordered_map>
-#include <filesystem>
+#include <vector>
 
 #ifdef WIN32
-#define NOMINMAX 
+#define NOMINMAX
 #include "Windows.h"
 #else
 #include <iostream>
@@ -37,14 +37,15 @@ std::string locate_file_dialog(const char* hint, const char* filter, const char*
 
 std::unordered_map<std::string, std::string> globalWakContents;
 
-template<typename T> T read_le(std::istream&);
-template<>
+template <typename T>
+T read_le(std::istream&);
+template <>
 inline std::uint8_t read_le(std::istream& s) {
 	uint8_t val;
 	s.read((char*)&val, sizeof(val));
 	return val;
 }
-template<>
+template <>
 inline std::uint32_t read_le(std::istream& s) {
 	uint32_t val;
 	auto it = (uint8_t*)&val;
@@ -52,7 +53,7 @@ inline std::uint32_t read_le(std::istream& s) {
 		it[i] = read_le<uint8_t>(s);
 	return val;
 }
-template<>
+template <>
 inline std::string read_le(std::istream& s) {
 	std::uint32_t size = read_le<std::uint32_t>(s);
 	std::string str;
@@ -61,25 +62,20 @@ inline std::string read_le(std::istream& s) {
 	return str;
 }
 
-bool file_exists(const char* path) {
-    std::ifstream s(path, std::ios::binary);
-    return !s.fail();
-}
-
 std::string read_file(const char* path) {
-    std::string out;
-    std::ifstream stream(path, std::ios::binary);
-    if (stream.fail()) {
-        printf("[%s] does not exist.\n", path);
-        exit(-1);
-    }
-    while (stream) {
-        char buffer[1024];
-        stream.read(buffer, sizeof(buffer));
-        out.append(buffer, stream.gcount());
-    }
+	std::string out;
+	std::ifstream stream(path, std::ios::binary);
+	if (stream.fail()) {
+		printf("[%s] does not exist.\n", path);
+		exit(-1);
+	}
+	while (stream) {
+		char buffer[1024];
+		stream.read(buffer, sizeof(buffer));
+		out.append(buffer, stream.gcount());
+	}
 
-    return out;
+	return out;
 }
 void write_file(const char* path, const std::string& in) {
 	std::ofstream stream(path, std::ios::binary);
@@ -107,21 +103,21 @@ void read_wak(const char* wak_path) {
 std::string& get_wak_file(const std::string& path) {
 	if (globalWakContents.find(path) != globalWakContents.end()) {
 		return globalWakContents.at(path);
-	}
-	else {
+	} else {
 		fprintf(stderr, "Unable to find file: %s\n", path.c_str());
 		exit(-1);
 	}
 }
 
 std::string find_wak() {
+#ifndef __CUDA_ARCH__
 	const char* wakpath = ".wakpath";
-	if (file_exists(wakpath))
+	if (std::filesystem::exists(wakpath))
 		return read_file(wakpath);
 
-#ifndef __CUDA_ARCH__
 	std::filesystem::path current = std::filesystem::current_path();
-	std::filesystem::path dialog_ret = locate_file_dialog("", "data.wak\0data.wak\0", "Locate your install's data.wak, in the steam install directory");
+	std::filesystem::path dialog_ret = locate_file_dialog(
+		"", "data.wak\0data.wak\0", "Locate your install's data.wak, in the steam install directory");
 	std::filesystem::current_path(current);
 	write_file(wakpath, dialog_ret.string().c_str());
 

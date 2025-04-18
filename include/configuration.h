@@ -6,15 +6,13 @@
 #include <cstring>
 #include <initializer_list>
 
-struct GeneralConfig
-{
+struct GeneralConfig {
 	uint32_t seedStart;
 	uint32_t seedEnd;
 	uint32_t seedBlockSize;
 	bool seedBlockOverride;
 };
-struct MemSizeConfig
-{
+struct MemSizeConfig {
 	size_t memoryCap;
 
 	size_t outputSize;
@@ -26,56 +24,47 @@ struct MemSizeConfig
 	size_t threadMemTotal;
 };
 
-struct StartingCartConfig
-{
+struct StartingCartConfig {
 	bool check;
 	CartType cart;
 };
-struct StartingFlaskConfig
-{
+struct StartingFlaskConfig {
 	bool check;
 	Material flask;
 };
-struct StartingWandConfig
-{
+struct StartingWandConfig {
 	bool check;
 	Spell projectile;
 	Spell bomb;
 };
-struct RainConfig
-{
+struct RainConfig {
 	bool check;
 	Material rain;
 };
-struct AlchemyConfig
-{
+struct AlchemyConfig {
 	bool check;
 	AlchemyOrdering ordering;
 	AlchemyRecipe LC;
 	AlchemyRecipe AP;
 };
-struct BiomeModifierConfig
-{
+struct BiomeModifierConfig {
 	bool check;
 	BiomeModifier modifiers[9];
 };
 constexpr int maxFungalShifts = 12;
-struct FungalShiftConfig
-{
+struct FungalShiftConfig {
 	bool check;
 	FungalShift shifts[maxFungalShifts];
 };
 constexpr int maxPerkFilters = 12;
-struct PerkConfig
-{
+struct PerkConfig {
 	bool check;
 	PerkInfo perks[maxPerkFilters];
 	Perk ignore_these[2];
 	uint8_t perksPerMountain[7];
 };
 
-struct StaticPrecheckConfig
-{
+struct StaticPrecheckConfig {
 	StartingCartConfig cart;
 	StartingFlaskConfig flask;
 	StartingWandConfig wands;
@@ -87,8 +76,7 @@ struct StaticPrecheckConfig
 	bool precheckUpwarps;
 };
 
-struct SpawnableConfig
-{
+struct SpawnableConfig {
 	Vec2i pwCenter;
 	Vec2i pwWidth;
 	int minHMidx;
@@ -115,8 +103,7 @@ struct SpawnableConfig
 	bool genWands;
 };
 
-struct FilterConfig
-{
+struct FilterConfig {
 	bool aggregate;
 	int itemFilterCount;
 	ItemFilter itemFilters[TOTAL_FILTER_COUNT];
@@ -130,12 +117,12 @@ struct FilterConfig
 	int wandStatThreshold;
 };
 
-struct OutputConfig
-{
+struct OutputConfig {
 	// 0=human-readable, 1=code, 2=binary
 	int outputMode;
 
 	float printInterval;
+	bool countPassesOnly;
 	bool printProgressLog;
 	bool printOutputToConsole;
 	bool printOutputToFile;

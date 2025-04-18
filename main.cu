@@ -1,32 +1,34 @@
-﻿#include "platforms/platform_implementation.h"
-#include "platforms/platform_api.h"
+﻿#include "platforms/platform_api.h"
+#include "platforms/platform_implementation.h"
 using namespace API_INTERNAL;
 #include "src/platform_implementation_src.cpp"
 
 //#include "gui/guiMain.h"
-#include "include/configuration.h"
 #include "include/compute.h"
+#include "include/configuration.h"
 #include "include/wak.h"
 
+#ifdef DEBUG_ATOMIC_COUNTERS
 #include <atomic>
 std::atomic<uint64_t> globalChestCounter = 0;
 std::atomic<uint64_t> globalHeartCounter = 0;
 std::atomic<uint64_t> globalItemCounter = 0;
 std::atomic<uint64_t> globalWandCounter = 0;
+#endif
 
-#include "src/structs.cpp"
-#include "src/misc.cpp"
-#include "src/compute.cpp"
-#include "src/precheck.cpp"
-#include "src/hbwang.cpp"
 #include "src/biome_impl.cpp"
-#include "src/worldgen.cpp"
-#include "src/pathfinding.cpp"
-#include "src/wandgen.cpp"
-#include "src/search.cpp"
+#include "src/compute.cpp"
 #include "src/filter.cpp"
+#include "src/hbwang.cpp"
+#include "src/misc.cpp"
 #include "src/output.cpp"
+#include "src/pathfinding.cpp"
+#include "src/precheck.cpp"
+#include "src/search.cpp"
+#include "src/structs.cpp"
 #include "src/wak.cpp"
+#include "src/wandgen.cpp"
+#include "src/worldgen.cpp"
 #define PNG_IMPL
 #include "include/pngutils.h"
 
@@ -34,15 +36,6 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #include <filesystem>
 
 OutputProgressData d;
-
-void appendOutput(char* s, char* c)
-{
-#ifdef SPAWNABLE_OUTPUT
-	//printf("%i (checked %i): %s", d.elapsedMillis, d.searchedSeeds, c);
-#else
-	//printf("%i: %s (checked %i)\n", d.elapsedMillis, s, d.searchedSeeds);
-#endif
-}
 
 #if 0
 namespace HELPERS
@@ -174,34 +167,63 @@ namespace HELPERS
 		}
 	}
 
-#if 0
-	constexpr uint64_t MAX_CNT = 100000000;
+#if 1
+	constexpr uint64_t MAX_CNT = INT_MAX;
 	__device__ int counter = 0;
-	__global__ void CountForEach(int n) {
+	__global__ void CountForEach() {
 		uint64_t start = blockDim.x * blockIdx.x + threadIdx.x;
 		uint64_t stride = gridDim.x * blockDim.x;
 		for (uint64_t i = start; i < MAX_CNT; i += stride) {
-			Wand w = GetWandWithLevelGivenSeed(i, n, false);
-			if (w.alwaysCast.s == SPELL_REGENERATION_FIELD)
+			Wand w = GetWandWithLevelGivenSeed(i, 10, false);
+			if (w.capacity >= 45 && w.alwaysCast.s == SPELL_NONE) {
+				printf("%i %f %i\n", i, w.capacity, w.multicast);
 				dAtomicAdd(&counter, 1);
+			}
 		}
 	}
 
 	static void HCountForEach() {
-		for (int i = 1; i <= 6; i++) {
-			int hCtr;
-			CountForEach << <30, 64 >> > (i);
-			checkCudaErrors(cudaDeviceSynchronize());
-			checkCudaErrors(cudaMemcpyFromSymbol(&hCtr, counter, 4));
-			printf("%i %f\n", hCtr, (double)hCtr / MAX_CNT);
+		int hCtr;
+		CountForEach << <30, 64 >> > ();
+		checkCudaErrors(cudaDeviceSynchronize());
+		checkCudaErrors(cudaMemcpyFromSymbol(&hCtr, counter, 4));
+		printf("%i %f\n", hCtr, (double)hCtr / MAX_CNT);
+	}
+#else
+	constexpr uint64_t MAX_CNT = 10000000;
+	std::atomic<int> counter = 0;
+	void CountForEach(int idx) {
+		uint64_t start = idx;
+		uint64_t stride = std::thread::hardware_concurrency();
+		for (uint64_t i = start; i < MAX_CNT; i += stride) {
+			Wand w = GetWandWithLevelGivenSeed(i, 1, false);
+			int add_manas = 0;
+			for (int i = 0; i < w.spellCount; i++)
+				if (w.spells[i].s == SPELL_MANA_REDUCE)
+					add_manas++;
+			if (add_manas >= 28) {
+				//printf("%i %f %i\n", i, w.capacity, w.multicast);
+				counter++;
+			}
 		}
+	}
+
+	static void HCountForEach() {
+		{
+			std::vector<std::jthread> vec;
+			for (int i = 0; i < std::thread::hardware_concurrency(); i++)
+				vec.emplace_back(CountForEach, i);
+		}
+		printf("%i %f\n", counter.load(), (double)counter.load() / MAX_CNT);
 	}
 #endif
 }
 #endif
 
-int main()
-{
+int main() {
+	//HCountForEach();
+	//return 0;
+
 	read_wak(find_wak().c_str());
 
 	InitializePlatform();
@@ -209,41 +231,6 @@ int main()
 
 	int biomeCount = 0;
 	int maxMapArea = 0;
-	
-	//InstantiateBiome(B_RAINFOREST, config.biomeScopes, biomeCount, maxMapArea);
-	//InstantiateBiome(B_RAINFOREST_OPEN, config.biomeScopes, biomeCount, maxMapArea);
-
-	config.biomeCount = biomeCount;
-
-	config.memSizes = {
-			.memoryCap = 40_GB,
-
-#ifdef IMAGE_OUTPUT
-			.outputSize = (size_t)maxMapArea * 3 + 512, // output
-#else
-			.outputSize = (size_t)512,
-#endif
-			.mapDataSize = (size_t)maxMapArea * 2,
-			.miscMemSize = (size_t)maxMapArea * 2,
-			.visitedMemSize = (size_t)maxMapArea + 256,
-			.spawnableMemSize = (size_t)12288,
-	};
-	config.generalCfg = {
-#ifdef SEEDS_AS_TRIES
-		.seedStart = 1,
-		.seedEnd = 100,
-#else
-		.seedStart = 1,
-		.seedEnd = INT_MAX,
-#endif
-#ifdef REALTIME_SEEDS
-		.seedBlockSize = 1;
-		.seedBlockOverride = true
-#else
-		.seedBlockSize = biomeCount ? 1u : 256u, 
-		.seedBlockOverride = false
-#endif
-	};
 
 	// Runs before generation, once
 	config.precheckCfg = {
@@ -251,12 +238,15 @@ int main()
 		.flask = {false, GOLD}, // flask
 		.wands = {false, SPELL_NONE, SPELL_NONE},
 		.rain = {false, MATERIAL_NONE},
-		.alchemy = {false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL}, {MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE}},
+		.alchemy = {false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL},
+			{MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE}},
 		.biomes = {false, {}},
 		.fungal = {false, {FungalShift(SS_STEAM, SD_FLASK, 0, 1)}},
-		.perks = {false, {
-			{PERK_ANGRY_GHOST, false, 0, 3},
-		}, {PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, { 3, 3, 3, 3, 3, 3, 3 }},
+		.perks = {false,
+			{
+				{PERK_ANGRY_GHOST, false, 0, 3},
+			},
+			{PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, {3, 3, 3, 3, 3, 3, 3}},
 		.precheckUpwarps = false,
 	};
 
@@ -284,39 +274,79 @@ int main()
 		.genWands = false,
 	};
 
+	//InstantiateBiome(B_COALMINE, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_EXCAVATIONSITE, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_SNOWCAVE, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_SNOWCASTLE, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_VAULT, config.biomeScopes, biomeCount, maxMapArea);
+	//InstantiateBiome(B_CRYPT, config.biomeScopes, biomeCount, maxMapArea);
+
 	// Runs after all biomes generated, once
 	config.filterCfg = {
-		.aggregate = false,
+		.aggregate = true,
 		.itemFilterCount = 0,
-		.itemFilters = {ItemFilter({SAMPO, TRUE_ORB}, 1)},
+		.itemFilters = {ItemFilter({SAMPO})},
 		.materialFilterCount = 0,
-		.materialFilters = {},
+		.materialFilters = {MaterialFilter({MAGIC_LIQUID_HP_REGENERATION, MAGIC_LIQUID_HP_REGENERATION_UNSTABLE})},
 		.spellFilterCount = 0,
-		.spellFilters = {SpellFilter({SPELL_NUKE_GIGA}, 1)},
-		.pixelSceneFilterCount = 0,
-		.pixelSceneFilters = {PixelSceneFilter({PS_CRYPT_POLYMORPHROOM}, 100)},
+		.spellFilters = {SpellFilter({SPELL_MANA_REDUCE}, 6, false, true)},
+		.pixelSceneFilterCount = 1,
+		.pixelSceneFilters = {PixelSceneFilter({PS_VAULT_LAB_PUZZLE}, 2)},
 		.wandStats = false,
 		.wandStatThreshold = 27,
 	};
 
 	config.outputCfg = {
-		.outputMode = 0, 
+		.outputMode = 0,
 		.printInterval = 5.f,
-		.printProgressLog = true, 
+		.countPassesOnly = true,
+		.printProgressLog = true,
 		.printOutputToConsole = false,
-		.printOutputToFile = false
+		.printOutputToFile = false,
 	};
 
-	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
-	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
-	config.memSizes.spawnableMemSize *= max(1, biomeCount);
+	config.biomeCount = biomeCount;
 
-	AllocateComputeMemory();
-	SearchMain(d, appendOutput);
-	FreeComputeMemory();
-	
-	DestroyPlatform();
+	config.memSizes = {
+		.memoryCap = 40_GB,
 
-	//SfmlMain();
-	return 0;
+#ifdef IMAGE_OUTPUT
+		.outputSize = (size_t)maxMapArea * 3 + 512, // output
+#else
+		.outputSize = (size_t)4096,
+#endif
+		.mapDataSize = (size_t)maxMapArea * 2,
+		.miscMemSize = (size_t)maxMapArea * 2,
+		.visitedMemSize = (size_t)maxMapArea + 256,
+		.spawnableMemSize = (size_t)4096,
+	};
+	config.generalCfg = {
+#ifdef SEEDS_AS_TRIES
+		.seedStart = 1,
+		.seedEnd = 100,
+#else
+		.seedStart = 1,
+		.seedEnd = 1000000,
+#endif
+#ifdef REALTIME_SEEDS
+		.seedBlockSize = 1;
+	.seedBlockOverride = true
+#else
+		.seedBlockSize = biomeCount ? (WorkerAppetite > 100 ? 1u : 512u) : (WorkerAppetite > 100 ? 256u : 16384u),
+		.seedBlockOverride = false
+#endif
+};
+
+config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
+config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
+config.memSizes.spawnableMemSize *= max(1, biomeCount);
+
+AllocateComputeMemory();
+SearchMain(d, nullptr);
+FreeComputeMemory();
+
+DestroyPlatform();
+
+//SfmlMain();
+return 0;
 }

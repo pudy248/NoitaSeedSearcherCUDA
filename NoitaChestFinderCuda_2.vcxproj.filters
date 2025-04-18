@@ -81,9 +81,6 @@
     <ClInclude Include="data\uiNames.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="data\wand_levels.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="data\wand_sprites.h">
       <Filter>data</Filter>
     </ClInclude>
