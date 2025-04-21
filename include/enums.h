@@ -9,6 +9,8 @@ enum Material : short {
 	MATERIAL_VAR3,
 	MATERIAL_VAR4,
 
+	MATERIAL_FLASK,
+
 	//SOLIDS
 	WATERROCK,
 	ICE_GLASS,
@@ -581,7 +583,7 @@ enum AlchemyOrdering {
 };
 
 enum ShiftSource : short {
-	SS_FLASK = -1,
+	SS_FLASK = MATERIAL_FLASK,
 	SS_NONE = MATERIAL_NONE,
 	SS_VAR1 = MATERIAL_VAR1,
 	SS_VAR2 = MATERIAL_VAR2,
@@ -605,12 +607,9 @@ enum ShiftSource : short {
 	SS_SNOW_STICKY = Material::SNOW_STICKY,
 	SS_ROCK_STATIC = Material::ROCK_STATIC,
 	SS_GOLD = Material::GOLD,
-
-	SD_FL_GOLD = Material::GOLD,
-	SD_FL_GRASS_HOLY = Material::GRASS_HOLY,
 };
 enum ShiftDest : short {
-	SD_FLASK = -1,
+	SD_FLASK = MATERIAL_FLASK,
 	SD_NONE = MATERIAL_NONE,
 	SD_VAR1 = MATERIAL_VAR1,
 	SD_VAR2 = MATERIAL_VAR2,
@@ -648,6 +647,9 @@ enum ShiftDest : short {
 	SD_POO = Material::POO,
 	SD_VOID_LIQUID = Material::VOID_LIQUID,
 	SD_CHEESE_STATIC = Material::CHEESE_STATIC,
+
+	SD_FL_GOLD = Material::GOLD,
+	SD_FL_GRASS_HOLY = Material::GRASS_HOLY,
 };
 
 enum Biome : unsigned char {

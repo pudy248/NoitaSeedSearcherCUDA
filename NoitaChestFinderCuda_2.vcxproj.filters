@@ -78,9 +78,6 @@
     <ClInclude Include="data\temples.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="data\uiNames.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="data\wand_sprites.h">
       <Filter>data</Filter>
     </ClInclude>
@@ -165,6 +162,18 @@
     </ClInclude>
     <ClInclude Include="src\wak.cpp">
       <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="data\ids.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="data\ui_names.h">
+      <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="src\cli.cpp">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="data\host_tables.h">
+      <Filter>data</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

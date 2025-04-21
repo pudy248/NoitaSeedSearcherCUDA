@@ -42,6 +42,10 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>NoitaChestFinder</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>NoitaChestFinder</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -104,6 +108,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="main.cu" />
+    <ClInclude Include="data\host_tables.h" />
+    <ClInclude Include="data\ids.h" />
+    <ClInclude Include="data\ui_names.h" />
     <ClInclude Include="include\gui_primitives.h" />
     <ClInclude Include="include\gui_structs.h" />
     <ClInclude Include="include\wak.h" />
@@ -158,7 +165,6 @@
     <ClInclude Include="data\rains.h" />
     <ClInclude Include="data\spells.h" />
     <ClInclude Include="data\temples.h" />
-    <ClInclude Include="data\uiNames.h" />
     <ClInclude Include="data\wand_sprites.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="include\compute.h" />
@@ -186,6 +192,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\wak.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\cli.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

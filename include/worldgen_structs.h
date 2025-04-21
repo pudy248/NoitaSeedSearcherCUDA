@@ -91,7 +91,7 @@ struct BiomeSpawnFunctions {
 	void (*funcs[12])(int, int, const SpawnParams&);
 
 	constexpr BiomeSpawnFunctions() = default;
-	_compute consteval BiomeSpawnFunctions(
+	_compute constexpr BiomeSpawnFunctions(
 		void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list);
 };
 

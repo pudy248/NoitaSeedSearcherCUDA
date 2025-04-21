@@ -69,7 +69,7 @@ _compute static void createWand(double x, double y, Item type, bool addOffset, c
 			rand_y += 683;
 		}
 
-		Wand w = GetWandWithLevel(params.seed, rand_x, rand_y, tier, nonshuffle, better);
+		Wand w = GetWandWithLevel(params.seed, rand_x, rand_y, tier, nonshuffle, better, params.sCfg.genSpells);
 		writeByte(params.bytes, params.offset, DATA_WAND); //-1
 		if (!params.bytes.is_safe(params.offset + 36 + w.spellCount * 3))
 			printf("createWand(): Ran out of output space.\n");
@@ -712,10 +712,10 @@ _compute static void spawnHellShop(int x, int y, const SpawnParams& params) {
 	writeShort(params.bytes, params.offset, GetRandomAction(params.seed, x, y, 10, 0));
 }
 
-_compute static Wand GetShopWand(NollaPRNG& random, double x, double y, int level) {
+_compute static Wand GetShopWand(NollaPRNG& random, double x, double y, int level, bool gen_spells) {
 	random.SetRandomSeed(x, y);
 	bool shuffle = random.Random(0, 100) <= 50;
-	return GetWandWithLevel(random.world_seed, x, y, level, shuffle, false);
+	return GetWandWithLevel(random.world_seed, x, y, level, shuffle, false, gen_spells);
 }
 
 _compute void CheckMountains(const SpawnParams& params) {
@@ -759,7 +759,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 					params.offset += 4;
 
 					for (int i = 0; i < itemCount; i++) {
-						Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier));
+						Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier), params.sCfg.genSpells);
 						writeByte(params.bytes, params.offset, DATA_WAND);
 						if (!params.bytes.is_safe(params.offset + 36 + w.spellCount * 3))
 							printf("CheckMountains(): Ran out of output space.\n");
@@ -830,7 +830,7 @@ _compute void CheckNightmareSpawnWands(const SpawnParams& params) {
 		int countOffset = params.offset;
 		params.offset += 4;
 		for (int i = 0; i < 3; i++) {
-			Wand w = GetWandWithLevel(params.seed, wx + width * i, wy, wtiers[0], false, false);
+			Wand w = GetWandWithLevel(params.seed, wx + width * i, wy, wtiers[0], false, false, params.sCfg.genSpells);
 			writeByte(params.bytes, params.offset, DATA_WAND);
 			if (!params.bytes.is_safe(params.offset + 36 + w.spellCount * 3))
 				printf("CheckNightmareSpawnWands(): Ran out of output space.\n");

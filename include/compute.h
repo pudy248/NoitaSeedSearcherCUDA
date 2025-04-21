@@ -40,7 +40,7 @@ _compute void LoadPixelScene(int x, int y, const PixelSceneList& list, const Spa
 
 _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset);
 _compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset);
-_compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better);
+_compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better, bool gen_spells);
 
 _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params);
 _compute void CheckMountains(const SpawnParams& params);

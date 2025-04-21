@@ -1,5 +1,6 @@
-﻿#include "platforms/platform_api.h"
-#include "platforms/platform_implementation.h"
+﻿#include "platforms/platform_implementation.h"
+
+#include "platforms/platform_api.h"
 using namespace API_INTERNAL;
 #include "src/platform_implementation_src.cpp"
 
@@ -17,6 +18,7 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #endif
 
 #include "src/biome_impl.cpp"
+#include "src/cli.cpp"
 #include "src/compute.cpp"
 #include "src/filter.cpp"
 #include "src/hbwang.cpp"
@@ -220,7 +222,9 @@ namespace HELPERS
 }
 #endif
 
-int main() {
+void cli_main(int argc, char** argv);
+
+int main(int argc, char** argv) {
 	//HCountForEach();
 	//return 0;
 
@@ -232,21 +236,29 @@ int main() {
 	int biomeCount = 0;
 	int maxMapArea = 0;
 
+	config.generalCfg = {
+#ifdef SEEDS_AS_TRIES
+		.seedStart = 1,
+		.seedEnd = 100,
+#else
+		.seedStart = 1,
+		.seedEnd = INT_MAX,
+#endif
+		.seedBlockSize = 1,
+		.seedBlockOverride = false,
+		.priority = 0,
+	};
+
 	// Runs before generation, once
 	config.precheckCfg = {
 		.cart = {false, CART_NONE},
-		.flask = {false, GOLD}, // flask
+		.flask = {false, GOLD},
 		.wands = {false, SPELL_NONE, SPELL_NONE},
 		.rain = {false, MATERIAL_NONE},
-		.alchemy = {false, AlchemyOrdering::UNORDERED, {MUD, WATER, SOIL},
-			{MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE}},
+		.alchemy = {false, {}, {}},
 		.biomes = {false, {}},
-		.fungal = {false, {FungalShift(SS_STEAM, SD_FLASK, 0, 1)}},
-		.perks = {false,
-			{
-				{PERK_ANGRY_GHOST, false, 0, 3},
-			},
-			{PERK_EDIT_WANDS_EVERYWHERE, PERK_INVISIBILITY}, {3, 3, 3, 3, 3, 3, 3}},
+		.fungal = {false, {}},
+		.perks = {false, {}, {}, {3, 3, 3, 3, 3, 3, 3}},
 		.precheckUpwarps = false,
 	};
 
@@ -264,7 +276,7 @@ int main() {
 		.biomeChests = false,
 		.biomePedestals = false,
 		.biomeAltars = false,
-		.biomePixelSceneIndexing = false,
+		.biomePixelSceneIndexing = true,
 		.biomePixelSceneSearch = false,
 		.biomeEnemies = false,
 		.hellShops = false,
@@ -274,79 +286,63 @@ int main() {
 		.genWands = false,
 	};
 
-	//InstantiateBiome(B_COALMINE, config.biomeScopes, biomeCount, maxMapArea);
-	//InstantiateBiome(B_EXCAVATIONSITE, config.biomeScopes, biomeCount, maxMapArea);
-	//InstantiateBiome(B_SNOWCAVE, config.biomeScopes, biomeCount, maxMapArea);
-	//InstantiateBiome(B_SNOWCASTLE, config.biomeScopes, biomeCount, maxMapArea);
-	//InstantiateBiome(B_VAULT, config.biomeScopes, biomeCount, maxMapArea);
-	//InstantiateBiome(B_CRYPT, config.biomeScopes, biomeCount, maxMapArea);
-
 	// Runs after all biomes generated, once
 	config.filterCfg = {
-		.aggregate = true,
+		.aggregate = false,
 		.itemFilterCount = 0,
-		.itemFilters = {ItemFilter({SAMPO})},
+		.itemFilters = {},
 		.materialFilterCount = 0,
-		.materialFilters = {MaterialFilter({MAGIC_LIQUID_HP_REGENERATION, MAGIC_LIQUID_HP_REGENERATION_UNSTABLE})},
+		.materialFilters = {},
 		.spellFilterCount = 0,
-		.spellFilters = {SpellFilter({SPELL_MANA_REDUCE}, 6, false, true)},
-		.pixelSceneFilterCount = 1,
-		.pixelSceneFilters = {PixelSceneFilter({PS_VAULT_LAB_PUZZLE}, 2)},
+		.spellFilters = {},
+		.pixelSceneFilterCount = 0,
+		.pixelSceneFilters = {},
 		.wandStats = false,
 		.wandStatThreshold = 27,
 	};
 
 	config.outputCfg = {
-		.outputMode = 0,
-		.printInterval = 5.f,
-		.countPassesOnly = true,
+		.outputMode = 1,
+		.outputFile = "output.txt",
+		.printInterval = 15.f,
+		.countPassesOnly = false,
 		.printProgressLog = true,
-		.printOutputToConsole = false,
+		.printOutputToConsole = true,
 		.printOutputToFile = false,
 	};
 
+	cli_main(argc, argv);
+	for (int i = 0; i < biome_list.size(); i++)
+		InstantiateBiome(biome_list[i], config.biomeScopes, biomeCount, maxMapArea);
+
 	config.biomeCount = biomeCount;
+	config.generalCfg.seedBlockSize = biomeCount ? (WorkerAppetite > 100 ? 1u : 512u) :
+												   (WorkerAppetite > 100 ? 256u : 16384u);
 
 	config.memSizes = {
 		.memoryCap = 40_GB,
 
-#ifdef IMAGE_OUTPUT
+	#ifdef IMAGE_OUTPUT
 		.outputSize = (size_t)maxMapArea * 3 + 512, // output
-#else
-		.outputSize = (size_t)4096,
-#endif
+	#else
+			.outputSize = (size_t)4096,
+	#endif
 		.mapDataSize = (size_t)maxMapArea * 2,
 		.miscMemSize = (size_t)maxMapArea * 2,
 		.visitedMemSize = (size_t)maxMapArea + 256,
 		.spawnableMemSize = (size_t)4096,
 	};
-	config.generalCfg = {
-#ifdef SEEDS_AS_TRIES
-		.seedStart = 1,
-		.seedEnd = 100,
-#else
-		.seedStart = 1,
-		.seedEnd = 1000000,
-#endif
-#ifdef REALTIME_SEEDS
-		.seedBlockSize = 1;
-	.seedBlockOverride = true
-#else
-		.seedBlockSize = biomeCount ? (WorkerAppetite > 100 ? 1u : 512u) : (WorkerAppetite > 100 ? 256u : 16384u),
-		.seedBlockOverride = false
-#endif
-};
 
-config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
-config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
-config.memSizes.spawnableMemSize *= max(1, biomeCount);
+	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
+	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
+	config.memSizes.spawnableMemSize *= max(1, biomeCount);
 
-AllocateComputeMemory();
-SearchMain(d, nullptr);
-FreeComputeMemory();
+	AllocateComputeMemory();
+	SearchMain(d, nullptr);
+	FreeComputeMemory();
 
-DestroyPlatform();
+	DestroyPlatform();
 
-//SfmlMain();
-return 0;
+	//SfmlMain();
+	return 0;
 }

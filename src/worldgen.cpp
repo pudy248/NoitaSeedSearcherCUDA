@@ -1,14 +1,10 @@
 #include "../platforms/platform_implementation.h"
 
-#include "../data/uiNames.h"
+#include "../data/ui_names.h"
 #include "../include/compute.h"
 #include "../include/misc_funcs.h"
 #include "../include/noita_random.h"
 #include "../include/worldgen_structs.h"
-
-#define BIOME_PATH_FIND_WORLD_POS_MIN_X 159
-#define BIOME_PATH_FIND_WORLD_POS_MAX_X 223
-#define WORLD_OFFSET_X 35
 
 _universal static WorldgenPRNG GetRNG(uint32_t world_seed, int map_w) {
 	WorldgenPRNG rng = WorldgenPRNG(world_seed);
@@ -150,11 +146,11 @@ void UploadBiomeData() {
 								d.spawns[d.spawnCount++] = {(int16_t)(HostSpawnColors[0].count + z), x, y};
 #ifdef DEBUG_SPAWN_PIXELS
 								printf("PS Spawn (%i, %i): Biome %i\n", x, y, z);
-#endif
 								if (HostSpawnColors[i].colors[z] != 0x00ff00)
 									printf(
 										"WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n",
 										d.path, x, y, z);
+#endif
 							}
 						}
 					}

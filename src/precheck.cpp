@@ -228,7 +228,7 @@ _compute static bool CheckAlchemy(NollaPRNG& random, AlchemyConfig c) {
 		prng.Next();
 	AlchemyRecipe lc = MaterialPicker(prng, random.world_seed);
 	AlchemyRecipe ap = MaterialPicker(prng, random.world_seed);
-	return lc.Equals(c.LC, lc, c.ordering) && ap.Equals(c.AP, ap, c.ordering);
+	return lc.Equals(c.LC, lc) && ap.Equals(c.AP, ap);
 }
 
 _compute static bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c) {
@@ -256,7 +256,7 @@ _compute static bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c) {
 	//populate vars
 	for (int i = 0; i < maxFungalShifts; i++) {
 		if (c.shifts[i].to > SD_NONE && (int)c.shifts[i].to <= SD_VAR4) {
-			for (int j = c.shifts[i].minIdx; j < c.shifts[i].maxIdx; j++) {
+			for (int j = c.shifts[i].minIdx; j <= c.shifts[i].maxIdx; j++) {
 				if (MaterialEquals((Material)c.shifts[i].from, (Material)generatedShifts[j].from, ptrs, variables))
 					MaterialSetVars((Material)c.shifts[i].to, (Material)generatedShifts[j].to, ptrs, variables);
 			}
@@ -267,7 +267,7 @@ _compute static bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c) {
 		if (c.shifts[i].minIdx == c.shifts[i].maxIdx)
 			continue;
 		bool found = false;
-		for (int j = c.shifts[i].minIdx; j < c.shifts[i].maxIdx; j++) {
+		for (int j = c.shifts[i].minIdx; j <= c.shifts[i].maxIdx; j++) {
 			if (FungalShiftEquals(c.shifts[i], generatedShifts[j], ptrs, variables)) {
 				found = true;
 				break;
@@ -367,11 +367,11 @@ _compute static bool CheckPerks(NollaPRNG& random, PerkConfig c) {
 	NollaPRNG rnd = NollaPRNG(random.world_seed);
 	for (int i = 0; i < maxPerkFilters; i++) {
 		PerkInfo perkToCkeck = c.perks[i];
-		if (c.perks[i].minPosition >= c.perks[i].maxPosition)
+		if (c.perks[i].minPosition > c.perks[i].maxPosition)
 			continue;
 		bool found = false;
 		for (int j = (perkToCkeck.minPosition + perkDeckIdx) % perkDeckIdx;
-			j < (perkToCkeck.maxPosition + perkDeckIdx) % perkDeckIdx; j++) {
+			j <= (perkToCkeck.maxPosition + perkDeckIdx) % perkDeckIdx; j++) {
 			if (perkToCkeck.p == perkDeck[j] || perkToCkeck.p == PERK_NONE) {
 				if (perkToCkeck.lottery) {
 					int tmp = j;

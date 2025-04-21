@@ -36,7 +36,7 @@ struct Worker {
 void GetProcessorName(char* buffer) {
 	memset(buffer, 0, 0x40);
 #ifdef _MSC_VER
-	int CPUInfo[4] = { -1 };
+	int CPUInfo[4] = {-1};
 	__cpuid(CPUInfo, 0x80000002);
 	memcpy(buffer, CPUInfo, sizeof(CPUInfo));
 	__cpuid(CPUInfo, 0x80000003);
@@ -82,17 +82,17 @@ void AllocateComputeMemory() {
 	SetWorkerCount(NumThreads);
 	SetWorkerAppetite(1);
 	SetTargetDispatchRate(16);
-	printf("Creating %i threads\n", NumThreads);
+	printf("Creating %i threads.\n", NumThreads);
 
 	hostPtrs.arena = (uint8_t*)malloc(GetMinimumSpanMemory() * NumThreads);
 	hostPtrs.output = (uint8_t*)malloc(GetMinimumOutputMemory() * NumThreads);
 
 	coalmine_overlay = (uint8_t*)malloc(3 * 256 * 103);
-	ReadBufferImage((uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay,
-					false);
+	ReadBufferImage(
+		(uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay, false);
 
-	printf("Allocated %lluKB of host memory\n",
-		   ((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
+	//printf("Allocated %lluKB of host memory\n",
+	//	   ((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
 }
 void FreeComputeMemory() {
 	free(hostPtrs.arena);
@@ -112,17 +112,22 @@ void DestroyWorker(Worker& worker) {
 }
 void ThreadMain(SpanParams params, Worker* worker) {
 	// These should be not taking up all of your system's resources :)
+	int prio_num = GetSearchConfig().generalCfg.priority;
+	if (prio_num) {
 #ifdef WIN32
-	SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+		SetThreadPriority(GetCurrentThread(), prio_num < 0 ? THREAD_PRIORITY_LOWEST :
+											  THREAD_PRIORITY_ABOVE_NORMAL);
 #else
-	int policy;
-	sched_param sp;
-	pthread_getschedparam(pthread_self(), &policy, &sp);
-	sp.sched_priority = sched_get_priority_min(policy);
-	pthread_setschedparam(pthread_self(), policy, &sp);
+		int policy;
+		sched_param sp;
+		pthread_getschedparam(pthread_self(), &policy, &sp);
+		sp.sched_priority = prio_num < 0 ? sched_get_priority_min(policy) :
+										   (sched_get_priority_min(policy) + 3 * sched_get_priority_max(policy)) / 4;
+		pthread_setschedparam(pthread_self(), policy, &sp);
 #endif
+	}
 	worker->ret = EvaluateSpan(GetSearchConfig(), params, hostPtrs.arena + GetMinimumSpanMemory() * worker->memIdx,
-							   hostPtrs.output + GetMinimumOutputMemory() * worker->memIdx);
+		hostPtrs.output + GetMinimumOutputMemory() * worker->memIdx);
 	worker->ret.outputPtr = hostPtrs.output + GetMinimumOutputMemory() * worker->memIdx;
 	worker->returned = true;
 }

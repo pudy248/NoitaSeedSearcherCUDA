@@ -131,6 +131,7 @@ static void stbhw__parse_h_rect(
 				}
 			}
 h_end:
+			continue;
 		}
 	if (sIdx > _WangTileMaxSpawns)
 		printf("H Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
@@ -175,7 +176,8 @@ static void stbhw__parse_v_rect(
 					goto v_end;
 				}
 			}
-v_end:
+		v_end:
+			continue;
 		}
 	if (sIdx > _WangTileMaxSpawns)
 		printf("V Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);

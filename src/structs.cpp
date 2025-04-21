@@ -110,20 +110,14 @@ PixelSceneFilter::PixelSceneFilter(
 	checkMats = true;
 }
 
-_universal AlchemyRecipe::AlchemyRecipe() {}
-_universal AlchemyRecipe::AlchemyRecipe(Material mat1, Material mat2, Material mat3) {
-	mats[0] = mat1;
-	mats[1] = mat2;
-	mats[2] = mat3;
-}
-_universal bool AlchemyRecipe::Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered) {
-	if (ordered == STRICT_ORDERED) {
+_universal bool AlchemyRecipe::Equals(AlchemyRecipe reference, AlchemyRecipe test) {
+	if (reference.ordering == STRICT_ORDERED) {
 		bool passed1 = reference.mats[0] == MATERIAL_NONE || reference.mats[0] == test.mats[0];
 		bool passed2 = reference.mats[1] == MATERIAL_NONE || reference.mats[1] == test.mats[1];
 		bool passed3 = reference.mats[2] == MATERIAL_NONE || reference.mats[2] == test.mats[2];
 
 		return passed1 && passed2 && passed3;
-	} else if (ordered == ONLY_CONSUMED) {
+	} else if (reference.ordering == ONLY_CONSUMED) {
 		bool passed1 = reference.mats[0] == MATERIAL_NONE ||
 					   (reference.mats[0] == test.mats[0] || reference.mats[0] == test.mats[2]);
 		bool passed2 = reference.mats[1] == MATERIAL_NONE || (reference.mats[1] == test.mats[1]);
@@ -173,7 +167,7 @@ constexpr BiomeSpawnColors::BiomeSpawnColors(std::initializer_list<uint32_t> lis
 		colors[i] = list.begin()[i];
 }
 
-_compute consteval BiomeSpawnFunctions::BiomeSpawnFunctions(
+_compute constexpr BiomeSpawnFunctions::BiomeSpawnFunctions(
 	void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list)
 	: count(list.size()), init(_fn), funcs() {
 	for (int i = 0; i < list.size(); i++)

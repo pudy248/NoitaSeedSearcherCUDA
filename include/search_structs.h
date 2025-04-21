@@ -6,10 +6,9 @@
 
 struct AlchemyRecipe {
 	Material mats[4] = {MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE, MATERIAL_NONE};
+	AlchemyOrdering ordering;
 
-	_universal AlchemyRecipe();
-	_universal AlchemyRecipe(Material mat1, Material mat2, Material mat3);
-	_universal bool Equals(AlchemyRecipe reference, AlchemyRecipe test, AlchemyOrdering ordered);
+	_universal bool Equals(AlchemyRecipe reference, AlchemyRecipe test);
 };
 
 struct FungalShift {

@@ -11,6 +11,7 @@ struct GeneralConfig {
 	uint32_t seedEnd;
 	uint32_t seedBlockSize;
 	bool seedBlockOverride;
+	int priority;
 };
 struct MemSizeConfig {
 	size_t memoryCap;
@@ -43,7 +44,6 @@ struct RainConfig {
 };
 struct AlchemyConfig {
 	bool check;
-	AlchemyOrdering ordering;
 	AlchemyRecipe LC;
 	AlchemyRecipe AP;
 };
@@ -120,6 +120,7 @@ struct FilterConfig {
 struct OutputConfig {
 	// 0=human-readable, 1=code, 2=binary
 	int outputMode;
+	const char* outputFile;
 
 	float printInterval;
 	bool countPassesOnly;

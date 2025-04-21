@@ -408,7 +408,7 @@ void SearchMain(OutputProgressData& progress, void (*appendOutput)(char*, char*)
 
 	UploadBiomeData();
 
-	FILE* f = fopen("output.txt", "wb");
+	FILE* f = config.outputCfg.printOutputToFile ? fopen(config.outputCfg.outputFile, "wb") : NULL;
 
 	time_t startTime = time(NULL) - 100000;
 	Vec2i seedCounts = OutputLoop(f, startTime, progress, appendOutput);

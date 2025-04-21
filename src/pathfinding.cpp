@@ -6,6 +6,10 @@
 #include "../include/noita_random.h"
 #include "../include/worldgen_structs.h"
 
+#define BIOME_PATH_FIND_WORLD_POS_MIN_X 159
+#define BIOME_PATH_FIND_WORLD_POS_MAX_X 223
+#define WORLD_OFFSET_X 35
+
 template <int coalmine_mode, bool skip_fill>
 _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl) {
 	if constexpr (coalmine_mode) {

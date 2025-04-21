@@ -605,53 +605,57 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 	}
 }
 
-_compute _noinline static Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle) {
+_compute _noinline static Wand GetWand(
+	uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle, bool gen_spells) {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStats(cost, level, force_unshuffle, random);
 	GetBestSprite(random, wand);
 	wand.spellCount = 0;
 #ifdef DO_SPELLGEN
-	AddRandomCards(&wand, seed, x, y, level, random);
+	if (gen_spells)
+		AddRandomCards(&wand, seed, x, y, level, random);
 #endif
 	return wand;
 }
-_compute _noinline static Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level) {
+_compute _noinline static Wand GetWandBetter(uint32_t seed, double x, double y, int cost, int level, bool gen_spells) {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStatsBetter(cost, level, random);
 	GetBestSprite(random, wand);
 	wand.spellCount = 0;
 #ifdef DO_SPELLGEN
-	AddRandomCardsBetter(&wand, seed, x, y, level, random);
+	if (gen_spells)
+		AddRandomCardsBetter(&wand, seed, x, y, level, random);
 #endif
 	return wand;
 }
 
-_compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better) {
+_compute _noinline Wand GetWandWithLevel(
+	uint32_t seed, double x, double y, int level, bool nonshuffle, bool better, bool gen_spells) {
 	if (nonshuffle)
 		switch (level) {
-		case 1: return GetWand(seed, x, y, 25, 1, true);
-		case 2: return GetWand(seed, x, y, 40, 2, true);
-		case 3: return GetWand(seed, x, y, 60, 3, true);
-		case 4: return GetWand(seed, x, y, 80, 4, true);
-		case 5: return GetWand(seed, x, y, 100, 5, true);
-		case 6: return GetWand(seed, x, y, 120, 6, true);
-		default: return GetWand(seed, x, y, 180, 11, true);
+		case 1: return GetWand(seed, x, y, 25, 1, true, gen_spells);
+		case 2: return GetWand(seed, x, y, 40, 2, true, gen_spells);
+		case 3: return GetWand(seed, x, y, 60, 3, true, gen_spells);
+		case 4: return GetWand(seed, x, y, 80, 4, true, gen_spells);
+		case 5: return GetWand(seed, x, y, 100, 5, true, gen_spells);
+		case 6: return GetWand(seed, x, y, 120, 6, true, gen_spells);
+		default: return GetWand(seed, x, y, 180, 11, true, gen_spells);
 		}
 	/*else if (better)
 		switch (level)
 		{
 		case 1:
-			return GetWandBetter(seed, x, y, 30, 1);
+			return GetWandBetter(seed, x, y, 30, 1, gen_spells);
 		case 2:
-			return GetWandBetter(seed, x, y, 40, 2);
+			return GetWandBetter(seed, x, y, 40, 2, gen_spells);
 		case 3:
-			return GetWandBetter(seed, x, y, 60, 3);
+			return GetWandBetter(seed, x, y, 60, 3, gen_spells);
 		case 4:
-			return GetWandBetter(seed, x, y, 80, 4);
+			return GetWandBetter(seed, x, y, 80, 4, gen_spells);
 		case 5:
-			return GetWandBetter(seed, x, y, 100, 5);
+			return GetWandBetter(seed, x, y, 100, 5, gen_spells);
 		case 6:
 			return GetWandBetter(seed, x, y, 120, 6);
 		default:
@@ -659,15 +663,15 @@ _compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int 
 		}*/
 	else
 		switch (level) {
-		case 1: return GetWand(seed, x, y, 30, 1, false);
-		case 2: return GetWand(seed, x, y, 40, 2, false);
-		case 3: return GetWand(seed, x, y, 60, 3, false);
-		case 4: return GetWand(seed, x, y, 80, 4, false);
-		case 5: return GetWand(seed, x, y, 100, 5, false);
-		case 6: return GetWand(seed, x, y, 120, 6, false);
-		default: return GetWand(seed, x, y, 200, 11, false);
+		case 1: return GetWand(seed, x, y, 30, 1, false, gen_spells);
+		case 2: return GetWand(seed, x, y, 40, 2, false, gen_spells);
+		case 3: return GetWand(seed, x, y, 60, 3, false, gen_spells);
+		case 4: return GetWand(seed, x, y, 80, 4, false, gen_spells);
+		case 5: return GetWand(seed, x, y, 100, 5, false, gen_spells);
+		case 6: return GetWand(seed, x, y, 120, 6, false, gen_spells);
+		default: return GetWand(seed, x, y, 200, 11, false, gen_spells);
 		}
-	return GetWand(seed, x, y, 10, 1, false);
+	return GetWand(seed, x, y, 10, 1, false, gen_spells);
 }
 
 _compute _noinline static Wand GetWandGivenSeed(uint32_t seed, int cost, int level, bool force_unshuffle) {

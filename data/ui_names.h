@@ -91,6 +91,7 @@ const char* MaterialNames[] = {
 	"Variable Y",
 	"Variable Z",
 	"Variable W",
+	"Flask",
 	"Rock",
 	"Ice",
 	"Ice",
