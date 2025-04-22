@@ -264,7 +264,7 @@ _compute static bool CheckFungalShifts(NollaPRNG& random, FungalShiftConfig c) {
 	}
 
 	for (int i = 0; i < maxFungalShifts; i++) {
-		if (c.shifts[i].minIdx == c.shifts[i].maxIdx)
+		if (c.shifts[i].from == SS_NONE && c.shifts[i].to == SD_NONE)
 			continue;
 		bool found = false;
 		for (int j = c.shifts[i].minIdx; j <= c.shifts[i].maxIdx; j++) {

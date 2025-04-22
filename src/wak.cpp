@@ -40,13 +40,13 @@ std::unordered_map<std::string, std::string> globalWakContents;
 template <typename T>
 static T read_le(std::istream&);
 template <>
-static std::uint8_t read_le(std::istream& s) {
+std::uint8_t read_le(std::istream& s) {
 	uint8_t val;
 	s.read((char*)&val, sizeof(val));
 	return val;
 }
 template <>
-static std::uint32_t read_le(std::istream& s) {
+std::uint32_t read_le(std::istream& s) {
 	uint32_t val;
 	auto it = (uint8_t*)&val;
 	for (int i = 0; i < 4; i++)
@@ -54,7 +54,7 @@ static std::uint32_t read_le(std::istream& s) {
 	return val;
 }
 template <>
-static std::string read_le(std::istream& s) {
+std::string read_le(std::istream& s) {
 	std::uint32_t size = read_le<std::uint32_t>(s);
 	std::string str;
 	str.resize(size);

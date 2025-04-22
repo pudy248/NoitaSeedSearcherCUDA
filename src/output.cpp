@@ -139,7 +139,7 @@ void PrintOutputBlock(
 				memOffset += s.count + 13;
 			}
 		}
-		//else seedInfo[bufOffset++] = '\n';
+		else sprintfc(seedInfo, "(no objects)\n");
 		seedInfo[bufOffset++] = '\0';
 		if (outputCfg.printOutputToFile) {
 			fprintf(outputFile, "%s", seedInfo);

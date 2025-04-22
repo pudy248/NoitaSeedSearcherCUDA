@@ -70,7 +70,7 @@ static const cmd commands[] = {
 		"Select LC/AP materials. Takes a pair of reactions of the format {mat1,mat2,mat3[,ordering]} for LC and AP. Ex. \"--alchemy {mud,water,soil,unordered} {any,water,any,only_consumed}\""},
 	{"--biome-mods", nullptr, nullptr, "Unimplemented in the command-line interface."},
 	{"--fungal", "-fg", cmd_fungal,
-		"Filter fungal shifts. Takes a list of shifts of the format {from,to[,min-index,max-index]}. Ex. \"-fs {gold,cheese,0,0} {steam,flask}\""},
+		"Filter fungal shifts. Takes a list of shifts of the format {from,to[,min-index,max-index]}. Ex. \"-fg {gold,cheese,0,0} {steam,flask}\""},
 	{"--perks", nullptr, cmd_perks,
 		"Filter the perk deck. Takes a list of perks of the format {perk[,min-index,max-index][,lottery-safe]}. Ex. \"--perks {edit_wands_everywhere,0,2} {perks_lottery,0,2,true}\""},
 	{"--holy-mountains", "-hm", cmd_hms,
