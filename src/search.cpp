@@ -547,7 +547,7 @@ _compute void spawnWand(int x, int y, const SpawnParams& params) {
 
 	NollaPRNG random = NollaPRNG(params.seed);
 	BiomeWands wandSet = AllWandLevels[params.currentBiome.bSec.b];
-	int sum = 0;
+	float sum = 0;
 	for (int i = 0; i < wandSet.count; i++)
 		sum += wandSet.levels[i].prob;
 	float r = random.ProceduralRandomf(x - 5, y, 0, 1) * sum;

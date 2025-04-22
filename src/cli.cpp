@@ -23,7 +23,7 @@ int cmd_flask(int);
 // int cmd_starting_spells(int);
 int cmd_rain(int);
 int cmd_alchemy(int);
-int cmd_biome_mods(int);
+// int cmd_biome_mods(int);
 int cmd_fungal(int);
 int cmd_perks(int);
 int cmd_hms(int);
@@ -61,12 +61,12 @@ int cmd_start_seed(int);
 int cmd_end_seed(int);
 int cmd_priority(int);
 
-const cmd commands[] = {
+static const cmd commands[] = {
 	{"--help", "-h", cmd_help, "Display this menu."},
 	{"--cart", nullptr, cmd_cart, "Select a starting cart."},
-	{"--rain", nullptr, cmd_rain, "Select an initial rain."},
-	{"--starting-flask", "-fl", cmd_flask, "Select a starting flask material."},
-	{"--alchemy", "-al", cmd_alchemy,
+	{"--rain", "-r", cmd_rain, "Select an initial rain."},
+	{"--starting-flask", "-sf", cmd_flask, "Select a starting flask material."},
+	{"--alchemy", "-a", cmd_alchemy,
 		"Select LC/AP materials. Takes a pair of reactions of the format {mat1,mat2,mat3[,ordering]} for LC and AP. Ex. \"--alchemy {mud,water,soil,unordered} {any,water,any,only_consumed}\""},
 	{"--biome-mods", nullptr, nullptr, "Unimplemented in the command-line interface."},
 	{"--fungal", "-fg", cmd_fungal,
@@ -78,26 +78,27 @@ const cmd commands[] = {
 	{"--parallels", "-pw", cmd_pws,
 		"Select how many parallel worlds to index, of the format {width[,height]} [{center_x,center_y}]. Ex. \"-pw {1,1}\" for a single parallel world in every direction, a total of 9 copies."},
 	{"--greed", nullptr, cmd_greed, "Generate with curse of greed enabled."},
-	{"--pacifist", nullptr, cmd_pacifist, "Generate pacifist chests."},
-	{"--shop-spells", nullptr, cmd_shop_spells, "Generate HM spells."},
-	{"--shop-wands", nullptr, cmd_shop_wands, "Generate HM wands. --gen-spells is required for spells on these wands as well."},
-	{"--eye-rooms", nullptr, cmd_eye_rooms, "Generate eye room spells."},
-	{"--biome-chests", "-gc", cmd_biome_chests, "Generate biome chest (and heart) spawns."},
-	{"--biome-pedestals", "-gp", cmd_biome_pedestals, "Generate biome item pedestal spawns."},
-	{"--biome-altars", "-gw", cmd_biome_altars, "Generate biome wand altar spawns."},
+	{"--pacifist", "-pc", cmd_pacifist, "Generate pacifist chests."},
+	{"--shop-spells", "-ss", cmd_shop_spells, "Generate HM spells."},
+	{"--shop-wands", "-sw", cmd_shop_wands,
+		"Generate HM wands. --gen-spells is required for spells on these wands as well."},
+	{"--eye-rooms", "-e", cmd_eye_rooms, "Generate eye room spells."},
+	{"--biome-chests", "-c", cmd_biome_chests, "Generate biome chest (and heart) spawns."},
+	{"--biome-pedestals", "-p", cmd_biome_pedestals, "Generate biome item pedestal spawns."},
+	{"--biome-altars", "-w", cmd_biome_altars, "Generate biome wand altar spawns."},
 	{"--no-pixel-scene-indexing", nullptr, cmd_biome_pixel_scene_indexing, "Disable indexing spawns inside of pixel scenes. Otherwise on by default."},
 	{"--pixel-scenes", "-ps", cmd_biome_pixel_scene_search,
 		"Generate pixel scene objects (for filtering puzzles, etc.). Not required for other objects inside pixel scenes to spawn."},
 	{"--t10-shops", nullptr, cmd_hell_shops, "Deprecated. Generate sky/hell shop items."},
-	{"--nightmare", nullptr, cmd_nightmare, "Deprecated. Generate a nightmare world."},
-	{"--gen-potions", "-p", cmd_gen_potions, "Generate potion contents instead of using generic items like 'potion_secret'."},
-	{"--gen-spells", "-s", cmd_gen_spells,
+	{"--nightmare", "-n", cmd_nightmare, "Deprecated. Generate a nightmare world."},
+	{"--gen-potions", "-gp", cmd_gen_potions, "Generate potion contents instead of using generic items like 'potion_secret'."},
+	{"--gen-spells", "-gs", cmd_gen_spells,
 		"Generate spells instead of using generic items like 'random_spell'. Wand stats must also be generated for spells on wands."},
-	{"--gen-wands", "-w", cmd_gen_wands,
+	{"--gen-wands", "-gw", cmd_gen_wands,
 		"Generate wands instead of using generic items like 'wand_t6ns'. Spells must also be generated for spells on wands."},
 	{"--biomes", "-b", cmd_biomes, "Select which biomes to generate. Ex. \"-b coalmine excavationsite crypt\"."},
 	{"--upwarps", "-u", cmd_upwarps, "Only check upwarped chests. Much faster than full biome generation."},
-	{"--aggregate", "-a", cmd_aggregate, "Aggregate filter checks between all loaded objects instead of requiring every filter to pass on a single object."},
+	{"--aggregate", "-g", cmd_aggregate, "Aggregate filter checks between all loaded objects instead of requiring every filter to pass on a single object."},
 	{"--filter-items", "-fi", cmd_filter_items,
 		"Define item filters of the formats {item[,count]} or {{item1,or-item2[,...]}[,count]}. Ex. \"-fi {{sampo,true_orb}} {bomb,3}\""},
 	{"--filter-materials", "-fm", cmd_filter_materials,
@@ -108,11 +109,11 @@ const cmd commands[] = {
 	{"--start-seed", nullptr, cmd_start_seed, "Set first seed to search."},
 	{"--end-seed", nullptr, cmd_end_seed, "Set last seed to search."},
 	{"--count-passed", "-cp", cmd_count_passed, "Do not record which seeds passed, only how many. Useful for gathering statistics where keeping track of specific seeds is an unnecessary slowdown."},
-	{"--print-to-console", "-oc", cmd_print_to_console, "Print seeds to standard output."},
+	{"--no-print-to-console", "-nc", cmd_print_to_console, "Don't print seeds to standard output."},
 	{"--print-to-file", "-of", cmd_print_to_file, "Print seeds to an output file (Default: output.txt)."},
 	{"--output-file", "-o", cmd_output_file, "Specify output filename."},
 	{"--logging-interval", "-li", cmd_logging_interval, "Set logging interval for progress updates, or 0 to disable."},
-	{"--output-mode", nullptr, cmd_output_mode,
+	{"--output-mode", "-om" , cmd_output_mode,
 		"Set output mode. 'image' only works when specifically compiled to output images."},
 	{"--priority", nullptr, cmd_priority,
 		"Set thread priority. Has no effect on non-CPU backends."},
@@ -120,33 +121,41 @@ const cmd commands[] = {
 };
 constexpr int num_commands = sizeof(commands) / sizeof(cmd);
 
-void check_argc(int i, int expected) {
-	if (i >= g_argc - expected)
-		printf("Unexpectedly ran out of arguments.\n");
+static void check_argc(int i, int expected) {
+	if (i >= g_argc - expected) {
+		fprintf(stderr, "Unexpectedly ran out of arguments.\n");
+		std::exit(-1);
+	}
+}
+static void check_range(int i, int min, int max) {
+	if (i < min || i > max) {
+		fprintf(stderr, "Integer parameter %i not in the valid range [%i,%i].\n", i, min, max);
+		std::exit(-1);
+	}
 }
 
-int to_int(const std::string_view s) {
+static int to_int(const std::string_view s) {
 	int result;
 	auto err = std::from_chars(s.data(), s.data() + s.size(), result);
 	if (err.ec != std::errc{} || err.ptr != s.data() + s.size()) {
-		printf("Value '%.*s' could not be converted to a number.\n", (int)s.size(), s.data());
-		std::abort();
+		fprintf(stderr, "Value '%.*s' could not be converted to a number.\n", (int)s.size(), s.data());
+		std::exit(-1);
 	}
 	return result;
 }
 
 template <std::size_t N>
-constexpr int list_to_id(std::string_view s, const char* (&list)[N]) {
+static int list_to_id(std::string_view s, const char* (&list)[N]) {
 	for (int i = 0; i < N; i++)
 		if (s == list[i])
 			return i;
-	printf("Invalid ID '%.*s' in parameter list. Valid options are:\n", (int)s.size(), s.data());
+	fprintf(stderr, "Invalid ID '%.*s' in parameter list. Valid options are:\n", (int)s.size(), s.data());
 	for (int i = 0; i < N; i++)
-		printf("  '%s'\n", list[i]);
-	std::abort();
+		fprintf(stderr, "  '%s'\n", list[i]);
+	std::exit(-1);
 }
 template <std::size_t N, typename T, std::size_t M>
-constexpr int list_to_id(std::string_view s, const char* (&list)[N], T (&subset)[M]) {
+static int list_to_id(std::string_view s, const char* (&list)[N], T (&subset)[M]) {
 	int idx = -1;
 	for (int i = 0; i < N; i++) {
 		if (s == list[i]) {
@@ -157,19 +166,19 @@ constexpr int list_to_id(std::string_view s, const char* (&list)[N], T (&subset)
 	for (int i = 0; i < M; i++)
 		if (idx == subset[i])
 			return idx;
-	printf("Invalid ID '%.*s' in parameter list. Valid options are:\n", (int)s.size(), s.data());
+	fprintf(stderr, "Invalid ID '%.*s' in parameter list. Valid options are:\n", (int)s.size(), s.data());
 	for (int i = 0; i < M; i++)
-		printf("  '%s'\n", list[subset[i]]);
-	std::abort();
+		fprintf(stderr, "  '%s'\n", list[subset[i]]);
+	std::exit(-1);
 }
-std::vector<std::string_view> decompose(const char* str) {
+static std::vector<std::string_view> decompose(const char* str) {
 	if (str[0] != '{') {
-		printf("Composite object '%s' does not start with {.\n", str);
-		std::abort();
+		fprintf(stderr, "Composite object '%s' does not start with {.\n", str);
+		std::exit(-1);
 	}
 	if (!strchr(str, '}')) {
-		printf("Unterminated composite object '%s'.\n", str);
-		std::abort();
+		fprintf(stderr, "Unterminated composite object '%s'.\n", str);
+		std::exit(-1);
 	}
 	std::vector<std::string_view> out;
 	const char* cur_str = str + 1;
@@ -181,12 +190,11 @@ std::vector<std::string_view> decompose(const char* str) {
 			len -= frag_len + 1;
 			cur_str += frag_len + 1;
 			if (!strchr(str, '}')) {
-				printf("Unterminated composite object '%s'.\n", str);
-				std::abort();
+				fprintf(stderr, "Unterminated composite object '%s'.\n", str);
+				std::exit(-1);
 			}
 		} else {
 			int frag_len = strcspn(cur_str, ",}");
-			//printf("%i %i '%.*s'\n", len, frag_len, frag_len, cur_str);
 			out.emplace_back(cur_str, frag_len);
 			len -= frag_len + 1;
 			cur_str += frag_len + 1;
@@ -194,28 +202,29 @@ std::vector<std::string_view> decompose(const char* str) {
 	}
 	return out;
 }
-std::vector<std::string_view> decompose(const char* str, std::initializer_list<int> allowed_lengths) {
+static std::vector<std::string_view> decompose(const char* str, std::initializer_list<int> allowed_lengths) {
 	auto ret = decompose(str);
 	bool passed = false;
 	for (int i = 0; i < allowed_lengths.size(); i++)
 		if (ret.size() == allowed_lengths.begin()[i])
 			passed = true;
 	if (!passed) {
-		printf("Invalid entry count %i in composite object '%s'.\n", (int)ret.size(), str);
-		std::abort();
+		fprintf(stderr, "Invalid entry count %i in composite object '%s'. Expected {", (int)ret.size(), str);
+		for (int i = 0; i < allowed_lengths.size(); i++)
+			fprintf(stderr, "%i%s", allowed_lengths.begin()[i], i == allowed_lengths.size() - 1 ? "}\n" : ",");
+		std::exit(-1);
 	}
 	return ret;
 }
-std::vector<std::string_view> maybe_decompose(const char* str) {
+static std::vector<std::string_view> maybe_decompose(const char* str) {
 	std::vector<std::string_view> out;
 	if (str[0] != '{') {
-		//printf("'%s' is not a composite.\n", str);
 		out.emplace_back(str);
 		return out;
 	}
 	if (!strchr(str, '}')) {
-		printf("Unterminated composite object '%s'.\n", str);
-		std::abort();
+		fprintf(stderr, "Unterminated composite object '%s'.\n", str);
+		std::exit(-1);
 	}
 	const char* cur_str = str + 1;
 	int len = strlen(cur_str);
@@ -226,12 +235,11 @@ std::vector<std::string_view> maybe_decompose(const char* str) {
 			len -= frag_len + 1;
 			cur_str += frag_len + 1;
 			if (!strchr(str, '}')) {
-				printf("Unterminated composite object '%s'.\n", str);
-				std::abort();
+				fprintf(stderr, "Unterminated composite object '%s'.\n", str);
+				std::exit(-1);
 			}
 		} else {
 			int frag_len = strcspn(cur_str, ",}");
-			//printf("%i %i '%.*s'\n", len, frag_len, frag_len, cur_str);
 			out.emplace_back(cur_str, frag_len);
 			len -= frag_len + 1;
 			cur_str += frag_len + 1;
@@ -244,12 +252,12 @@ int cmd_help(int idx) {
 	printf("Possible flags are:\n");
 	for (int i = 0; i < num_commands; i++) {
 		if (commands[i].short_name)
-			printf("% 28s  %*s(%s)  %s\n", commands[i].long_name, 4 - strlen(commands[i].short_name), "",
+			printf("%28s  %*s(%s)  %s\n", commands[i].long_name, 3 - (int)strlen(commands[i].short_name), "",
 				commands[i].short_name, commands[i].desc);
 		else
-			printf("% 28s          %s\n", commands[i].long_name, commands[i].desc);
+			printf("%28s         %s\n", commands[i].long_name, commands[i].desc);
 	}
-	std::abort();
+	std::exit(-1);
 }
 int cmd_cart(int i) {
 	check_argc(i, 1);
@@ -303,6 +311,8 @@ int cmd_fungal(int i) {
 		int idx2 = list_to_id(composite[1], IDs::materials, HTables::fungal_to);
 		int start = composite.size() > 2 ? to_int(composite[2]) : 0;
 		int end = composite.size() > 2 ? to_int(composite[3]) : 20;
+		check_range(start, 0, 20);
+		check_range(end, 0, 20);
 		config.precheckCfg.fungal.shifts[j++] = {(ShiftSource)idx1, (ShiftDest)idx2, start, end};
 	}
 	return i - 1;
@@ -328,6 +338,8 @@ int cmd_hms(int i) {
 	auto composite = decompose(g_argv[i + 1], {2});
 	config.spawnableCfg.minHMidx = to_int(composite[0]);
 	config.spawnableCfg.minHMidx = to_int(composite[1]);
+	check_range(config.spawnableCfg.minHMidx, 0, 6);
+	check_range(config.spawnableCfg.maxHMidx, 0, 6);
 	return i + 1;
 }
 int cmd_pws(int i) {
@@ -496,7 +508,7 @@ int cmd_count_passed(int i) {
 	return i;
 }
 int cmd_print_to_console(int i) {
-	config.outputCfg.printOutputToConsole = true;
+	config.outputCfg.printOutputToConsole = false;
 	return i;
 }
 int cmd_print_to_file(int i) {
@@ -542,7 +554,7 @@ void cli_main(int argc, char** argv) {
 	g_argc = argc;
 	g_argv = argv;
 	if (argc == 1) {
-		printf("Not enough arguments.");
+		fprintf(stderr, "Not enough arguments.");
 		cmd_help(0);
 		return;
 	}
@@ -554,7 +566,7 @@ void cli_main(int argc, char** argv) {
 				goto end;
 			}
 		}
-		printf("Unrecognized flag '%s'.\n", argv[i]);
+		fprintf(stderr, "Unrecognized flag '%s'.\n", argv[i]);
 		cmd_help(0);
 		return;
 end:

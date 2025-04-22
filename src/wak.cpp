@@ -14,7 +14,7 @@
 #endif
 
 // Portable solution probably doesn't exist, sucks to suck
-std::string locate_file_dialog(const char* hint, const char* filter, const char* title) {
+static std::string locate_file_dialog(const char* hint, const char* filter, const char* title) {
 #ifdef WIN32
 	char buf[2048] = {};
 	OPENFILENAMEA fn = {};
@@ -38,15 +38,15 @@ std::string locate_file_dialog(const char* hint, const char* filter, const char*
 std::unordered_map<std::string, std::string> globalWakContents;
 
 template <typename T>
-T read_le(std::istream&);
+static T read_le(std::istream&);
 template <>
-inline std::uint8_t read_le(std::istream& s) {
+static std::uint8_t read_le(std::istream& s) {
 	uint8_t val;
 	s.read((char*)&val, sizeof(val));
 	return val;
 }
 template <>
-inline std::uint32_t read_le(std::istream& s) {
+static std::uint32_t read_le(std::istream& s) {
 	uint32_t val;
 	auto it = (uint8_t*)&val;
 	for (int i = 0; i < 4; i++)
@@ -54,7 +54,7 @@ inline std::uint32_t read_le(std::istream& s) {
 	return val;
 }
 template <>
-inline std::string read_le(std::istream& s) {
+static std::string read_le(std::istream& s) {
 	std::uint32_t size = read_le<std::uint32_t>(s);
 	std::string str;
 	str.resize(size);
@@ -62,7 +62,7 @@ inline std::string read_le(std::istream& s) {
 	return str;
 }
 
-std::string read_file(const char* path) {
+static std::string read_file(const char* path) {
 	std::string out;
 	std::ifstream stream(path, std::ios::binary);
 	if (stream.fail()) {
@@ -77,7 +77,7 @@ std::string read_file(const char* path) {
 
 	return out;
 }
-void write_file(const char* path, const std::string& in) {
+static void write_file(const char* path, const std::string& in) {
 	std::ofstream stream(path, std::ios::binary);
 	stream.write(in.c_str(), in.length());
 }
@@ -92,7 +92,7 @@ void read_wak(const char* wak_path) {
 	uint32_t dataStart = read_le<std::uint32_t>(data);
 	uint32_t z2 = read_le<std::uint32_t>(data);
 
-	for (int i = 0; i < fileCount; i++) {
+	for (uint32_t i = 0; i < fileCount; i++) {
 		uint32_t offset = read_le<std::uint32_t>(data);
 		uint32_t size = read_le<std::uint32_t>(data);
 		std::string name = read_le<std::string>(data);

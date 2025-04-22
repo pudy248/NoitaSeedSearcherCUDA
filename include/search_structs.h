@@ -184,8 +184,8 @@ struct EnemyList
 };
 */
 
-#define FILTER_OR_COUNT 5
-#define TOTAL_FILTER_COUNT 10
+constexpr auto FILTER_OR_COUNT = 5;
+constexpr auto TOTAL_FILTER_COUNT = 10;
 struct ItemFilter {
 	Item items[FILTER_OR_COUNT];
 	int duplicates;

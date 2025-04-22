@@ -6,9 +6,9 @@
 #include "../include/noita_random.h"
 #include "../include/worldgen_structs.h"
 
-#define BIOME_PATH_FIND_WORLD_POS_MIN_X 159
-#define BIOME_PATH_FIND_WORLD_POS_MAX_X 223
-#define WORLD_OFFSET_X 35
+constexpr int BIOME_PATH_FIND_WORLD_POS_MIN_X = 159;
+constexpr int BIOME_PATH_FIND_WORLD_POS_MAX_X = 223;
+constexpr int WORLD_OFFSET_X = 35;
 
 template <int coalmine_mode, bool skip_fill>
 _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl) {
@@ -83,7 +83,7 @@ _compute static void tryNext(const GeneratedBiome& s, const MainPathFill& f, int
 	}
 }
 
-_compute bool findPath(
+_compute static bool findPath(
 	const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea, MemSpan visited, int x, int y) {
 	int rmw = s.scope.bSec.map_w; //register map width
 	int rmh = s.scope.bSec.map_h; //register map height
@@ -114,7 +114,8 @@ _compute bool findPath(
 	return pathFound;
 }
 
-_compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea, MemSpan visited,
+_compute static bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea,
+	MemSpan visited,
 	uint32_t path_start_x, bool fixed_x) {
 	if (!visited.is_safe(max(0, s.scope.bSec.map_w * s.scope.bSec.map_h - 1)))
 		printf("findPath(): visited mem too small\n");
@@ -123,7 +124,7 @@ _compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, Me
 	if (fixed_x)
 		return findPath(s, f, stackMemArea, visited, path_start_x, 0);
 
-	for (int x = path_start_x; x < s.scope.bSec.map_w; x++) {
+	for (uint32_t x = path_start_x; x < s.scope.bSec.map_w; x++) {
 		uint32_t c = get_pixel(s, f, x, 0, s.scope.ts.short_side_len);
 		if (c != COLOR_BLACK && c != COLOR_COFFEE)
 			continue;
@@ -139,7 +140,7 @@ _compute bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, Me
 }
 
 _compute bool isValid(const GeneratedBiome& s, MemSpan stackMemArea, MemSpan visited) {
-	int fill_x_from = (BIOME_PATH_FIND_WORLD_POS_MIN_X - (s.scope.bSec.worldX - WORLD_OFFSET_X) * 512.0) / 10;
+	int fill_x_from = (BIOME_PATH_FIND_WORLD_POS_MIN_X - (s.scope.bSec.worldX - WORLD_OFFSET_X) * 512) / 10;
 	int fill_x_to = fill_x_from + (BIOME_PATH_FIND_WORLD_POS_MAX_X - BIOME_PATH_FIND_WORLD_POS_MIN_X) / 10;
 	bool active = fill_x_to > 0 && fill_x_from > 0 && s.scope.bSec.map_w > fill_x_from &&
 				  fill_x_to < s.scope.bSec.map_w + fill_x_from;
