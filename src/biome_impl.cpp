@@ -991,6 +991,37 @@ static BiomeSpawnColors Colors({0x00ff00});
 _data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
 };
 
+namespace FUNCS_WANDCAVE {
+BiomePixelScenes Scenes({});
+_data BiomeWands wandLevels({});
+static BiomeSpawnColors Colors({});
+_data static BiomeSpawnFunctions Funcs(NULL, {});
+};
+namespace FUNCS_PYRAMID {
+BiomePixelScenes Scenes({});
+_data BiomeWands wandLevels({});
+static BiomeSpawnColors Colors({});
+_data static BiomeSpawnFunctions Funcs(NULL, {});
+};
+namespace FUNCS_THE_END {
+BiomePixelScenes Scenes({});
+_data BiomeWands wandLevels({});
+static BiomeSpawnColors Colors({});
+_data static BiomeSpawnFunctions Funcs(NULL, {});
+};
+namespace FUNCS_THE_SKY {
+BiomePixelScenes Scenes({});
+_data BiomeWands wandLevels({});
+static BiomeSpawnColors Colors({});
+_data static BiomeSpawnFunctions Funcs(NULL, {});
+};
+namespace FUNCS_SANDCAVE {
+BiomePixelScenes Scenes({});
+_data BiomeWands wandLevels({});
+static BiomeSpawnColors Colors({});
+_data static BiomeSpawnFunctions Funcs(NULL, {});
+};
+
 #define _SetBiomeDataHelper1(bName)                      \
 	AllSpawnFunctions[B_##bName] = FUNCS_##bName::Funcs; \
 	AllWandLevels[B_##bName] = FUNCS_##bName::wandLevels
@@ -1012,9 +1043,14 @@ _compute void SetBiomeData() {
 	_SetBiomeDataHelper1(FUNGICAVE);
 	_SetBiomeDataHelper1(FUNGIFOREST);
 	_SetBiomeDataHelper1(RAINFOREST_DARK);
+	_SetBiomeDataHelper1(WANDCAVE);
+	_SetBiomeDataHelper1(THE_END);
+	_SetBiomeDataHelper1(THE_SKY);
 	_SetBiomeDataHelper1(WIZARDCAVE);
-	_SetBiomeDataHelper1(LIQUIDCAVE);
+	_SetBiomeDataHelper1(SANDCAVE);
+	_SetBiomeDataHelper1(PYRAMID);
 	_SetBiomeDataHelper1(ROBOBASE);
+	_SetBiomeDataHelper1(LIQUIDCAVE);
 	_SetBiomeDataHelper1(VAULT_FROZEN);
 	_SetBiomeDataHelper1(MEAT);
 }
@@ -1033,9 +1069,14 @@ void SetBiomePixelScenes() {
 	_SetBiomeDataHelper2(FUNGICAVE);
 	_SetBiomeDataHelper2(FUNGIFOREST);
 	_SetBiomeDataHelper2(RAINFOREST_DARK);
+	_SetBiomeDataHelper2(WANDCAVE);
+	_SetBiomeDataHelper2(THE_END);
+	_SetBiomeDataHelper2(THE_SKY);
 	_SetBiomeDataHelper2(WIZARDCAVE);
-	_SetBiomeDataHelper2(LIQUIDCAVE);
+	_SetBiomeDataHelper2(SANDCAVE);
+	_SetBiomeDataHelper2(PYRAMID);
 	_SetBiomeDataHelper2(ROBOBASE);
+	_SetBiomeDataHelper2(LIQUIDCAVE);
 	_SetBiomeDataHelper2(VAULT_FROZEN);
 	_SetBiomeDataHelper2(MEAT);
 }

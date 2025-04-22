@@ -136,10 +136,10 @@ void AllocateComputeMemory() {
 	size_t memPerThread = GetMinimumSpanMemory() + GetMinimumOutputMemory();
 	//printf("Each thread requires %lli bytes of block memory\n", memPerThread);
 
-	int numThreads = std::min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart), freeMem / memPerThread);
+	int numThreads = std::min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart + 1), freeMem / memPerThread);
 	int numBlocks = numThreads / BLOCKSIZE;
 	NumBlocks = max(min(MAXBLOCKS, numBlocks - numBlocks % 1), 1);
-	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart) / (NumBlocks * BLOCKSIZE) + 1);
+	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart + 1) / (NumBlocks * BLOCKSIZE) + 1);
 
 	SetWorkerCount(NumBlocks);
 	SetWorkerAppetite(BLOCKSIZE);

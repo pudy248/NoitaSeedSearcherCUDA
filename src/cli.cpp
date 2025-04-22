@@ -59,6 +59,7 @@ int cmd_logging_interval(int);
 int cmd_output_mode(int);
 int cmd_start_seed(int);
 int cmd_end_seed(int);
+int cmd_this_seed(int);
 int cmd_priority(int);
 
 static const cmd commands[] = {
@@ -86,19 +87,22 @@ static const cmd commands[] = {
 	{"--biome-chests", "-c", cmd_biome_chests, "Generate biome chest (and heart) spawns."},
 	{"--biome-pedestals", "-p", cmd_biome_pedestals, "Generate biome item pedestal spawns."},
 	{"--biome-altars", "-w", cmd_biome_altars, "Generate biome wand altar spawns."},
-	{"--no-pixel-scene-indexing", nullptr, cmd_biome_pixel_scene_indexing, "Disable indexing spawns inside of pixel scenes. Otherwise on by default."},
+	{"--no-pixel-scene-indexing", nullptr, cmd_biome_pixel_scene_indexing,
+		"Disable indexing spawns inside of pixel scenes. Otherwise on by default."},
 	{"--pixel-scenes", "-ps", cmd_biome_pixel_scene_search,
 		"Generate pixel scene objects (for filtering puzzles, etc.). Not required for other objects inside pixel scenes to spawn."},
 	{"--t10-shops", nullptr, cmd_hell_shops, "Deprecated. Generate sky/hell shop items."},
 	{"--nightmare", "-n", cmd_nightmare, "Deprecated. Generate a nightmare world."},
-	{"--gen-potions", "-gp", cmd_gen_potions, "Generate potion contents instead of using generic items like 'potion_secret'."},
+	{"--gen-potions", "-gp", cmd_gen_potions,
+		"Generate potion contents instead of using generic items like 'potion_secret'."},
 	{"--gen-spells", "-gs", cmd_gen_spells,
 		"Generate spells instead of using generic items like 'random_spell'. Wand stats must also be generated for spells on wands."},
 	{"--gen-wands", "-gw", cmd_gen_wands,
 		"Generate wands instead of using generic items like 'wand_t6ns'. Spells must also be generated for spells on wands."},
 	{"--biomes", "-b", cmd_biomes, "Select which biomes to generate. Ex. \"-b coalmine excavationsite crypt\"."},
 	{"--upwarps", "-u", cmd_upwarps, "Only check upwarped chests. Much faster than full biome generation."},
-	{"--aggregate", "-g", cmd_aggregate, "Aggregate filter checks between all loaded objects instead of requiring every filter to pass on a single object."},
+	{"--aggregate", "-g", cmd_aggregate,
+		"Aggregate filter checks between all loaded objects instead of requiring every filter to pass on a single object."},
 	{"--filter-items", "-fi", cmd_filter_items,
 		"Define item filters of the formats {item[,count]} or {{item1,or-item2[,...]}[,count]}. Ex. \"-fi {{sampo,true_orb}} {bomb,3}\""},
 	{"--filter-materials", "-fm", cmd_filter_materials,
@@ -108,15 +112,16 @@ static const cmd commands[] = {
 		"Define pixel scene filters of the same format as item filters, or {scene,{mat1,mat2[,...]}[,count]} for pixel scenes like oil tanks which contain materials."},
 	{"--start-seed", nullptr, cmd_start_seed, "Set first seed to search."},
 	{"--end-seed", nullptr, cmd_end_seed, "Set last seed to search."},
-	{"--count-passed", "-cp", cmd_count_passed, "Do not record which seeds passed, only how many. Useful for gathering statistics where keeping track of specific seeds is an unnecessary slowdown."},
+	{"--this-seed", nullptr, cmd_this_seed, "Search only one seed. Overrides start-seed and end-seed."},
+	{"--count-passed", "-cp", cmd_count_passed,
+		"Do not record which seeds passed, only how many. Useful for gathering statistics where keeping track of specific seeds is an unnecessary slowdown."},
 	{"--no-print-to-console", "-nc", cmd_print_to_console, "Don't print seeds to standard output."},
 	{"--print-to-file", "-of", cmd_print_to_file, "Print seeds to an output file (Default: output.txt)."},
 	{"--output-file", "-o", cmd_output_file, "Specify output filename."},
 	{"--logging-interval", "-li", cmd_logging_interval, "Set logging interval for progress updates, or 0 to disable."},
-	{"--output-mode", "-om" , cmd_output_mode,
+	{"--output-mode", "-om", cmd_output_mode,
 		"Set output mode. 'image' only works when specifically compiled to output images."},
-	{"--priority", nullptr, cmd_priority,
-		"Set thread priority. Has no effect on non-CPU backends."},
+	{"--priority", nullptr, cmd_priority, "Set thread priority. Has no effect on non-CPU backends."},
 
 };
 constexpr int num_commands = sizeof(commands) / sizeof(cmd);
@@ -144,31 +149,62 @@ static int to_int(const std::string_view s) {
 	return result;
 }
 
-template <std::size_t N>
-static int list_to_id(std::string_view s, const char* (&list)[N]) {
+template <std::size_t N, std::size_t N2>
+static int list_to_id(std::string_view s, const char* (&lists)[N2][N]) {
 	for (int i = 0; i < N; i++)
-		if (s == list[i])
-			return i;
-	fprintf(stderr, "Invalid ID '%.*s' in parameter list. Valid options are:\n", (int)s.size(), s.data());
-	for (int i = 0; i < N; i++)
-		fprintf(stderr, "  '%s'\n", list[i]);
+		for (int j = 0; j < N2; j++)
+			if (s == lists[j][i])
+				return i;
+	fprintf(stderr, "Invalid ID '%.*s' in parameter list. Did you mean:\n", (int)s.size(), s.data());
+	for (int i = 0; i < N; i++) {
+		bool passed = false;
+		for (int j = 0; j < N2; j++)
+			passed |= std::string_view(lists[j][i]).starts_with(s);
+		if (!passed)
+			continue;
+		fprintf(stderr, "  ");
+		for (int j = 0; j < N2; j++)
+			fprintf(stderr, "'%s'%s", lists[j][i], j == N2 - 1 ? "\n" : ", ");
+	}
+	fprintf(stderr, "All valid options:\n");
+	for (int i = 0; i < N; i++) {
+		fprintf(stderr, "  ");
+		for (int j = 0; j < N2; j++)
+			fprintf(stderr, "'%s'%s", lists[j][i], j == N2 - 1 ? "\n" : ", ");
+	}
 	std::exit(-1);
 }
-template <std::size_t N, typename T, std::size_t M>
-static int list_to_id(std::string_view s, const char* (&list)[N], T (&subset)[M]) {
+template <std::size_t N, std::size_t N2, typename T, std::size_t M>
+static int list_to_id(std::string_view s, const char* (&lists)[N2][N], T (&subset)[M]) {
 	int idx = -1;
 	for (int i = 0; i < N; i++) {
-		if (s == list[i]) {
-			idx = i;
-			break;
+		for (int j = 0; j < N2; j++) {
+			if (s == lists[j][i]) {
+				idx = i;
+				break;
+			}
 		}
 	}
 	for (int i = 0; i < M; i++)
 		if (idx == subset[i])
 			return idx;
-	fprintf(stderr, "Invalid ID '%.*s' in parameter list. Valid options are:\n", (int)s.size(), s.data());
-	for (int i = 0; i < M; i++)
-		fprintf(stderr, "  '%s'\n", list[subset[i]]);
+	fprintf(stderr, "Invalid ID '%.*s' in parameter list. Did you mean:\n", (int)s.size(), s.data());
+	for (int i = 0; i < M; i++) {
+		bool passed = false;
+		for (int j = 0; j < N2; j++)
+			passed |= std::string_view(lists[j][subset[i]]).starts_with(s);
+		if (!passed)
+			continue;
+		fprintf(stderr, "  ");
+		for (int j = 0; j < N2; j++)
+			fprintf(stderr, "'%s'%s", lists[j][subset[i]], j == N2 - 1 ? "\n" : ", ");
+	}
+	fprintf(stderr, "All valid options:\n");
+	for (int i = 0; i < M; i++) {
+		fprintf(stderr, "  ");
+		for (int j = 0; j < N2; j++)
+			fprintf(stderr, "'%s'%s", lists[j][subset[i]], j == N2 - 1 ? "\n" : ", ");
+	}
 	std::exit(-1);
 }
 static std::vector<std::string_view> decompose(const char* str) {
@@ -206,8 +242,7 @@ static std::vector<std::string_view> decompose(const char* str, std::initializer
 	auto ret = decompose(str);
 	bool passed = false;
 	for (int i = 0; i < allowed_lengths.size(); i++)
-		if (ret.size() == allowed_lengths.begin()[i])
-			passed = true;
+		passed |= ret.size() == allowed_lengths.begin()[i];
 	if (!passed) {
 		fprintf(stderr, "Invalid entry count %i in composite object '%s'. Expected {", (int)ret.size(), str);
 		for (int i = 0; i < allowed_lengths.size(); i++)
@@ -427,8 +462,24 @@ std::vector<int> biome_list;
 int cmd_biomes(int i) {
 	check_argc(i, 1);
 	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++)
-		biome_list.emplace_back(list_to_id(g_argv[i], IDs::biomes) + 1);
+	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
+		int n = list_to_id(g_argv[i], IDs::biomes);
+		if (n == 0) {
+			biome_list.clear();
+			for (int j = 1; j < 22; j++)
+				biome_list.push_back(j);
+		} else if (n == 1) {
+			biome_list.push_back(B_COALMINE);
+			biome_list.push_back(B_EXCAVATIONSITE);
+			biome_list.push_back(B_SNOWCAVE);
+			biome_list.push_back(B_SNOWCASTLE);
+			biome_list.push_back(B_RAINFOREST);
+			biome_list.push_back(B_RAINFOREST_OPEN);
+			biome_list.push_back(B_VAULT);
+			biome_list.push_back(B_CRYPT);
+		} else
+			biome_list.emplace_back(n - 1);
+	}
 	return i - 1;
 }
 int cmd_filter_items(int i) {
@@ -437,7 +488,7 @@ int cmd_filter_items(int i) {
 	int j = 0;
 	++i;
 	for (; i < g_argc && g_argv[i][0] == '{'; i++) {
-		auto composite = decompose(g_argv[i], {1,2});
+		auto composite = decompose(g_argv[i], {1, 2});
 		std::string tmp(composite[0]);
 		auto inner = maybe_decompose(tmp.c_str());
 		for (int k = 0; k < inner.size(); k++)
@@ -491,14 +542,17 @@ int cmd_filter_pixel_scenes(int i) {
 		std::string tmp(composite[0]);
 		auto inner1 = maybe_decompose(tmp.c_str());
 		std::string tmp2(composite.size() > 1 ? composite[1] : "");
-		auto inner2 = composite.size() > 1 && composite[1][0] == '{' ? decompose(tmp2.c_str()) : std::vector<std::string_view>();
+		auto inner2 = composite.size() > 1 && composite[1][0] == '{' ? decompose(tmp2.c_str()) :
+																	   std::vector<std::string_view>();
 		for (int k = 0; k < inner1.size(); k++)
 			config.filterCfg.pixelSceneFilters[j].pixelScenes[k] = (PixelScene)list_to_id(inner1[k], IDs::pixel_scenes);
 		for (int k = 0; k < inner2.size(); k++)
 			config.filterCfg.pixelSceneFilters[j].materials[k] = (Material)list_to_id(inner2[k], IDs::materials);
 		config.filterCfg.pixelSceneFilters[j].checkMats = inner2.size();
-		config.filterCfg.pixelSceneFilters[j++].duplicates =
-			composite.size() > 2 ? to_int(composite[2]) : composite.size() > 1 && !inner2.size() ? to_int(composite[1]) : 1;
+		config.filterCfg.pixelSceneFilters[j++].duplicates = composite.size() > 2 ? to_int(composite[2]) :
+															 composite.size() > 1 && !inner2.size() ?
+																					to_int(composite[1]) :
+																					1;
 	}
 	config.filterCfg.pixelSceneFilterCount = j;
 	return i - 1;
@@ -542,6 +596,12 @@ int cmd_start_seed(int i) {
 int cmd_end_seed(int i) {
 	check_argc(i, 1);
 	config.generalCfg.seedEnd = to_int(g_argv[i + 1]);
+	return i + 1;
+}
+int cmd_this_seed(int i) {
+	check_argc(i, 1);
+	config.generalCfg.seedStart = to_int(g_argv[i + 1]);
+	config.generalCfg.seedEnd = config.generalCfg.seedStart;
 	return i + 1;
 }
 int cmd_priority(int i) {

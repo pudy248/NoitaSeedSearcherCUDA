@@ -71,7 +71,7 @@ void InitializePlatform() {
 #endif
 	char buffer[0x40];
 	GetProcessorName(buffer);
-	printf("Running with CPU backend using %s\n", buffer);
+	printf("Running with CPU backend using %s, ", buffer);
 	memIdxCtr = 0;
 }
 void DestroyPlatform() {}
@@ -82,7 +82,7 @@ void AllocateComputeMemory() {
 	SetWorkerCount(NumThreads);
 	SetWorkerAppetite(1);
 	SetTargetDispatchRate(16);
-	printf("Creating %i threads.\n", NumThreads);
+	printf("creating %i threads.\n", NumThreads);
 
 	hostPtrs.arena = (uint8_t*)malloc(GetMinimumSpanMemory() * NumThreads);
 	hostPtrs.output = (uint8_t*)malloc(GetMinimumOutputMemory() * NumThreads);

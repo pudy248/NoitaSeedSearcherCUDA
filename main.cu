@@ -242,7 +242,7 @@ int main(int argc, char** argv) {
 		.seedEnd = 100,
 #else
 		.seedStart = 1,
-		.seedEnd = INT_MAX,
+		.seedEnd = INT_MAX - 1,
 #endif
 		.seedBlockSize = 1,
 		.seedBlockOverride = false,
@@ -267,7 +267,7 @@ int main(int argc, char** argv) {
 		.pwCenter = {0, 0},
 		.pwWidth = {0, 0},
 		.minHMidx = 0,
-		.maxHMidx = 0,
+		.maxHMidx = 6,
 		.greedCurse = false,
 		.pacifist = false,
 		.shopSpells = false,
@@ -330,7 +330,7 @@ int main(int argc, char** argv) {
 		.mapDataSize = (size_t)maxMapArea * 2,
 		.miscMemSize = (size_t)maxMapArea * 2,
 		.visitedMemSize = (size_t)maxMapArea + 256,
-		.spawnableMemSize = (size_t)4096,
+		.spawnableMemSize = (size_t)maxMapArea / 4,
 	};
 
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;

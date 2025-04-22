@@ -142,9 +142,9 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 		workers.emplace_back(CreateWorker());
 	}
 	for (int i = 0; i < NumWorkers; i++) {
-		if (currentSeed < config.generalCfg.seedEnd) {
+		if (currentSeed <= config.generalCfg.seedEnd) {
 			for (int j = 0; j < WorkerAppetite; j++) {
-				if (currentSeed >= config.generalCfg.seedEnd) {
+				if (currentSeed > config.generalCfg.seedEnd) {
 					params[j] = {0, 0};
 					continue;
 				}
@@ -155,7 +155,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				writeInt({output, 4}, _, currentSeed);
 				nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
-				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
+				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed + 1);
 				params[j] = {(int)nextSeed, (int)length};
 				currentSeed += length;
 			}
@@ -163,7 +163,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 		} else {
 			stoppedBlocks++;
 			stopped[i] = true;
-			printf("Sleeping worker %i.\n", index);
+			//printf("Sleeping worker %i.\n", index);
 		}
 	}
 
@@ -176,7 +176,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				AbortJob(*workers[i]);
 			break;
 		}
-		if (currentSeed >= config.generalCfg.seedEnd && dbg_seed_loop_ctr < dbg_seed_loop_max) {
+		if (currentSeed > config.generalCfg.seedEnd && dbg_seed_loop_ctr < dbg_seed_loop_max) {
 			dbg_seed_loop_ctr++;
 			currentSeed = config.generalCfg.seedStart;
 		}
@@ -211,7 +211,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				lastSeed = checkedSeeds;
 				displayIntervals++;
 				float percentComplete =
-					((float)(checkedSeeds) / (config.generalCfg.seedEnd - config.generalCfg.seedStart));
+					((float)(checkedSeeds) / (config.generalCfg.seedEnd - config.generalCfg.seedStart + 1));
 				progress.progressPercent = percentComplete;
 				int seconds = (displayIntervals - 1) * config.outputCfg.printInterval;
 				int minutes = seconds / 60;
@@ -262,9 +262,9 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					};
 				}
 			}
-			if (inputIdx > 0 || currentSeed < config.generalCfg.seedEnd) {
+			if (inputIdx > 0 || currentSeed <= config.generalCfg.seedEnd) {
 				for (int i = 0; i < WorkerAppetite; i++) {
-					if (currentSeed >= config.generalCfg.seedEnd || returns[i].seedFound)
+					if (currentSeed > config.generalCfg.seedEnd || returns[i].seedFound)
 						continue;
 					uint32_t nextSeed = currentSeed;
 #ifdef REALTIME_SEEDS
@@ -274,7 +274,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
 					uint32_t length =
-						std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed);
+						std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed + 1);
 					params[inputIdx++] = {(int)nextSeed, (int)length};
 					currentSeed += length;
 				}
@@ -372,11 +372,11 @@ void InstantiateBiome(int biome, BiomeWangScope** ss, int& bC, int& mA) {
 	case B_VAULT: InstantiateSector(ss, bC, mA, "data/wang_tiles/vault.png", {B_VAULT, 29, 31, 11, 3}); break;
 	case B_CRYPT: InstantiateSector(ss, bC, mA, "data/wang_tiles/crypt.png", {B_CRYPT, 26, 35, 14, 4}); break;
 	case B_WANDCAVE:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", {B_WANDCAVE, 27, 21, 3, 1});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", {B_WANDCAVE, 47, 35, 4, 4});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", {B_WANDCAVE, 41, 36, 6, 1});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", {B_WANDCAVE, 53, 36, 2, 2});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wandcave.png", {B_WANDCAVE, 53, 39, 5, 1});
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 27, 21, 3, 1});
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 47, 35, 4, 4});
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 41, 36, 6, 1});
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 53, 36, 2, 2});
+		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 53, 39, 5, 1});
 		break;
 	case B_VAULT_FROZEN:
 		InstantiateSector(ss, bC, mA, "data/wang_tiles/vault_frozen.png", {B_VAULT_FROZEN, 12, 15, 7, 5});
