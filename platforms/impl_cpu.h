@@ -64,25 +64,25 @@ void GetProcessorName(char* buffer) {
 }
 
 void InitializePlatform() {
-#ifdef SINGLE_THREAD
-	NumThreads = 1;
-#else
-	NumThreads = std::thread::hardware_concurrency();
-#endif
+	if (DEBUG_FLAGS & DEBUG::SINGLE_THREAD)
+		NumThreads = 1;
+	else
+		NumThreads = std::thread::hardware_concurrency();
+
 	char buffer[0x40];
 	GetProcessorName(buffer);
-	printf("Running with CPU backend using %s, ", buffer);
+	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		printf("Running with CPU backend using %s, creating %i threads.\n", buffer, NumThreads);
 	memIdxCtr = 0;
+
+	SetWorkerCount(NumThreads);
+	SetWorkerAppetite(1);
+	SetTargetDispatchRate(NumThreads);
 }
 void DestroyPlatform() {}
 
 void AllocateComputeMemory() {
 	//SearchConfig config = GetSearchConfig();
-
-	SetWorkerCount(NumThreads);
-	SetWorkerAppetite(1);
-	SetTargetDispatchRate(16);
-	printf("creating %i threads.\n", NumThreads);
 
 	hostPtrs.arena = (uint8_t*)malloc(GetMinimumSpanMemory() * NumThreads);
 	hostPtrs.output = (uint8_t*)malloc(GetMinimumOutputMemory() * NumThreads);
@@ -90,9 +90,10 @@ void AllocateComputeMemory() {
 	coalmine_overlay = (uint8_t*)malloc(3 * 256 * 103);
 	ReadBufferImage(
 		(uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay, false);
-
-	//printf("Allocated %lluKB of host memory\n",
-	//	   ((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
+	
+	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		printf("Allocated %lluKB of host memory\n",
+			((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
 }
 void FreeComputeMemory() {
 	free(hostPtrs.arena);
@@ -115,8 +116,7 @@ void ThreadMain(SpanParams params, Worker* worker) {
 	int prio_num = GetSearchConfig().generalCfg.priority;
 	if (prio_num) {
 #ifdef WIN32
-		SetThreadPriority(GetCurrentThread(), prio_num < 0 ? THREAD_PRIORITY_LOWEST :
-											  THREAD_PRIORITY_ABOVE_NORMAL);
+		SetThreadPriority(GetCurrentThread(), prio_num < 0 ? THREAD_PRIORITY_LOWEST : THREAD_PRIORITY_ABOVE_NORMAL);
 #else
 		int policy;
 		sched_param sp;
@@ -154,3 +154,4 @@ void HSetBiomeData() {
 	SetBiomePixelScenes();
 }
 void HSetBiomeData2(BiomePixelScenes* l) { memcpy(AllPixelSceneLists, l, sizeof(HostPixelSceneLists)); }
+void HSetSpellData(SpellTables* l) { memcpy(&spellTables, l, sizeof(SpellTables)); }

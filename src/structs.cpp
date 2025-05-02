@@ -11,11 +11,13 @@ ItemFilter::ItemFilter() {
 	duplicates = 0;
 }
 ItemFilter::ItemFilter(std::initializer_list<Item> _items) {
+	Assert(_items.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(items, 0, sizeof(Item) * FILTER_OR_COUNT);
 	memcpy(items, _items.begin(), sizeof(Item) * _items.size());
 	duplicates = 1;
 }
 ItemFilter::ItemFilter(std::initializer_list<Item> _items, int _dupes) {
+	Assert(_items.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(items, 0, sizeof(Item) * FILTER_OR_COUNT);
 	memcpy(items, _items.begin(), sizeof(Item) * _items.size());
 	duplicates = _dupes;
@@ -26,11 +28,13 @@ MaterialFilter::MaterialFilter() {
 	duplicates = 0;
 }
 MaterialFilter::MaterialFilter(std::initializer_list<Material> _materials) {
+	Assert(_materials.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
 	memcpy(materials, _materials.begin(), sizeof(Material) * _materials.size());
 	duplicates = 1;
 }
 MaterialFilter::MaterialFilter(std::initializer_list<Material> _materials, int _dupes) {
+	Assert(_materials.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
 	memcpy(materials, _materials.begin(), sizeof(Material) * _materials.size());
 	duplicates = _dupes;
@@ -43,6 +47,7 @@ SpellFilter::SpellFilter() {
 	perWand = false;
 }
 SpellFilter::SpellFilter(std::initializer_list<Spell> _spells) {
+	Assert(_spells.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
 	memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 	duplicates = 1;
@@ -50,6 +55,7 @@ SpellFilter::SpellFilter(std::initializer_list<Spell> _spells) {
 	perWand = false;
 }
 SpellFilter::SpellFilter(std::initializer_list<Spell> _spells, int _dupes) {
+	Assert(_spells.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
 	memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 	duplicates = _dupes;
@@ -57,6 +63,7 @@ SpellFilter::SpellFilter(std::initializer_list<Spell> _spells, int _dupes) {
 	perWand = false;
 }
 SpellFilter::SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast) {
+	Assert(_spells.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
 	memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 	duplicates = _dupes;
@@ -64,6 +71,7 @@ SpellFilter::SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool 
 	perWand = false;
 }
 SpellFilter::SpellFilter(std::initializer_list<Spell> _spells, int _dupes, bool _asAlwaysCast, bool _consecutive) {
+	Assert(_spells.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(spells, 0, sizeof(Spell) * FILTER_OR_COUNT);
 	memcpy(spells, _spells.begin(), sizeof(Spell) * _spells.size());
 	duplicates = _dupes;
@@ -78,6 +86,7 @@ PixelSceneFilter::PixelSceneFilter() {
 	checkMats = false;
 }
 PixelSceneFilter::PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes) {
+	Assert(_pixelScenes.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
 	memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
 	memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
@@ -93,6 +102,7 @@ PixelSceneFilter::PixelSceneFilter(std::initializer_list<PixelScene> _pixelScene
 }
 PixelSceneFilter::PixelSceneFilter(
 	std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials) {
+	Assert(_pixelScenes.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
 	memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
 	memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
@@ -102,6 +112,7 @@ PixelSceneFilter::PixelSceneFilter(
 }
 PixelSceneFilter::PixelSceneFilter(
 	std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes) {
+	Assert(_pixelScenes.size() <= FILTER_OR_COUNT, "Filter size overflow.");
 	memset(pixelScenes, 0, sizeof(PixelScene) * FILTER_OR_COUNT);
 	memset(materials, 0, sizeof(Material) * FILTER_OR_COUNT);
 	memcpy(pixelScenes, _pixelScenes.begin(), sizeof(PixelScene) * _pixelScenes.size());
@@ -159,42 +170,4 @@ _universal FungalShift::FungalShift(ShiftSource _from, ShiftDest _to, int _minId
 	}
 	minIdx = _minIdx;
 	maxIdx = _maxIdx;
-}
-
-// Worldgen structs
-constexpr BiomeSpawnColors::BiomeSpawnColors(std::initializer_list<uint32_t> list) : count(list.size()), colors() {
-	for (int i = 0; i < list.size(); i++)
-		colors[i] = list.begin()[i];
-}
-
-_compute constexpr BiomeSpawnFunctions::BiomeSpawnFunctions(
-	void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list)
-	: count(list.size()), init(_fn), funcs() {
-	for (int i = 0; i < list.size(); i++)
-		funcs[i] = list.begin()[i];
-}
-_universal constexpr PixelSceneSpawn::PixelSceneSpawn(int _t, short _x, short _y) : i(_t), x(_x), y(_y) {}
-
-_universal constexpr PixelSceneData::PixelSceneData(PixelScene _scene, float _prob, const char* _path)
-	: scene(_scene), prob(_prob), path(_path), materialCount(0), materials(), spawnCount(0), spawns() {}
-_universal constexpr PixelSceneData::PixelSceneData(
-	PixelScene _scene, float _prob, const char* _path, std::initializer_list<Material> _mats)
-	: scene(_scene), prob(_prob), path(_path), materialCount(_mats.size()), materials(), spawnCount(0), spawns() {
-	for (int i = 0; i < materialCount; i++)
-		materials[i] = _mats.begin()[i];
-}
-
-_universal constexpr PixelSceneList::PixelSceneList(std::initializer_list<PixelSceneData> list)
-	: count(list.size()), probSum(), scenes() {
-	for (int i = 0; i < list.size(); i++) {
-		probSum += list.begin()[i].prob;
-		scenes[i] = list.begin()[i];
-	}
-}
-
-_universal constexpr BiomePixelScenes::BiomePixelScenes(std::initializer_list<PixelSceneList> list)
-	: count(list.size()), lists(/*list.size() ? (PixelSceneList*)malloc(sizeof(PixelSceneList) * list.size()) : 0*/) {
-	for (int i = 0; i < list.size(); i++) {
-		lists[i] = list.begin()[i];
-	}
 }

@@ -260,7 +260,7 @@ void ReadBufferImage(const uint8_t* compressed_data, uint8_t* data, bool rgba) {
 			}
 		}
 	} else {
-		printf("Unrecognized PNG color type.\n");
+		fprintf(stderr, "Unrecognized PNG color type.\n");
 	}
 
 	png_read_end(png_ptr, info_ptr);
@@ -334,7 +334,7 @@ void ReadImage(const char* file_name, uint8_t* data, bool rgba) {
 			}
 		}
 	} else {
-		printf("Unrecognized PNG color type.\n");
+		fprintf(stderr, "Unrecognized PNG color type.\n");
 	}
 
 	png_read_end(png_ptr, info_ptr);

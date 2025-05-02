@@ -156,14 +156,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="data\alchemy.h" />
-    <ClInclude Include="data\biomeMap.h" />
     <ClInclude Include="data\fungal.h" />
     <ClInclude Include="data\guiData.h" />
     <ClInclude Include="data\modifiers.h" />
     <ClInclude Include="data\perks.h" />
     <ClInclude Include="data\potions.h" />
     <ClInclude Include="data\rains.h" />
-    <ClInclude Include="data\spells.h" />
     <ClInclude Include="data\temples.h" />
     <ClInclude Include="data\wand_sprites.h" />
     <ClInclude Include="defines.h" />
@@ -195,6 +193,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\cli.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\biome_map.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

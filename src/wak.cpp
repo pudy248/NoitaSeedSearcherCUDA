@@ -66,7 +66,7 @@ static std::string read_file(const char* path) {
 	std::string out;
 	std::ifstream stream(path, std::ios::binary);
 	if (stream.fail()) {
-		printf("[%s] does not exist.\n", path);
+		fprintf(stderr, "Internal error: [%s] does not exist.\n", path);
 		exit(-1);
 	}
 	while (stream) {
@@ -104,7 +104,7 @@ std::string& get_wak_file(const std::string& path) {
 	if (globalWakContents.find(path) != globalWakContents.end()) {
 		return globalWakContents.at(path);
 	} else {
-		fprintf(stderr, "Unable to find file: %s\n", path.c_str());
+		fprintf(stderr, "Internal error: [%s] does not exist.\n", path.c_str());
 		exit(-1);
 	}
 }

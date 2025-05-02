@@ -74,24 +74,33 @@ struct SpellProb {
 	Spell s;
 };
 
-struct Wand {
-	int level;
-	bool isBetter;
-	float cost;
+struct SpellTables {
+	const bool* spellSpawnableInChests;
+	const bool* spellSpawnableInBoxes;
+	const SpellProb* allSpellProbs[11];
+	int spellTierCounts[11];
+	float spellTierSums[11];
+	const SpellProb* spellProbs_Types[11][8];
+	int spellProbs_Counts[11][8];
+	float spellProbs_Sums[11][8];
+};
 
-	float prob_unshuffle;
-	float prob_draw_many;
+struct Wand {
+	uint8_t level;
+	bool isBetter;
 	bool force_unshuffle;
 	bool is_rare;
-
+	float cost;
+	float prob_unshuffle;
+	float prob_draw_many;
 	float capacity;
-	int multicast;
-	int mana;
-	int regen;
-	int delay;
-	int reload;
+	uint16_t mana;
+	uint16_t regen;
+	int16_t delay;
+	int16_t reload;
 	float speed;
-	int spread;
+	uint8_t multicast;
+	int8_t spread;
 	bool shuffle;
 	uint8_t spellCount;
 	LabelledSpell alwaysCast;
@@ -101,17 +110,16 @@ struct Wand {
 #pragma pack(push, 1)
 struct WandData {
 	float capacity;
-	int multicast;
-	int mana;
-	int regen;
-	int delay;
-	int reload;
+	uint16_t mana;
+	uint16_t regen;
+	int16_t delay;
+	int16_t reload;
 	float speed;
-	int spread;
+	uint8_t multicast;
+	int8_t spread;
 	bool shuffle;
 	uint8_t spellCount;
 	LabelledSpell alwaysCast;
-	LabelledSpell spells;
 };
 #pragma pack(pop)
 
@@ -133,7 +141,6 @@ struct BiomeWands {
 };
 
 struct WandSprite {
-	const char* name;
 	int fileNum;
 	int8_t grip_x;
 	int8_t grip_y;

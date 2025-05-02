@@ -91,34 +91,50 @@ _compute static bool findPath(
 
 	bool pathFound = false;
 
-	int stackSize = 1;
+	int stackSize = 3;
 	Vec2i* stackMem = (Vec2i*)stackMemArea.ptr;
 
-	stackMem[0] = {x, y};
+	stackMem[0] = {x - 1, y};
+	stackMem[1] = {x + 1, y};
+	stackMem[2] = {x, y + 1};
 
 	while (stackSize > 0 && pathFound != 1) {
 		Vec2i n = stackMem[--stackSize];
+		uint32_t c = get_pixel(s, f, n.x, n.y, ssl);
+		if (c == COLOR_BLACK || c == COLOR_COFFEE || c == COLOR_HELL_GREEN)
+			visited.ptr[n.y * rmw + n.x] = 2;
+		else
+			continue;
 		if (n.y == rmh - 1) {
 			pathFound = 1;
 			break;
 		}
 		if (n.x != -1) {
-			tryNext(s, f, n.x, n.y - 1, stackMemArea, stackSize, visited, rmw, rmh, ssl);
-			tryNext(s, f, n.x - 1, n.y, stackMemArea, stackSize, visited, rmw, rmh, ssl);
-			tryNext(s, f, n.x + 1, n.y, stackMemArea, stackSize, visited, rmw, rmh, ssl);
-			tryNext(s, f, n.x, n.y + 1, stackMemArea, stackSize, visited, rmw, rmh, ssl);
-			if (!stackMemArea.is_safe(stackSize, sizeof(Vec2i)))
-				printf("findPath(): stack mem too small\n");
+			if (n.y > 0 && !visited.ptr[(n.y - 1) * rmw + n.x]) {
+				stackMem[stackSize++] = {n.x, n.y - 1};
+				visited.ptr[(n.y - 1) * rmw + n.x] = 1;
+			}
+			if (n.x > 0 && !visited.ptr[n.y * rmw + (n.x - 1)]) {
+				stackMem[stackSize++] = {n.x - 1, n.y};
+				visited.ptr[n.y * rmw + (n.x - 1)] = 1;
+			}
+			if (n.x < rmw - 1 && !visited.ptr[n.y * rmw + (n.x + 1)]) {
+				stackMem[stackSize++] = {n.x + 1, n.y};
+				visited.ptr[n.y * rmw + (n.x + 1)] = 1;
+			}
+			if (n.y < rmh - 1 && !visited.ptr[(n.y + 1) * rmw + n.x]) {
+				stackMem[stackSize++] = {n.x, n.y + 1};
+				visited.ptr[(n.y + 1) * rmw + n.x] = 1;
+			}
+			stackMemArea.is_safe("findPath", "stack (misc)", stackSize, sizeof(Vec2i));
 		}
 	}
 	return pathFound;
 }
 
 _compute static bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill& f, MemSpan stackMemArea,
-	MemSpan visited,
-	uint32_t path_start_x, bool fixed_x) {
-	if (!visited.is_safe(max(0, s.scope.bSec.map_w * s.scope.bSec.map_h - 1)))
-		printf("findPath(): visited mem too small\n");
+	MemSpan visited, uint32_t path_start_x, bool fixed_x) {
+	visited.is_safe("findPath", "visited", max(0, s.scope.bSec.map_w * s.scope.bSec.map_h - 1));
 	cMemset(visited.ptr, 0, s.scope.bSec.map_w * s.scope.bSec.map_h);
 
 	if (fixed_x)

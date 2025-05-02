@@ -19,7 +19,7 @@ _compute static void ItemFilterPassed(Spawnable* s, int count, ItemFilter f, int
 		} else if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			n += 37 + dat.spellCount * 3;
+			n += 23 + dat.spellCount * 3;
 		} else {
 			bool iFound = f.items[0] == ITEM_NONE;
 			for (int i = 0; i < FILTER_OR_COUNT; i++) {
@@ -61,9 +61,11 @@ _compute static void MaterialFilterPassed(Spawnable* s, int count, MaterialFilte
 		} else if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			n += 37 + dat.spellCount * 3;
+			n += 23 + dat.spellCount * 3;
 		} else if (c > TRUE_ORB) {
+#ifdef DEVICE_LOGGING
 			printf("Unrecognized byte in filter stream: %i at %i\n", c, n);
+#endif
 		}
 	}
 }
@@ -92,7 +94,7 @@ _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, S
 			n += 4;
 			continue;
 		} else if (c == DATA_WAND) {
-			n += 34;
+			n += 20;
 			int ctr = 0;
 			int offset = n;
 			uint8_t spellCount = readByte((uint8_t*)(&s->contents), offset);
@@ -113,7 +115,9 @@ _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, S
 			n = offset - 1;
 			continue;
 		} else if (c > TRUE_ORB) {
+#ifdef DEVICE_LOGGING
 			printf("Unrecognized byte in filter stream: %i at %i\n", c, n);
+#endif
 		}
 	}
 }
@@ -135,7 +139,7 @@ _compute static bool WandFilterPassed(Spawnable* s, int count, int howBig) {
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
 			if (dat.capacity >= howBig)
 				return true;
-			n += 36 + dat.spellCount * 3;
+			n += 23 + dat.spellCount * 3;
 			continue;
 		}
 	}
@@ -173,7 +177,7 @@ _compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneF
 		else if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			n += 37 + dat.spellCount * 3;
+			n += 24 + dat.spellCount * 3;
 		}
 	}
 }

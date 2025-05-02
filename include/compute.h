@@ -15,12 +15,6 @@ struct OutputProgressData {
 	volatile bool abort = false;
 };
 
-_compute void SetBiomeData();
-void SetBiomePixelScenes();
-void UploadBiomeData();
-WangTileset stbhw_build_tileset_from_image(uint8_t* data, int biome, int stride, int w, int h);
-void InstantiateBiome(int biome, BiomeWangScope** ss, int& bC, int& mA);
-
 _compute bool PrecheckSeed(uint32_t seed, StaticPrecheckConfig c);
 _compute int stbhw_generate_image(WangTileIndex* output, const BiomeWangScope& scope, int w, int h, WorldgenPRNG& prng);
 _compute bool isValid(const GeneratedBiome& s, MemSpan stackMemArea, MemSpan visited);
@@ -36,7 +30,7 @@ _compute void spawnHeart(int x, int y, const SpawnParams& params);
 _compute void spawnChest(int x, int y, const SpawnParams& params);
 _compute void spawnPotion(int x, int y, const SpawnParams& params);
 _compute void spawnWand(int x, int y, const SpawnParams& params);
-_compute void LoadPixelScene(int x, int y, const PixelSceneList& list, const SpawnParams& params);
+_compute void LoadPixelScene(int x, int y, const PixelSceneList& list, int dim, const SpawnParams& params);
 
 _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset);
 _compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset);

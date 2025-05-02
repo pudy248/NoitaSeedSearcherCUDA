@@ -2,7 +2,6 @@
 #include "../include/search_structs.h"
 #include "../platforms/platform_implementation.h"
 
-#include "../data/spells.h"
 #include "../data/wand_sprites.h"
 
 #include <cmath>
@@ -90,11 +89,11 @@ _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int
 	level = min(level, 10);
 
 	int low = 0;
-	int high = spellTierCounts[level];
+	int high = spellTables.spellTierCounts[level];
 
-	const SpellProb* tierProbs = allSpellProbs[level];
+	const SpellProb* tierProbs = spellTables.allSpellProbs[level];
 
-	double sum = tierProbs[high - 1].p;
+	double sum = spellTables.spellTierSums[level];
 	double cutoff = random.NextD() * sum + 0.00001;
 
 	while (low < high) {
@@ -112,14 +111,14 @@ _compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int le
 	level = min(level, 10);
 
 	int low = 0;
-	int high = spellProbs_Counts[level][type];
+	int high = spellTables.spellProbs_Counts[level][type];
 
 	if (high == 0)
 		return SPELL_NONE;
 
-	const SpellProb* tierProbs = spellProbs_Types[level][type];
+	const SpellProb* tierProbs = spellTables.spellProbs_Types[level][type];
 
-	double sum = tierProbs[high - 1].p;
+	double sum = spellTables.spellProbs_Sums[level][type];
 	double cutoff = random.NextD() * sum;
 
 	while (low < high) {
@@ -202,7 +201,7 @@ _compute static void applyMulticast(Wand* gun, StatProb prob, NollaPRNG& random)
 
 	gun->multicast =
 		(int)floorf(fminf(fmaxf(random.RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max));
-	gun->cost -= actionCosts[(int)(fminf(fmaxf(gun->multicast, 1), 5)) - 1];
+	gun->cost -= actionCosts[(int)(fminf(fmaxf(gun->multicast, 1), 5))-1];
 }
 _compute static void applyShuffle(Wand* gun, StatProb prob, NollaPRNG& random) {
 	int rnd = random.Random(0, 1);
@@ -228,7 +227,7 @@ _compute static void applyRandomVariable(Wand* gun, WandStat s, StatProbBlock di
 }
 
 _compute static Wand GetWandStats(int _cost, int level, bool force_unshuffle, NollaPRNG& random) {
-	Wand gun = {level};
+	Wand gun = {(uint8_t)level};
 	int cost = _cost;
 
 	if (level == 1 && random.Random(0, 100) < 50)
@@ -332,7 +331,7 @@ _compute static Wand GetWandStats(int _cost, int level, bool force_unshuffle, No
 	return gun;
 }
 _compute static Wand GetWandStatsBetter(int _cost, int level, NollaPRNG& random) {
-	Wand gun = {level, true};
+	Wand gun = {(uint8_t)level, true};
 	int cost = _cost;
 
 	if (level == 1 && random.Random(0, 100) < 50)
@@ -643,24 +642,16 @@ _compute _noinline Wand GetWandWithLevel(
 		case 6: return GetWand(seed, x, y, 120, 6, true, gen_spells);
 		default: return GetWand(seed, x, y, 180, 11, true, gen_spells);
 		}
-	/*else if (better)
-		switch (level)
-		{
-		case 1:
-			return GetWandBetter(seed, x, y, 30, 1, gen_spells);
-		case 2:
-			return GetWandBetter(seed, x, y, 40, 2, gen_spells);
-		case 3:
-			return GetWandBetter(seed, x, y, 60, 3, gen_spells);
-		case 4:
-			return GetWandBetter(seed, x, y, 80, 4, gen_spells);
-		case 5:
-			return GetWandBetter(seed, x, y, 100, 5, gen_spells);
-		case 6:
-			return GetWandBetter(seed, x, y, 120, 6);
-		default:
-			return GetWandBetter(seed, x, y, 180, 11);
-		}*/
+	else if (better)
+		switch (level) {
+		case 1: return GetWandBetter(seed, x, y, 30, 1, gen_spells);
+		case 2: return GetWandBetter(seed, x, y, 40, 2, gen_spells);
+		case 3: return GetWandBetter(seed, x, y, 60, 3, gen_spells);
+		case 4: return GetWandBetter(seed, x, y, 80, 4, gen_spells);
+		case 5: return GetWandBetter(seed, x, y, 100, 5, gen_spells);
+		case 6: return GetWandBetter(seed, x, y, 120, 6, gen_spells);
+		default: return GetWandBetter(seed, x, y, 180, 11, gen_spells);
+		}
 	else
 		switch (level) {
 		case 1: return GetWand(seed, x, y, 30, 1, false, gen_spells);

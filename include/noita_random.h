@@ -8,10 +8,10 @@
 
 class WorldgenPRNG {
 public:
-	double Seed;
-	_universal WorldgenPRNG(double seed);
+	uint32_t Seed;
+	_universal WorldgenPRNG(uint32_t seed);
 	_universal uint32_t NextU();
-	_universal double Next();
+	_universal void Next();
 };
 
 class NollaPRNG {
@@ -23,6 +23,7 @@ public:
 	_universal _noinline void SetRandomSeed(double x, double y);
 	_universal _noinline void SetRandomSeedInt(int x, int y);
 	_universal float Next();
+	_universal void Prev();
 	_universal double NextD();
 	_universal int Random(int a, int b);
 	_universal int RandomD(int a, int b);

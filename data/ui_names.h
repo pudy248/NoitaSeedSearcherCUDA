@@ -572,6 +572,7 @@ const char* BiomeNames[] = {
 	"Fungal Caverns",
 	"Overgrown Cavern",
 	"Lukki Lair",
+	"Ancient Laboratory",
 	"Magical Temple",
 	"The Work (Hell)",
 	"The Work (Sky)",
@@ -579,7 +580,6 @@ const char* BiomeNames[] = {
 	"Sandcave",
 	"Pyramid",
 	"Power Plant",
-	"Ancient Laboratiry",
 	"Frozen Vault",
 	"Meat Realm",
 

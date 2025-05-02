@@ -32,6 +32,7 @@ void* UploadToDevice(const void* hMem, size_t size);
 // Wacky workarounds to CUDA device pointers being inaccessible in some cases from host code
 void HSetBiomeData();
 void HSetBiomeData2(BiomePixelScenes* l);
+void HSetSpellData(SpellTables* t);
 
 //Creates or destroys a persistent worker that can recieve jobs.
 Worker* CreateWorker();

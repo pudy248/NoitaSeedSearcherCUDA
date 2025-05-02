@@ -51,9 +51,6 @@
     <ClInclude Include="data\alchemy.h">
       <Filter>data</Filter>
     </ClInclude>
-    <ClInclude Include="data\biomeMap.h">
-      <Filter>data</Filter>
-    </ClInclude>
     <ClInclude Include="data\fungal.h">
       <Filter>data</Filter>
     </ClInclude>
@@ -70,9 +67,6 @@
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="data\rains.h">
-      <Filter>data</Filter>
-    </ClInclude>
-    <ClInclude Include="data\spells.h">
       <Filter>data</Filter>
     </ClInclude>
     <ClInclude Include="data\temples.h">
@@ -174,6 +168,9 @@
     </ClInclude>
     <ClInclude Include="data\host_tables.h">
       <Filter>data</Filter>
+    </ClInclude>
+    <ClInclude Include="src\biome_map.cpp">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

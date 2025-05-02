@@ -105,9 +105,8 @@ static void stbhw__parse_h_rect(
 	h.colors[3] = d;
 	h.colors[4] = e;
 	h.colors[5] = f;
-#ifdef DEBUG_SPAWN_PIXELS
-	printf("H %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
-#endif
+	if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+		fprintf(stderr, "H %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
 
 	for (uint8_t j = 0; j < len; ++j)
 		for (uint8_t i = 0; i < len * 2; ++i) {
@@ -115,18 +114,16 @@ static void stbhw__parse_h_rect(
 			for (int16_t z = 0; z < HostSpawnColors[p.biome].count; z++) {
 				if (pix == HostSpawnColors[p.biome].colors[z]) {
 					h.spawns[sIdx++] = {i, j, z};
-#ifdef DEBUG_SPAWN_PIXELS
-					printf("Wang Spawn (%i, %i): Biome %i\n", i, j, z);
-#endif
+					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+						fprintf(stderr, "Wang Spawn (%i, %i): Biome %i\n", i, j, z);
 					goto h_end;
 				}
 			}
 			for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
 				if (pix == HostSpawnColors[0].colors[z]) {
 					h.spawns[sIdx++] = {i, j, (int16_t)(HostSpawnColors[p.biome].count + z)};
-#ifdef DEBUG_SPAWN_PIXELS
-					printf("Wang Spawn (%i, %i): Global %i\n", i, j, z);
-#endif
+					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+						fprintf(stderr, "Wang Spawn (%i, %i): Global %i\n", i, j, z);
 					goto h_end;
 				}
 			}
@@ -134,7 +131,7 @@ h_end:
 			continue;
 		}
 	if (sIdx > _WangTileMaxSpawns)
-		printf("H Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
+		fprintf(stderr, "H Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
 }
 
 static void stbhw__parse_v_rect(
@@ -151,9 +148,8 @@ static void stbhw__parse_v_rect(
 	h.colors[3] = d;
 	h.colors[4] = e;
 	h.colors[5] = f;
-#ifdef DEBUG_SPAWN_PIXELS
-	printf("V %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
-#endif
+	if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+		fprintf(stderr, "V %i: %i %i %i %i %i %i\n", idx, a, b, c, d, e, f);
 
 	for (uint8_t j = 0; j < len * 2; ++j)
 		for (uint8_t i = 0; i < len; ++i) {
@@ -161,26 +157,24 @@ static void stbhw__parse_v_rect(
 			for (int16_t z = 0; z < HostSpawnColors[p.biome].count; z++) {
 				if (pix == HostSpawnColors[p.biome].colors[z]) {
 					h.spawns[sIdx++] = {i, j, z};
-#ifdef DEBUG_SPAWN_PIXELS
-					printf("Wang Spawn (%i, %i): Biome %i\n", i, j, z);
-#endif
+					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+						fprintf(stderr, "Wang Spawn (%i, %i): Biome %i\n", i, j, z);
 					goto v_end;
 				}
 			}
 			for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
 				if (pix == HostSpawnColors[0].colors[z]) {
 					h.spawns[sIdx++] = {i, j, (int16_t)(HostSpawnColors[p.biome].count + z)};
-#ifdef DEBUG_SPAWN_PIXELS
-					printf("Wang Spawn (%i, %i): Global %i\n", i, j, z);
-#endif
+					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+						fprintf(stderr, "Wang Spawn (%i, %i): Global %i\n", i, j, z);
 					goto v_end;
 				}
 			}
-		v_end:
+v_end:
 			continue;
 		}
 	if (sIdx > _WangTileMaxSpawns)
-		printf("V Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
+		fprintf(stderr, "V Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
 }
 
 static void stbhw__process_h_row(WangProcess& p, WangTileset& ts, int tx, int ty, int a0, int a1, int b0, int b1,
@@ -216,8 +210,6 @@ static int stbhw__process_template(WangProcess& p, WangTileset& ts) {
 
 	int vi = 0;
 	int hi = 0;
-
-	// printf("process_template: %i %i [%i %i %i %i]\n", ts.num_vary[0], ts.num_vary[1], ts.num_color[0], ts.num_color[1], ts.num_color[2], ts.num_color[3]);
 
 	if (ts.is_corner) {
 		ty = 0;
@@ -353,7 +345,7 @@ WangTileset stbhw_build_tileset_from_image(uint8_t* data, int biome, int stride,
 	}
 
 	if (ts.max_colors > 3) {
-		printf("ERR: TILESET HAS MORE THAN 3 COLOR CHANNELS\n");
+		fprintf(stderr, "ERR: TILESET HAS MORE THAN 3 COLOR CHANNELS\n");
 	}
 
 	//if (ts.num_vary[0] < 0 || ts.num_vary[0] > 64 || ts.num_vary[1] < 0 || ts.num_vary[1] > 64)

@@ -18,6 +18,7 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #endif
 
 #include "src/biome_impl.cpp"
+#include "src/biome_map.cpp"
 #include "src/cli.cpp"
 #include "src/compute.cpp"
 #include "src/filter.cpp"
@@ -34,142 +35,88 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #define PNG_IMPL
 #include "include/pngutils.h"
 
+#include <array>
 #include <chrono>
 #include <filesystem>
 
 OutputProgressData d;
 
-#if 0
-namespace HELPERS
-{
-	static void GenerateSpellData()
-	{
-		printf("_data const static bool spellSpawnableInChests[] = {\n");
-		for (int j = 0; j < SpellCount; j++)
-		{
-			bool passed = false;
-			for (int t = 0; t < 11; t++)
-			{
-				if (allSpells[j].spawn_probabilities[t] > 0 || allSpells[j].s == SPELL_SUMMON_PORTAL || allSpells[j].s == SPELL_SEA_SWAMP)
-				{
-					passed = true;
+static void GenerateSpellData() {
+	SpellTables tbl;
+	std::array<bool, SpellCount> spellSpawnableInChests = {};
+	for (int j = 0; j < SpellCount; j++) {
+		for (int t = 0; t < 11; t++) {
+			if (HTables::spells[j].spawn_probabilities[t] > 0 || HTables::spells[j].s == SPELL_SUMMON_PORTAL ||
+				HTables::spells[j].s == SPELL_SEA_SWAMP) {
+				spellSpawnableInChests[j] = true;
+				break;
+			}
+		}
+	}
+	tbl.spellSpawnableInChests =
+		(const bool*)UploadToDevice(spellSpawnableInChests.data(), sizeof(spellSpawnableInChests));
+
+	std::array<bool, SpellCount> spellSpawnableInBoxes = {};
+	for (int j = 0; j < SpellCount; j++) {
+		if (HTables::spells[j].type == MODIFIER || HTables::spells[j].type == UTILITY) {
+			for (int t = 0; t < 11; t++) {
+				if (HTables::spells[j].spawn_probabilities[t] > 0 || HTables::spells[j].s == SPELL_SUMMON_PORTAL ||
+					HTables::spells[j].s == SPELL_SEA_SWAMP) {
+					spellSpawnableInBoxes[j] = true;
 					break;
 				}
 			}
-			printf(passed ? "true" : "false");
-			printf(",\n");
-		}
-		printf("};\n");
-
-		printf("_data const static bool spellSpawnableInBoxes[] = {\n");
-		for (int j = 0; j < SpellCount; j++)
-		{
-			bool passed = false;
-			if (allSpells[j].type == MODIFIER || allSpells[j].type == UTILITY)
-			{
-				for (int t = 0; t < 11; t++)
-				{
-					if (allSpells[j].spawn_probabilities[t] > 0 || allSpells[j].s == SPELL_SUMMON_PORTAL || allSpells[j].s == SPELL_SEA_SWAMP)
-					{
-						passed = true;
-						break;
-					}
-				}
-			}
-			printf(passed ? "true" : "false");
-			printf(",\n");
-		}
-		printf("};\n");
-
-		int counters2[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
-		double sums[11] = { 0,0,0,0,0,0,0,0,0,0,0 };
-		for (int t = 0; t < 11; t++)
-		{
-			printf("_data const static SpellProb spellProbs_%i[] = {\n", t);
-			for (int j = 0; j < SpellCount; j++)
-			{
-				if (allSpells[j].spawn_probabilities[t] > 0)
-				{
-					counters2[t]++;
-					sums[t] += allSpells[j].spawn_probabilities[t];
-					printf("{%f,SPELL_%s},\n", sums[t], allSpells[j].name);
-				}
-			}
-			printf("};\n");
-		}
-
-		printf("_data const static int spellTierCounts[] = {\n");
-		for (int t = 0; t < 11; t++)
-		{
-			printf("%i,\n", counters2[t]);
-		}
-		printf("};\n");
-
-		printf("_data const static float spellTierSums[] = {\n");
-		for (int t = 0; t < 11; t++)
-		{
-			printf("%f,\n", sums[t]);
-		}
-		printf("};\n\n");
-
-
-		for (int tier = 0; tier < 11; tier++)
-		{
-			int counters[8] = { 0,0,0,0,0,0,0,0 };
-			for (int t = 0; t < 8; t++)
-			{
-				for (int j = 0; j < SpellCount; j++)
-				{
-					if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[tier] > 0)
-					{
-						counters[t]++;
-					}
-				}
-			}
-			for (int t = 0; t < 8; t++)
-			{
-				if (counters[t] > 0)
-				{
-					double sum = 0;
-					printf("_data const static SpellProb spellProbs_%i_T%i[] = {\n", tier, t);
-					for (int j = 0; j < SpellCount; j++)
-					{
-						if ((int)allSpells[j].type == t && allSpells[j].spawn_probabilities[tier] > 0)
-						{
-							sum += allSpells[j].spawn_probabilities[tier];
-							printf("{%f,SPELL_%s},\n", sum, allSpells[j].name);
-						}
-					}
-					printf("};\n");
-				}
-			}
-			printf("_data const static SpellProb* spellProbs_%i_Types[] = {\n", tier);
-			for (int t = 0; t < 8; t++)
-			{
-				if (counters[t] > 0)
-					printf("spellProbs_%i_T%i,\n", tier, t);
-				else
-					printf("NULL,\n");
-			}
-			printf("};\n");
-
-			printf("_data const static int spellProbs_%i_Counts[] = {\n", tier);
-			for (int t = 0; t < 8; t++)
-			{
-				printf("%i,\n", counters[t]);
-			}
-			printf("};\n\n");
-
-			printf("_data const static int spellProbs_%i_Counts[] = {\n", tier);
-			for (int t = 0; t < 8; t++)
-			{
-				printf("%i,\n", counters[t]);
-			}
-			printf("};\n\n");
 		}
 	}
+	tbl.spellSpawnableInBoxes =
+		(const bool*)UploadToDevice(spellSpawnableInBoxes.data(), sizeof(spellSpawnableInBoxes));
 
-#if 1
+	for (int t = 0; t < 11; t++) {
+		std::array<SpellProb, SpellCount> spellProbs_n = {};
+		int n = 0;
+		for (int j = 0; j < SpellCount; j++) {
+			if (HTables::spells[j].spawn_probabilities[t] > 0) {
+				tbl.spellTierCounts[t]++;
+				tbl.spellTierSums[t] += HTables::spells[j].spawn_probabilities[t];
+				spellProbs_n[n++] = {tbl.spellTierSums[t], HTables::spells[j].s};
+			}
+		}
+		tbl.allSpellProbs[t] = (const SpellProb*)UploadToDevice(spellProbs_n.data(), sizeof(SpellProb) * n);
+	}
+
+	for (int tier = 0; tier < 11; tier++) {
+		for (int t = 0; t < 8; t++) {
+			for (int j = 0; j < SpellCount; j++) {
+				if ((int)HTables::spells[j].type == t && HTables::spells[j].spawn_probabilities[tier] > 0) {
+					tbl.spellProbs_Counts[tier][t]++;
+				}
+			}
+		}
+		for (int t = 0; t < 8; t++) {
+			std::array<SpellProb, SpellCount> spellProbs_t_n = {};
+			int n = 0;
+			if (tbl.spellProbs_Counts[tier][t] > 0) {
+				double sum = 0;
+				for (int j = 0; j < SpellCount; j++) {
+					if ((int)HTables::spells[j].type == t && HTables::spells[j].spawn_probabilities[tier] > 0) {
+						sum += HTables::spells[j].spawn_probabilities[tier];
+						spellProbs_t_n[n++] = {sum, HTables::spells[j].s};
+					}
+				}
+				tbl.spellProbs_Sums[tier][t] = sum;
+				tbl.spellProbs_Types[tier][t] =
+					(const SpellProb*)UploadToDevice(spellProbs_t_n.data(), sizeof(SpellProb) * n);
+			}
+		}
+	}
+	HSetSpellData(&tbl);
+}
+
+#if 0
+namespace HELPERS
+{
+
+#if 0
 	constexpr uint64_t MAX_CNT = INT_MAX;
 	__device__ int counter = 0;
 	__global__ void CountForEach() {
@@ -192,21 +139,17 @@ namespace HELPERS
 		printf("%i %f\n", hCtr, (double)hCtr / MAX_CNT);
 	}
 #else
-	constexpr uint64_t MAX_CNT = 10000000;
+	constexpr uint64_t MAX_CNT = 2147483647;
 	std::atomic<int> counter = 0;
 	void CountForEach(int idx) {
 		uint64_t start = idx;
 		uint64_t stride = std::thread::hardware_concurrency();
 		for (uint64_t i = start; i < MAX_CNT; i += stride) {
-			Wand w = GetWandWithLevelGivenSeed(i, 1, false);
-			int add_manas = 0;
-			for (int i = 0; i < w.spellCount; i++)
-				if (w.spells[i].s == SPELL_MANA_REDUCE)
-					add_manas++;
-			if (add_manas >= 28) {
-				//printf("%i %f %i\n", i, w.capacity, w.multicast);
+			NollaPRNG rng(i);
+			float f = rng.RandomDistributionf(0.8, 1.2, 1, 6);
+			//printf("%f\n", f);
+			if (f == 1.f)
 				counter++;
-			}
 		}
 	}
 
@@ -225,16 +168,10 @@ namespace HELPERS
 void cli_main(int argc, char** argv);
 
 int main(int argc, char** argv) {
-	//HCountForEach();
+	//HELPERS::HCountForEach();
 	//return 0;
 
 	read_wak(find_wak().c_str());
-
-	InitializePlatform();
-	HSetBiomeData();
-
-	int biomeCount = 0;
-	int maxMapArea = 0;
 
 	config.generalCfg = {
 #ifdef SEEDS_AS_TRIES
@@ -298,7 +235,7 @@ int main(int argc, char** argv) {
 		.pixelSceneFilterCount = 0,
 		.pixelSceneFilters = {},
 		.wandStats = false,
-		.wandStatThreshold = 27,
+		.wandStatThreshold = 44,
 	};
 
 	config.outputCfg = {
@@ -312,25 +249,32 @@ int main(int argc, char** argv) {
 	};
 
 	cli_main(argc, argv);
-	for (int i = 0; i < biome_list.size(); i++)
-		InstantiateBiome(biome_list[i], config.biomeScopes, biomeCount, maxMapArea);
+
+	InitializePlatform();
+	HSetBiomeData();
+	GenerateSpellData();
+
+	BiomeMapChunks map = load_biome_map("data/biome_impl/biome_map.png", 0);
+	int biomeCount = 0;
+	int maxMapArea = 0;
+	InstantiateBiomes(config.biomeScopes, biomeCount, maxMapArea, map, biome_list);
 
 	config.biomeCount = biomeCount;
-	config.generalCfg.seedBlockSize = biomeCount ? (WorkerAppetite > 100 ? 1u : 512u) :
+	config.generalCfg.seedBlockSize = biomeCount ? (WorkerAppetite > 100 ? 1u : 32u) :
 												   (WorkerAppetite > 100 ? 256u : 16384u);
 
 	config.memSizes = {
 		.memoryCap = 40_GB,
 
-	#ifdef IMAGE_OUTPUT
+#ifdef IMAGE_OUTPUT
 		.outputSize = (size_t)maxMapArea * 3 + 512, // output
-	#else
-			.outputSize = (size_t)4096,
-	#endif
+#else
+		.outputSize = (size_t)8192,
+#endif
 		.mapDataSize = (size_t)maxMapArea * 2,
 		.miscMemSize = (size_t)maxMapArea * 2,
-		.visitedMemSize = (size_t)maxMapArea + 256,
-		.spawnableMemSize = (size_t)maxMapArea / 4,
+		.visitedMemSize = (size_t)maxMapArea + 512,
+		.spawnableMemSize = max((size_t)maxMapArea / 4, 8192u),
 	};
 
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;

@@ -666,6 +666,7 @@ enum Biome : unsigned char {
 	B_FUNGICAVE,
 	B_FUNGIFOREST,
 	B_RAINFOREST_DARK,
+	B_LIQUIDCAVE,
 	B_WANDCAVE,
 	B_THE_END,
 	B_THE_SKY,
@@ -673,10 +674,9 @@ enum Biome : unsigned char {
 	B_SANDCAVE,
 	B_PYRAMID,
 	B_ROBOBASE,
-	B_LIQUIDCAVE,
 	B_VAULT_FROZEN,
 	B_MEAT,
-
+	/*
 	B_SOLID_WALL_TOWER_1,
 	B_SOLID_WALL_TOWER_2,
 	B_SOLID_WALL_TOWER_3,
@@ -686,7 +686,7 @@ enum Biome : unsigned char {
 	B_SOLID_WALL_TOWER_7,
 	B_SOLID_WALL_TOWER_8,
 	B_SOLID_WALL_TOWER_9,
-
+	*/
 	B_BIOME_COUNT
 };
 enum BiomeModifier : unsigned char {
@@ -1264,7 +1264,6 @@ enum WandStat { RELOAD, CAST_DELAY, SPREAD, SPEED_MULT, CAPACITY, MULTICAST, SHU
 
 enum PixelScene : short {
 	PS_NONE,
-
 	PS_COALMINE_CARTHILL,
 	PS_COALMINE_COALPIT01,
 	PS_COALMINE_COALPIT02,

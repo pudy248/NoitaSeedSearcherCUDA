@@ -17,10 +17,10 @@ _universal WandData readMisalignedWand(const WandData* wPtr);
 
 struct MemoryArena {
 	uint8_t* ptr;
-	uint64_t offset;
+	uint32_t offset;
 };
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size);
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth);
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint32_t size);
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint32_t size, uint32_t alignmentWidth);
 _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer);
 
 template <int coalmine_mode = 1, bool skip_fill = false>
@@ -31,16 +31,19 @@ _universal Vec2i GetGlobalPos(const int x, const int y, const int px, int py);
 _universal Vec2i GetLocalPos(const int gx, int gy);
 _compute int roundRNGPos(int num);
 
-_universal void _itoa_offset(int num, int base, char* buffer, int& offset);
-_universal void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset);
-_universal void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset);
-_universal void _putstr_offset(const char* str, char* buffer, int& offset);
+struct BiomeChunk {
+	Biome b;
+	int x, y, w, h;
+};
+struct BiomeMapChunks {
+	int w, h;
+	Biome* map;
+	std::vector<BiomeChunk> chunks;
+};
+BiomeMapChunks load_biome_map(const char* path, int ngplus);
 
-constexpr uint32_t COLOR_PURPLE = 0x7f007fU;
-constexpr uint32_t COLOR_BLACK = 0x000000U;
-constexpr uint32_t COLOR_WHITE = 0xffffffU;
-constexpr uint32_t COLOR_YELLOW = 0xffff00U;
-constexpr uint32_t COLOR_COFFEE = 0xc0ffeeU;
-constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80U;
-
-_compute uint8_t* coalmine_overlay;
+_compute void SetBiomeData();
+void SetBiomePixelScenes();
+void UploadBiomeData();
+WangTileset stbhw_build_tileset_from_image(uint8_t* data, int biome, int stride, int w, int h);
+void InstantiateBiomes(BiomeWangScope** ss, int& biomeCount, int& maxMapArea, BiomeMapChunks c, std::vector<Biome>& b);

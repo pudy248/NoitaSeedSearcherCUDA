@@ -4,6 +4,10 @@
 #include "primitives.h"
 #include "search_structs.h"
 
+struct BiomeMap {
+	int w, h;
+	Biome* map;
+};
 struct BiomeSector {
 	Biome b;
 
@@ -58,6 +62,7 @@ struct MainPathFill {
 };
 
 struct BiomeWangScope {
+	BiomeMap map;
 	WangTileset ts;
 	BiomeSector bSec;
 };
@@ -82,7 +87,11 @@ struct BiomeSpawnColors {
 	uint32_t colors[12];
 
 	constexpr BiomeSpawnColors() = default;
-	constexpr BiomeSpawnColors(std::initializer_list<uint32_t> list);
+	constexpr BiomeSpawnColors(std::initializer_list<uint32_t> list) : count(list.size()), colors() {
+		//Assert(list.size() <= 12, "Spawn function size overflow.");
+		for (int i = 0; i < list.size(); i++)
+			colors[i] = list.begin()[i];
+	}
 };
 
 struct BiomeSpawnFunctions {
@@ -92,7 +101,12 @@ struct BiomeSpawnFunctions {
 
 	constexpr BiomeSpawnFunctions() = default;
 	_compute constexpr BiomeSpawnFunctions(
-		void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list);
+		void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list)
+		: count(list.size()), init(_fn), funcs() {
+		//Assert(list.size() <= 12, "Spawn function size overflow.");
+		for (int i = 0; i < list.size(); i++)
+			funcs[i] = list.begin()[i];
+	}
 };
 
 struct PixelSceneSpawn {
@@ -100,39 +114,69 @@ struct PixelSceneSpawn {
 	short x;
 	short y;
 	constexpr PixelSceneSpawn() = default;
-	_universal constexpr PixelSceneSpawn(int _t, short _x, short _y);
+	_universal constexpr PixelSceneSpawn(int _t, short _x, short _y) : i(_t), x(_x), y(_y) {}
 };
 struct PixelSceneData {
 	PixelScene scene;
 	float prob;
-	const char* path;
 	short materialCount;
-	Material materials[20];
+	Material materials[16];
 	short spawnCount;
 	PixelSceneSpawn spawns[8];
 
 	constexpr PixelSceneData() = default;
-	_universal constexpr PixelSceneData(PixelScene _scene, float _prob, const char* _path);
+	_universal constexpr PixelSceneData(PixelScene _scene, float _prob)
+		: scene(_scene), prob(_prob), materialCount(0), materials(), spawnCount(0), spawns() {}
 	_universal constexpr PixelSceneData(
-		PixelScene _scene, float _prob, const char* _path, std::initializer_list<Material> _mats);
+		PixelScene _scene, float _prob, std::initializer_list<Material> _mats)
+		: scene(_scene), prob(_prob), materialCount(_mats.size()), materials(), spawnCount(0), spawns() {
+		for (int i = 0; i < materialCount; i++)
+			materials[i] = _mats.begin()[i];
+	}
 };
 struct PixelSceneList {
 	int count;
 	float probSum;
 	PixelSceneData scenes[20];
 	constexpr PixelSceneList() = default;
-	_universal constexpr PixelSceneList(std::initializer_list<PixelSceneData> list);
+	_universal constexpr PixelSceneList(std::initializer_list<PixelSceneData> list)
+		: count(list.size()), probSum(), scenes() {
+		//Assert(list.size() <= 20, "Pixel scene list size overflow.");
+		for (int i = 0; i < list.size(); i++) {
+			probSum += list.begin()[i].prob;
+			scenes[i] = list.begin()[i];
+		}
+	}
 };
 struct BiomePixelScenes {
 	int count;
 	PixelSceneList lists[10];
 	constexpr BiomePixelScenes() = default;
-	_universal constexpr BiomePixelScenes(std::initializer_list<PixelSceneList> list);
+	_universal constexpr BiomePixelScenes(std::initializer_list<PixelSceneList> list)
+		: count(list.size())
+		, lists() {
+		//Assert(list.size() <= 10, "Biome pixel scenes size overflow.");
+		for (int i = 0; i < list.size(); i++) {
+			lists[i] = list.begin()[i];
+		}
+	}
 };
 
 BiomeSpawnColors HostSpawnColors[B_BIOME_COUNT] = {};
-BiomePixelScenes HostPixelSceneLists[B_BIOME_COUNT] = {};
+BiomePixelScenes HostPixelSceneLists[B_LIQUIDCAVE + 1] = {};
 
 _data BiomeWands AllWandLevels[B_BIOME_COUNT];
 _data BiomeSpawnFunctions AllSpawnFunctions[B_BIOME_COUNT];
-_data BiomePixelScenes AllPixelSceneLists[B_BIOME_COUNT];
+_data BiomePixelScenes AllPixelSceneLists[B_LIQUIDCAVE + 1];
+
+_data constexpr int SpellCount = SPELL_CESSATION;
+_data SpellTables spellTables = {};
+
+constexpr uint32_t COLOR_PURPLE = 0x7f007fU;
+constexpr uint32_t COLOR_BLACK = 0x000000U;
+constexpr uint32_t COLOR_WHITE = 0xffffffU;
+constexpr uint32_t COLOR_YELLOW = 0xffff00U;
+constexpr uint32_t COLOR_COFFEE = 0xc0ffeeU;
+constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80U;
+
+_compute uint8_t* coalmine_overlay;

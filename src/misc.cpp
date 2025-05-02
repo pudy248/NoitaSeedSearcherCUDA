@@ -8,8 +8,7 @@
 
 _universal uint8_t readByte(const uint8_t* ptr, int& offset) { return ptr[offset++]; }
 _universal void writeByte(MemSpan ptr, int& offset, uint8_t b) {
-	if (!ptr.is_safe(offset))
-		printf("writeByte(): Ran out of space.\n");
+	ptr.is_safe("writeByte", "", offset);
 	ptr.ptr[offset++] = b;
 }
 _universal int readInt(const uint8_t* ptr, int& offset) {
@@ -19,8 +18,7 @@ _universal int readInt(const uint8_t* ptr, int& offset) {
 	return tmp;
 }
 _universal void writeInt(MemSpan ptr, int& offset, int val) {
-	if (!ptr.is_safe(offset + 3))
-		printf("writeByte(): Ran out of space.\n");
+	ptr.is_safe("writeInt", "", offset);
 	memcpy(ptr.ptr + offset, &val, 4);
 	offset += 4;
 }
@@ -53,11 +51,11 @@ _universal Spawnable readMisalignedSpawnable(const Spawnable* sPtr) {
 }
 _universal WandData readMisalignedWand(const WandData* wPtr) {
 	WandData w = {};
-	cMemcpyU(&w, wPtr, 37);
+	cMemcpyU(&w, wPtr, 23);
 	return w;
 }
 
-_universal WorldgenPRNG::WorldgenPRNG(double seed) {
+_universal WorldgenPRNG::WorldgenPRNG(uint32_t seed) {
 	Seed = seed;
 	Next();
 }
@@ -65,13 +63,12 @@ _universal uint32_t WorldgenPRNG::NextU() {
 	Next();
 	return (uint32_t)((Seed * 4.656612875e-10) * 2147483645.0);
 }
-_universal double WorldgenPRNG::Next() {
-	int v4 = (int)Seed * 0x41a7 + ((int)Seed / 0x1f31d) * -0x7fffffff;
+_universal void WorldgenPRNG::Next() {
+	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
 	if (v4 < 0) {
 		v4 += 0x7fffffff;
 	}
-	Seed = (double)v4;
-	return Seed / 0x7fffffff;
+	Seed = v4;
 }
 
 _universal static uint64_t SetRandomSeedHelper(double r) {
@@ -159,12 +156,13 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y) {
 
 	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
 
-	//double s = g;
-	//s /= 4294967295.0;
-	//s *= 2147483639.0;
-	//s += 1.0;
-	//Seed = (int)s;
-
+#ifndef __CUDA_ARCH__
+	double s = g;
+	s /= 4294967295.0;
+	s *= 2147483639.0;
+	s += 1.0;
+	Seed = (int)s;
+#else
 	//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
 	const uint32_t diddle_table[17] = {0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44};
 	constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
@@ -174,14 +172,10 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y) {
 	t = (t + (g > 0x80000000)) >> 1;
 	t = (int)t + (g == 0xffffffff);
 	Seed = t;
+#endif
 
-	Next();
-
-	uint32_t h = ws & 3;
-	while (h > 0) {
+	for (int h = 0; h <= (ws & 3); h++)
 		Next();
-		h--;
-	}
 }
 _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 	uint32_t ws = world_seed;
@@ -211,12 +205,13 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 
 	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
 
-	//double s = g;
-	//s /= 4294967295.0;
-	//s *= 2147483639.0;
-	//s += 1.0;
-	//Seed = (int)s;
-
+#ifndef __CUDA_ARCH__
+	double s = g;
+	s /= 4294967295.0;
+	s *= 2147483639.0;
+	s += 1.0;
+	Seed = (int)s;
+#else
 	//Kaliuresis bithackery!!! Nobody knows how it works. Equivalent to the above FP64 code.
 	const uint32_t diddle_table[17] = {0, 4, 6, 25, 12, 39, 52, 9, 21, 64, 78, 92, 104, 118, 18, 32, 44};
 	constexpr uint32_t magic_number = 252645135; //magic number is 1/(1-2*actual ratio)
@@ -226,14 +221,10 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 	t = (t + (g > 0x80000000)) >> 1;
 	t = (int)t + (g == 0xffffffff);
 	Seed = t;
+#endif
 
-	Next();
-
-	uint32_t h = ws & 3;
-	while (h > 0) {
+	for (int h = 0; h <= (ws & 3); h++)
 		Next();
-		h--;
-	}
 }
 _universal float NollaPRNG::Next() {
 	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
@@ -243,6 +234,7 @@ _universal float NollaPRNG::Next() {
 	Seed = v4;
 	return (float)Seed / 0x7fffffff;
 }
+_universal void NollaPRNG::Prev() { Seed = ((uint64_t)Seed * 1407677000ull) % 0x7fffffffu; }
 _universal double NollaPRNG::NextD() {
 	int v4 = Seed * 0x41a7 + (Seed / 0x1f31d) * -0x7fffffff;
 	if (v4 < 0) {
@@ -373,13 +365,13 @@ int pick_world_seed(uint64_t time) {
 	return out;
 }
 
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size) {
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint32_t size) {
 	uint8_t* ptr = arena.ptr + arena.offset;
 	arena.offset += size;
 	return {ptr, size};
 }
-_compute MemSpan ArenaAlloc(MemoryArena& arena, uint64_t size, uint64_t alignmentWidth) {
-	uint64_t alignedAddr = ((uint64_t)arena.ptr + arena.offset + alignmentWidth - 1) & ~(alignmentWidth - 1);
+_compute MemSpan ArenaAlloc(MemoryArena& arena, uint32_t size, uint32_t alignmentWidth) {
+	uint64_t alignedAddr = ((uint64_t)arena.ptr + arena.offset + alignmentWidth - 1) & ~((uint64_t)alignmentWidth - 1);
 	arena.offset = alignedAddr - (uint64_t)arena.ptr + size;
 	return {(uint8_t*)alignedAddr, size};
 }
@@ -408,96 +400,4 @@ _compute int roundRNGPos(int num) {
 	else if (-100000000 < num && num < 100000000)
 		return int(num / 100.0f) * 100;
 	return num;
-}
-
-_universal void _itoa_offset(int num, int base, char* buffer, int& offset) {
-	char internal_buffer[11]; //ints can't be bigger than this!
-	int i = 10;
-	bool isNegative = false;
-
-	if (num == 0) {
-		buffer[offset++] = '0';
-		return;
-	}
-
-	if (num < 0 && base == 10) {
-		isNegative = true;
-		num = -num;
-	}
-
-	while (num != 0) {
-		int rem = num % base;
-
-		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
-
-		num = num / base;
-	}
-
-	if (isNegative)
-		internal_buffer[i--] = '-';
-
-	for (int j = i + 1; j < 11; j++)
-		buffer[offset++] = internal_buffer[j];
-}
-_universal void _itoa_offset_decimal(int num, int base, int fixedPoint, char* buffer, int& offset) {
-	char internal_buffer[11]; //ints can't be bigger than this!
-	int i = 10;
-	bool isNegative = false;
-
-	if (num == 0) {
-		buffer[offset++] = '0';
-		return;
-	}
-
-	if (num < 0 && base == 10) {
-		isNegative = true;
-		num = -num;
-	}
-
-	while (num != 0 || 10 - i < (fixedPoint + 2)) {
-		int rem = num % base;
-
-		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
-
-		if (10 - i == fixedPoint)
-			internal_buffer[i--] = '.';
-
-		num = num / base;
-	}
-
-	if (isNegative)
-		internal_buffer[i--] = '-';
-
-	for (int j = i + 1; j < 11; j++)
-		buffer[offset++] = internal_buffer[j];
-}
-_universal void _itoa_offset_zeroes(int num, int base, int leadingZeroes, char* buffer, int& offset) {
-	char internal_buffer[11]; //ints can't be bigger than this!
-	int i = 10;
-	bool isNegative = false;
-
-	if (num < 0 && base == 10) {
-		isNegative = true;
-		num = -num;
-	}
-
-	while (num != 0 || 10 - i < leadingZeroes) {
-		int rem = num % base;
-
-		internal_buffer[i--] = (rem > 9) ? (rem - 10) + 'A' : rem + '0';
-
-		num = num / base;
-	}
-
-	if (isNegative)
-		internal_buffer[i--] = '-';
-
-	for (int j = i + 1; j < 11; j++)
-		buffer[offset++] = internal_buffer[j];
-}
-_universal void _putstr_offset(const char* str, char* buffer, int& offset) {
-	int i = 0;
-	while (str[i] != '\0') {
-		buffer[offset++] = str[i++];
-	}
 }

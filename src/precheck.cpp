@@ -90,9 +90,11 @@ _compute static bool MaterialSetVars(Material reference, Material test, int* ptr
 		return true;
 	else if ((int)reference <= MATERIAL_VAR4) {
 		int idx = (int)reference - 1;
+#ifdef DEVICE_LOGGING
 		if (ptrs[idx] >= materialVarEntryCount)
 			printf("Material variable %i space ran out!\n", idx);
 		else
+#endif
 			variables[idx * materialVarEntryCount + ptrs[idx]++] = test;
 		return true;
 	}
@@ -383,7 +385,7 @@ _compute static bool CheckPerks(NollaPRNG& random, PerkConfig c) {
 
 					int x = temple_x[templeIdx] + (int)rintf((tmp + 0.5f) * (60.0f / c.perksPerMountain[templeIdx]));
 					int y = temple_y[templeIdx];
-					rnd.SetRandomSeed(x, y);
+					rnd.SetRandomSeedInt(x, y);
 					if (rnd.Random(1, 100) > 50) {
 						found = true;
 					}

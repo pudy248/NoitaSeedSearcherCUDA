@@ -21,8 +21,7 @@ _compute void WriteOutputBlock(MemSpan output, const SpawnableBlock& b) {
 		writeInt(output, offset, s.y);
 		writeByte(output, offset, s.sType);
 		writeInt(output, offset, s.count);
-		if (!output.is_safe(offset + s.count - 1))
-			printf("WriteOutputBlock(): Ran out of output space.\n");
+		output.is_safe("WriteOutputBlock", "output", offset + s.count - 1);
 		memcpy(output.ptr + offset, &sPtr->contents, s.count);
 		offset += s.count;
 	}
@@ -111,15 +110,15 @@ void PrintOutputBlock(
 						n += 4;
 					} else if (item == DATA_WAND) {
 						n++;
-						WandData dat = *(WandData*)(&sPtr->contents + n);
+						WandData dat = readMisalignedWand((WandData*)(&sPtr->contents + n));
 						sprintfc(seedInfo,
-							"[%i capacity, %i S/C, %.2fsec CD, %.2fsec RT, %i Mana, %i Regen, %.3fx Speed, %ideg Spread, %s]",
+							"[%i capacity, %i S/C, %.2fsec CD, %.2fsec RT, %u Mana, %u Regen, %.3fx Speed, %ideg Spread, %s]",
 							(int)dat.capacity, dat.multicast, dat.delay / 60.f, dat.reload / 60.f, dat.mana, dat.regen,
 							dat.speed, dat.spread, dat.shuffle ? "Shuffle" : "Non-shuffle");
 						if (dat.alwaysCast.s)
 							sprintfc(seedInfo, " AC: ");
 
-						n += 33;
+						n += 19 + (3 * !dat.alwaysCast.s);
 						continue;
 					} else if (GOLD_NUGGETS > item || item > TRUE_ORB) {
 						sprintfc(seedInfo, "0x%x", item);
@@ -138,8 +137,8 @@ void PrintOutputBlock(
 				sprintfc(seedInfo, "]\n");
 				memOffset += s.count + 13;
 			}
-		}
-		else sprintfc(seedInfo, "(no objects)\n");
+		} else
+			sprintfc(seedInfo, "(no objects)\n");
 		seedInfo[bufOffset++] = '\0';
 		if (outputCfg.printOutputToFile) {
 			fprintf(outputFile, "%s", seedInfo);
@@ -159,7 +158,7 @@ void PrintOutputBlock(
 			printf("%s\n", seedInfo);
 	}
 	if (bufOffset > 16384)
-		printf("ERR! Buffer overflow in output with size %i\n", bufOffset);
+		fprintf(stderr, "Buffer overflow in output with size %i\n", bufOffset);
 	if (appendOutput != NULL)
 		appendOutput(seedNum, seedInfo);
 	else {

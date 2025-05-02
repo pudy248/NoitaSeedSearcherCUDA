@@ -32,7 +32,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 			bool tmp = config.spawnableCfg.biomeChests;
 			config.spawnableCfg.biomeChests = true;
 			MemSpan upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 8);
-			MemSpan miscMem2 = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT + 128, 8);
+			MemSpan miscMem = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT + 128, 8);
 			int offset = 0;
 			int _ = 0;
 			spawnChest(315, 17, {currentSeed, {}, config.spawnableCfg, upwarps, offset, _});
@@ -42,12 +42,12 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 			SpawnableBlock b = {currentSeed, 2, spawnables};
 			config.spawnableCfg.biomeChests = tmp;
 
-			seedPassed &= SpawnablesPassed(b, config.filterCfg, output, miscMem2, true, true);
+			seedPassed &= SpawnablesPassed(b, config.filterCfg, output, miscMem, true, true);
 			ArenaSetOffset(arena, upwarps.ptr);
 			if (!seedPassed)
 				continue;
 
-			if (!config.spawnableCfg.biomeChests) {
+			if (!config.outputCfg.countPassesOnly && !config.spawnableCfg.biomeChests) {
 				memcpy(output.ptr, &currentSeed, 4);
 				memcpy((uint8_t*)outputPtr, output.ptr, config.memSizes.outputSize);
 
@@ -62,8 +62,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 		MemSpan visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
 		MemSpan spawnableDat = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
 		MemSpan spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize / 4, 4);
-		MemSpan miscMem = ArenaAlloc(arena, config.memSizes.miscMemSize, 8);
-		MemSpan miscMem2 = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT + 128, 4);
+		MemSpan miscMem = ArenaAlloc(arena, max(config.memSizes.miscMemSize, 16 * TOTAL_FILTER_COUNT + 128), 8);
 
 #ifdef DO_WORLDGEN
 		for (int biomeNum = 0; biomeNum < config.biomeCount; biomeNum++) {
@@ -90,7 +89,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 			ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
 		threadSync();
 		seedPassed &=
-			SpawnablesPassed(result, config.filterCfg, output, miscMem2, true, config.precheckCfg.precheckUpwarps);
+			SpawnablesPassed(result, config.filterCfg, output, miscMem, true, config.precheckCfg.precheckUpwarps);
 
 		if (!seedPassed)
 			continue;
@@ -114,7 +113,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 using namespace API_INTERNAL;
 Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progress, void (*appendOutput)(char*, char*)) {
 	uint32_t displayIntervals = 0;
-	uint32_t recountIntervals = 2;
+	uint64_t recountIntervals = 2;
 
 	uint32_t lastDiff = 0;
 	uint32_t lastSeed = 0;
@@ -155,7 +154,8 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 				writeInt({output, 4}, _, currentSeed);
 				nextSeed = pick_world_seed(startTime + currentSeed);
 #endif
-				uint32_t length = std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed + 1);
+				uint32_t length =
+					std::min(config.generalCfg.seedBlockSize, config.generalCfg.seedEnd - currentSeed + 1);
 				params[j] = {(int)nextSeed, (int)length};
 				currentSeed += length;
 			}
@@ -188,20 +188,23 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			progress.elapsedMillis = milliseconds;
 			progress.searchedSeeds = checkedSeeds;
 			progress.validSeeds = passedSeeds;
-			uint64_t timescale1 = recountIntervals * recountIntervals * recountIntervals * 3;
+			uint64_t timescale1 = recountIntervals * recountIntervals * recountIntervals * recountIntervals;
 			if (timescale1 < milliseconds) {
 				recountIntervals++;
-				uint64_t timescale2 = recountIntervals * recountIntervals * recountIntervals * 3;
+				uint64_t timescale2 = recountIntervals * recountIntervals * recountIntervals * recountIntervals;
 				double expected = DispatchRate * (timescale2 - timescale1) / 1000.0;
 				double fraction = returnedBlocksThisIter / expected;
-				//printf("%ims: Recalculating seed block size. Current size %i, current fraction %.2f\n",
-				//	milliseconds, config.generalCfg.seedBlockSize, fraction);
+				if (DEBUG_FLAGS & DEBUG::LOG_SEED_BLOCKS)
+					fprintf(stderr, "%llims: Recalculating seed block size. Current size %i, current fraction %.2f\n",
+						milliseconds, config.generalCfg.seedBlockSize, fraction);
 				returnedBlocksThisIter = 0;
 #ifndef REALTIME_SEEDS
 				if (!config.generalCfg.seedBlockOverride && fraction < 0.1 && config.generalCfg.seedBlockSize > 1)
 					config.generalCfg.seedBlockSize *= 0.5;
 				else if (!config.generalCfg.seedBlockOverride && fraction < 0.5 && config.generalCfg.seedBlockSize > 1)
 					config.generalCfg.seedBlockSize *= 0.8;
+				else if (!config.generalCfg.seedBlockOverride && fraction > 10)
+					config.generalCfg.seedBlockSize *= 4;
 				else if (!config.generalCfg.seedBlockOverride && fraction > 1.5)
 					config.generalCfg.seedBlockSize *= 1.5 + 0.5 * (config.generalCfg.seedBlockSize == 1);
 #endif
@@ -317,90 +320,38 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 	return {(int)checkedSeeds, (int)passedSeeds};
 }
 
-void InstantiateSector(
-	BiomeWangScope** scopes, int& biomeCount, int& maxMapArea, const char* path, BiomeSector partialSector) {
-	Vec2i tileDims = GetBufferImageDimensions((uint8_t*)get_wak_file(path).c_str());
+void InstantiateBiomes(
+	BiomeWangScope** ss, int& biomeCount, int& maxMapArea, BiomeMapChunks map, std::vector<Biome>& b) {
+	void* dPtr = UploadToDevice(map.map, map.w * map.h);
+	for (auto& c : map.chunks) {
+		if (std::ranges::find(b, c.b) == b.end())
+			continue;
+		BiomeSector sector = {c.b, c.x, c.y, c.w, c.h};
+		const std::string& wang_tiles = get_wak_file(HTables::wang_paths[c.b]);
+		Vec2i tileDims = GetBufferImageDimensions((uint8_t*)wang_tiles.c_str());
 
-	partialSector.tiles_w = tileDims.x;
-	partialSector.tiles_h = tileDims.y;
-	partialSector.map_w = GetWidthFromPix(partialSector.worldX, partialSector.worldX + partialSector.worldW);
-	partialSector.map_h = GetWidthFromPix(partialSector.worldY, partialSector.worldY + partialSector.worldH);
+		sector.tiles_w = tileDims.x;
+		sector.tiles_h = tileDims.y;
+		sector.map_w = GetWidthFromPix(sector.worldX, sector.worldX + sector.worldW);
+		sector.map_h = GetWidthFromPix(sector.worldY, sector.worldY + sector.worldH);
 
-	uint8_t* hTileData = (uint8_t*)malloc(3 * tileDims.x * tileDims.y);
-	ReadBufferImage((uint8_t*)get_wak_file(path).c_str(), hTileData, false);
+		uint8_t* hTileData = (uint8_t*)malloc(3 * tileDims.x * tileDims.y);
+		ReadBufferImage((uint8_t*)wang_tiles.c_str(), hTileData, false);
 
-	BiomeWangScope scope;
-	scope.ts = stbhw_build_tileset_from_image(hTileData, partialSector.b, 3 * tileDims.x, tileDims.x, tileDims.y);
-	partialSector.wang_w = (partialSector.map_w + scope.ts.short_side_len - 1) / scope.ts.short_side_len;
-	partialSector.wang_h = (partialSector.map_h + scope.ts.short_side_len + 3) / scope.ts.short_side_len;
-	maxMapArea = max(maxMapArea, (int)(partialSector.map_w * partialSector.map_h));
+		BiomeWangScope scope;
+		scope.map = {map.w, map.h, (Biome*)dPtr};
+		scope.ts = stbhw_build_tileset_from_image(hTileData, sector.b, 3 * tileDims.x, tileDims.x, tileDims.y);
+		sector.wang_w = (sector.map_w + scope.ts.short_side_len - 1) / scope.ts.short_side_len;
+		sector.wang_h = (sector.map_h + scope.ts.short_side_len + 3) / scope.ts.short_side_len;
+		maxMapArea = max(maxMapArea, (int)(sector.map_w * sector.map_h));
 
-	scope.ts.tileData = (uint8_t*)UploadToDevice(scope.ts.tileData, 3 * tileDims.x * tileDims.y);
-	scope.bSec = partialSector;
-	free(hTileData);
-	BiomeWangScope* dScope = (BiomeWangScope*)UploadToDevice(&scope, sizeof(BiomeWangScope));
-
-	scopes[biomeCount++] = dScope;
-}
-void InstantiateBiome(int biome, BiomeWangScope** ss, int& bC, int& mA) {
-	switch (biome) {
-	case B_COALMINE: InstantiateSector(ss, bC, mA, "data/wang_tiles/coalmine.png", {B_COALMINE, 34, 14, 5, 2}); break;
-	case B_COALMINE_ALT:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/coalmine_alt.png", {B_COALMINE_ALT, 32, 15, 2, 1});
-		break;
-	case B_EXCAVATIONSITE:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/excavationsite.png", {B_EXCAVATIONSITE, 31, 17, 8, 2});
-		break;
-	case B_FUNGICAVE:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/fungicave.png", {B_FUNGICAVE, 28, 17, 3, 2});
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/fungicave.png", { B_FUNGICAVE, 34, 28, 1, 1 });
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/fungicave.png", { B_FUNGICAVE, 39, 31, 1, 1 });
-		break;
-	case B_SNOWCAVE: InstantiateSector(ss, bC, mA, "data/wang_tiles/snowcave.png", {B_SNOWCAVE, 30, 20, 10, 3}); break;
-	case B_SNOWCASTLE:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/snowcastle.png", {B_SNOWCASTLE, 31, 24, 7, 2});
-		break;
-	case B_RAINFOREST:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/rainforest.png", {B_RAINFOREST, 30, 27, 9, 2});
-		break;
-	case B_RAINFOREST_OPEN:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/rainforest_open.png", {B_RAINFOREST_OPEN, 30, 28, 9, 2});
-		break;
-	case B_RAINFOREST_DARK:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/rainforest_dark.png", {B_RAINFOREST_DARK, 25, 26, 5, 8});
-		break;
-	case B_VAULT: InstantiateSector(ss, bC, mA, "data/wang_tiles/vault.png", {B_VAULT, 29, 31, 11, 3}); break;
-	case B_CRYPT: InstantiateSector(ss, bC, mA, "data/wang_tiles/crypt.png", {B_CRYPT, 26, 35, 14, 4}); break;
-	case B_WANDCAVE:
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 27, 21, 3, 1});
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 47, 35, 4, 4});
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 41, 36, 6, 1});
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 53, 36, 2, 2});
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/wand.png", {B_WANDCAVE, 53, 39, 5, 1});
-		break;
-	case B_VAULT_FROZEN:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/vault_frozen.png", {B_VAULT_FROZEN, 12, 15, 7, 5});
-		break;
-	case B_WIZARDCAVE:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", {B_WIZARDCAVE, 23, 25, 3, 2});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", {B_WIZARDCAVE, 47, 36, 2, 2});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", {B_WIZARDCAVE, 51, 36, 8, 3});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", {B_WIZARDCAVE, 59, 39, 1, 1});
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/wizardcave.png", {B_WIZARDCAVE, 53, 40, 6, 6});
-		break;
-	case B_FUNGIFOREST:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/fungiforest.png", {B_FUNGIFOREST, 59, 16, 7, 9});
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/fungiforest.png", { B_FUNGIFOREST, 58, 35, 4, 6 });
-		break;
-	case B_ROBOBASE: InstantiateSector(ss, bC, mA, "data/wang_tiles/robobase.png", {B_ROBOBASE, 59, 29, 7, 9}); break;
-	case B_LIQUIDCAVE:
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/liquidcave.png", {B_LIQUIDCAVE, 26, 14, 5, 2});
-		break;
-	case B_MEAT:
-		//InstantiateSector(ss, bC, mA, "data/wang_tiles/meat.png", { B_MEAT, 47, 25, 3, 7 });
-		InstantiateSector(ss, bC, mA, "data/wang_tiles/meat.png", {B_MEAT, 62, 38, 4, 8});
-		break;
+		scope.ts.tileData = (uint8_t*)UploadToDevice(scope.ts.tileData, 3 * tileDims.x * tileDims.y);
+		scope.bSec = sector;
+		free(hTileData);
+		BiomeWangScope* dScope = (BiomeWangScope*)UploadToDevice(&scope, sizeof(BiomeWangScope));
+		ss[biomeCount++] = dScope;
 	}
+	free(map.map);
 }
 
 void SearchMain(OutputProgressData& progress, void (*appendOutput)(char*, char*)) {
@@ -416,8 +367,10 @@ void SearchMain(OutputProgressData& progress, void (*appendOutput)(char*, char*)
 	std::chrono::steady_clock::time_point time2 = std::chrono::steady_clock::now();
 	std::chrono::nanoseconds duration = time2 - time1;
 
-	printf("Search finished in %ims. Checked %i seeds, found %i valid seeds (%.3f%%).\n",
-		(int)(duration.count() / 1000000), seedCounts.x, seedCounts.y, (double)seedCounts.y / seedCounts.x * 100);
+	if (!QUIET)
+		printf("Search finished in %ims. Checked %i seeds, found %i valid seeds (%.3f%%).\n",
+			(int)(duration.count() / 1000000), seedCounts.x, seedCounts.y, (double)seedCounts.y / seedCounts.x * 100);
 
-	fclose(f);
+	if (f)
+		fclose(f);
 }

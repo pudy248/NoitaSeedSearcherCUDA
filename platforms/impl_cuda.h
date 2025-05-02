@@ -107,15 +107,19 @@ void InitializePlatform() {
 
 	cudaDeviceProp properties;
 	checkCudaErrors(cudaGetDeviceProperties_v2(&properties, 0));
+	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		printf("Running with CUDA backend using device %i: %s.\n", device, properties.name);
 #ifndef SINGLE_THREAD
 	BLOCKDIV = 8 * properties.multiProcessorCount;
 	BLOCKSIZE = 64 * BLOCKDIV;
 #endif
-	printf("Running with CUDA backend using device %i: %s.\n", device, properties.name);
 
 	checkCudaErrors(cudaSetDeviceFlags(cudaDeviceMapHost));
 
 	memIdxCtr = 0;
+
+	SetWorkerAppetite(BLOCKSIZE);
+	SetTargetDispatchRate(20);
 }
 void DestroyPlatform() {
 	//Optional but good practice.
@@ -129,7 +133,8 @@ void AllocateComputeMemory() {
 	uint64_t freeMem;
 	uint64_t physicalMem;
 	checkCudaErrors(cudaMemGetInfo(&freeMem, &physicalMem));
-	printf("Memory free: %lli of %lli bytes\n", freeMem, physicalMem);
+	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		printf("Memory free: %lli of %lli bytes\n", freeMem, physicalMem);
 	freeMem *= 0.9f; //leave a bit of extra
 	freeMem = std::min(freeMem, config.memSizes.memoryCap);
 
@@ -142,9 +147,8 @@ void AllocateComputeMemory() {
 	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart + 1) / (NumBlocks * BLOCKSIZE) + 1);
 
 	SetWorkerCount(NumBlocks);
-	SetWorkerAppetite(BLOCKSIZE);
-	SetTargetDispatchRate(20);
-	printf("Creating %ix%ix%i threads\n", NumBlocks, BLOCKDIV, BLOCKSIZE / BLOCKDIV);
+	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		printf("Creating %ix%ix%i threads\n", NumBlocks, BLOCKDIV, BLOCKSIZE / BLOCKDIV);
 
 	//Do the actual allocation.
 	size_t totalMemory = GetMinimumSpanMemory() * NumBlocks * BLOCKSIZE;
@@ -174,7 +178,9 @@ void AllocateComputeMemory() {
 	checkCudaErrors(cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0));
 	free(hPtr);
 
-	printf("Allocated %lliMB of host and %lliMB of device memory\n", (2 * outputSize + KIO_size * NumBlocks) / 1_MB, (totalMemory + outputSize + KIO_size * NumBlocks) / 1_MB);
+	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		printf("Allocated %lliMB of host and %lliMB of device memory\n", (2 * outputSize + KIO_size * NumBlocks) / 1_MB,
+			(totalMemory + outputSize + KIO_size * NumBlocks) / 1_MB);
 }
 void FreeComputeMemory() {
 	//TODO fix the fact that we leak literally everything, I don't want to write this function right now.
@@ -207,7 +213,7 @@ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig co
 void DispatchJob(Worker& worker, SpanParams* spans) {
 	memcpy(KIO_params(KIO_idx(hostPtrs.hIO, worker.memIdx)), spans, sizeof(SpanParams) * BLOCKSIZE);
 	cudaEventCreateWithFlags(&worker.event, cudaEventDisableTiming);
-	DispatchBlock << <BLOCKDIV, BLOCKSIZE / BLOCKDIV, 0, worker.stream >> > (computePtrs, GetMinimumSpanMemory(), GetSearchConfig(), worker.memIdx, BLOCKSIZE);
+	DispatchBlock<<<BLOCKDIV, BLOCKSIZE / BLOCKDIV, 0, worker.stream>>>(computePtrs, GetMinimumSpanMemory(), GetSearchConfig(), worker.memIdx, BLOCKSIZE);
 	cudaEventRecord(worker.event, worker.stream);
 }
 bool QueryWorker(Worker& worker) {
@@ -241,7 +247,7 @@ __global__ static void _GSetBiomeData() {
 	SetBiomeData();
 }
 void HSetBiomeData() {
-	_GSetBiomeData << <1, 1 >> > ();
+	_GSetBiomeData<<<1, 1>>>();
 	checkCudaErrors(cudaDeviceSynchronize());
 
 	SetBiomePixelScenes();
@@ -249,3 +255,4 @@ void HSetBiomeData() {
 void HSetBiomeData2(BiomePixelScenes* l) {
 	checkCudaErrors(cudaMemcpyToSymbol(AllPixelSceneLists, l, sizeof(HostPixelSceneLists)));
 }
+void HSetSpellData(SpellTables* l) { checkCudaErrors(cudaMemcpyToSymbol(spellTables, l, sizeof(SpellTables))); }

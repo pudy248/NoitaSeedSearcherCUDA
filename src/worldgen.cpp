@@ -87,12 +87,12 @@ _compute GeneratedBiome GenerateMap(
 			break;
 #endif
 	}
+	//printf("found path %i in %i tries\n", worldSeed, tries);
 	//if (tries > 60)
 	//	printf("Seed %i: %i tries\n", worldSeed, tries);
 
 #ifdef IMAGE_OUTPUT
-	if (!output.is_safe(3 * scope.bSec.map_w * scope.bSec.map_h + 11))
-		printf("GenerateMap(): Ran out of image output space.\n");
+	output.is_safe("GenerateMap", "image output", 3 * scope.bSec.map_w * scope.bSec.map_h + 11);
 	memcpy(output.ptr + 4, &scope.bSec.map_w, 4);
 	memcpy(output.ptr + 8, &scope.bSec.map_h, 4);
 	uint8_t* img = output.ptr + 12;
@@ -118,17 +118,16 @@ void UploadBiomeData() {
 			for (int k = 0; k < HostPixelSceneLists[i].lists[j].count; k++) {
 				PixelSceneData& d = HostPixelSceneLists[i].lists[j].scenes[k];
 				d.spawnCount = 0;
-				if (!d.path)
+				if (!d.scene)
 					continue;
 
-				const uint8_t* png = (const uint8_t*)get_wak_file(d.path).data();
+				const uint8_t* png = (const uint8_t*)get_wak_file(HTables::ps_paths[d.scene]).data();
 				Vec2i dims = GetBufferImageDimensions(png);
 				uint8_t* buf = (uint8_t*)malloc(3 * dims.x * dims.y);
 				ReadBufferImage(png, buf, false);
 
-#ifdef DEBUG_SPAWN_PIXELS
-				printf("\n%s\n", d.path);
-#endif
+				if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+					fprintf(stderr, "\n%s\n", HTables::ps_paths[d.scene]);
 				for (int16_t y = 0; y < dims.y; y++) {
 					for (int16_t x = 0; x < dims.x; x++) {
 						uint32_t pix = (buf[3 * (y * dims.x + x)] << 16) + (buf[3 * (y * dims.x + x) + 1] << 8) +
@@ -136,21 +135,20 @@ void UploadBiomeData() {
 						for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
 							if (pix == HostSpawnColors[0].colors[z]) {
 								d.spawns[d.spawnCount++] = {z, x, y};
-#ifdef DEBUG_SPAWN_PIXELS
-								printf("PS Spawn (%i, %i): Global %i\n", x, y, z);
-#endif
+								if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+									fprintf(stderr, "PS Spawn (%i, %i): Global %i\n", x, y, z);
 							}
 						}
 						for (int16_t z = 0; z < HostSpawnColors[i].count; z++) {
 							if (pix == HostSpawnColors[i].colors[z]) {
 								d.spawns[d.spawnCount++] = {(int16_t)(HostSpawnColors[0].count + z), x, y};
-#ifdef DEBUG_SPAWN_PIXELS
-								printf("PS Spawn (%i, %i): Biome %i\n", x, y, z);
-								if (HostSpawnColors[i].colors[z] != 0x00ff00)
-									printf(
-										"WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n",
-										d.path, x, y, z);
-#endif
+								if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS) {
+									fprintf(stderr, "PS Spawn (%i, %i): Biome %i\n", x, y, z);
+									if (HostSpawnColors[i].colors[z] != 0x00ff00)
+										fprintf(stderr,
+											"WARNING: BIOME-SPECIFIC PIXEL SCENE SPAWNS UNSUPPORTED:\n%s @ %i, %i: Biome %i\n",
+											HTables::ps_paths[d.scene], x, y, z);
+								}
 							}
 						}
 					}
