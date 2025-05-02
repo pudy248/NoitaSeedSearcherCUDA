@@ -428,7 +428,7 @@ _compute static int stbhw__choose_tile(const WangTile* list, const uint16_t* ind
 }
 #endif
 
-_compute static int stbhw__match(int x, int y, signed char (&c_color)[64][64]) {
+_compute static int stbhw__match(int x, int y, signed char (&c_color)[128][128]) {
 	return c_color[y][x] == c_color[y + 1][x + 1];
 }
 
@@ -441,14 +441,14 @@ _compute static int stbhw__change_color(int old_color, int num_options, Worldgen
 // returns 1 on success, 0 on error
 _compute int stbhw_generate_image(
 	WangTileIndex* output, const BiomeWangScope& scope, int w, int h, WorldgenPRNG& prng) {
-	signed char c_color[64][64];
-	signed char v_color[64][64];
-	signed char h_color[64][64];
+	signed char c_color[128][128];
+	signed char v_color[128][128];
+	signed char h_color[128][128];
 
 	int sidelen = scope.ts.short_side_len;
 	int xmax = (w / sidelen) + 6;
 	int ymax = (h / sidelen) + 6;
-	if (xmax > 64 || ymax > 64) {
+	if (xmax > 128 || ymax > 128) {
 		printf("STBHW_GENERATE_IMAGE: RAN OUT OF COLORS!\n");
 		return 0;
 	}

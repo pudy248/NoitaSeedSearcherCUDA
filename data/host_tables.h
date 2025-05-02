@@ -74,8 +74,8 @@ const char* wang_paths[] = {nullptr, "data/wang_tiles/coalmine.png", "data/wang_
 	"data/wang_tiles/crypt.png", "data/wang_tiles/fungicave.png", "data/wang_tiles/fungiforest.png",
 	"data/wang_tiles/rainforest_dark.png", "data/wang_tiles/liquidcave.png", "data/wang_tiles/wand.png",
 	"data/wang_tiles/the_end.png", "data/wang_tiles/the_sky.png", "data/wang_tiles/wizardcave.png",
-	"data/wang_tiles/pyramid.png", "data/wang_tiles/robobase.png", "data/wang_tiles/vault_frozen.png",
-	"data/wang_tiles/meat.png"};
+	"data/wang_tiles/sandcave.png", "data/wang_tiles/pyramid.png", "data/wang_tiles/robobase.png",
+	"data/wang_tiles/vault_frozen.png", "data/wang_tiles/meat.png"};
 
 const char* ps_paths[] = {nullptr, "data/biome_impl/coalmine/carthill.png", "data/biome_impl/coalmine/coalpit01.png",
 	"data/biome_impl/coalmine/coalpit02.png", "data/biome_impl/coalmine/coalpit03.png",

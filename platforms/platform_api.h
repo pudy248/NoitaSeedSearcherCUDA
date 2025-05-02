@@ -19,7 +19,7 @@ struct SearchConfig
 	OutputConfig outputCfg;
 
 	int biomeCount;
-	BiomeWangScope* biomeScopes[20];
+	BiomeWangScope* biomeScopes[40];
 };
 
 //These are internal functions and variables and should not be accessed by platform-specific code.

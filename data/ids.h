@@ -98,13 +98,13 @@ const char* materials[1][470] = {{"any", "var1", "var2", "var3", "var4", "flask"
 	"spark_blue", "spark_blue_dark", "spark_red", "spark_red_bright", "spark_white", "spark_white_bright",
 	"spark_yellow", "spark_purple", "spark_purple_bright", "spark_player", "spark_teal"}};
 
-const char* biomes[2][23] = {
+const char* biomes[2][24] = {
 	{"all", "coalmine", "coalmine_alt", "excavationsite", "snowcave", "snowcastle", "rainforest", "rainforest_open",
 		"vault", "crypt", "fungicave", "fungiforest", "rainforest_dark", "liquidcave", "wandcave", "the_end", "the_sky",
-		"wizardcave", "pyramid", "robobase", "vault_frozen", "meat", "mainpath"},
+		"wizardcave", "sandcave", "pyramid", "robobase", "vault_frozen", "meat", "mainpath"},
 	{"all", "mines", "collapsed_mines", "coal_pits", "snowy_depths", "hiisi_base", "jungle", "jungle_open", "vault",
 		"temple_of_the_art", "fungal_caverns", "overgrown_caverns", "lukki_lair", "abandoned_lab", "magical_temple",
-		"hell", "sky", "wizards_den", "pyramid", "power_plant", "frozen_vault", "meat_realm", "mainpath"}};
+		"hell", "sky", "wizards_den", "sandcave", "pyramid", "power_plant", "frozen_vault", "meat_realm", "mainpath"}};
 
 const char* biome_modifiers[2][23] = {
 	{"any", "moist", "fog_of_war_reappears", "high_gravity", "low_gravity", "conductive", "hot", "gold_vein",
