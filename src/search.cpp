@@ -479,7 +479,7 @@ _compute void spawnHeart(int x, int y, const SpawnParams& params) {
 		writeInt(params.bytes, params.offset, 1);
 		writeByte(params.bytes, params.offset, HEART_NORMAL);
 	} else if (r > 0.3) {
-		random.SetRandomSeedInt(x + 45, y - 2123);
+		random.SetRandomSeed(x + 45, y - 2123);
 		int rnd = random.Random(1, 100);
 		if (rnd <= 90 || y < 512 * 3) {
 			rnd = random.Random(1, 1000);
@@ -725,7 +725,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 			pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++) {
 			for (int hm_level = params.sCfg.minHMidx; hm_level < min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
 				hm_level++) {
-				int x = temple_x[hm_level] + chestOffsetX + 70 * 512 * pw;
+				int x = temple_x[hm_level] + chestOffsetX + params.currentBiome.map.w * 512 * pw;
 				int y = temple_y[hm_level] + chestOffsetY;
 				CheckNormalChestLoot(x, y, false, params);
 			}
@@ -741,7 +741,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 			pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++) {
 			for (int hm_level = params.sCfg.minHMidx; hm_level < min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
 				hm_level++) {
-				int x = temple_x[hm_level] + shopOffsetX + 70 * 512 * pw;
+				int x = temple_x[hm_level] + shopOffsetX + params.currentBiome.map.w * 512 * pw;
 				int y = temple_y[hm_level] + shopOffsetY;
 				int tier = temple_tiers[hm_level];
 				random.SetRandomSeedInt(x, y);
@@ -799,7 +799,7 @@ _compute void CheckEyeRooms(const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x;
 			pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++) {
-			int x = -3850 + pw * 70 * 512;
+			int x = -3850 + pw * params.currentBiome.map.w * 512;
 			int y = 5400;
 			params.sCount++;
 			writeInt(params.bytes, params.offset, x);
@@ -808,7 +808,7 @@ _compute void CheckEyeRooms(const SpawnParams& params) {
 			writeInt(params.bytes, params.offset, 24);
 
 			for (int i = 0; i < 8; i++) {
-				Vec2i pos = positions[i] + Vec2i(pw * 70 * 512, 0);
+				Vec2i pos = positions[i] + Vec2i(pw * params.currentBiome.map.w * 512, 0);
 				random.SetRandomSeedInt(pos.x, pos.y);
 				writeByte(params.bytes, params.offset, DATA_SPELL);
 				writeShort(params.bytes, params.offset, MakeRandomCard(random));
@@ -887,9 +887,8 @@ _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params) {
 					pwY <= params.sCfg.pwCenter.y + params.sCfg.pwWidth.y; pwY++) {
 					for (int pwX = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x;
 						pwX <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pwX++) {
-						Vec2i gp = GetGlobalPos(params.currentBiome.bSec.worldX + 70 * pwX,
-							params.currentBiome.bSec.worldY + 48 * pwY, px * 10,
-							py * 10 - (int)truncf((pwY * 3) / 5.0f) * 10);
+						Vec2i gp = GetGlobalPos(params.currentBiome.bSec.worldX + params.currentBiome.map.w * pwX,
+							params.currentBiome.bSec.worldY + params.currentBiome.map.h * pwY, px * 10, py * 10);
 						spawn(gp.x, gp.y, params);
 						params.bytes.is_safe("CheckSpawnables", "output", max(0, params.offset - 1));
 					}

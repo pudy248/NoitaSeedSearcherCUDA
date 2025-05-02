@@ -174,7 +174,8 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y) {
 	Seed = t;
 #endif
 
-	for (int h = 0; h <= (ws & 3); h++)
+	Next();
+	for (int h = ws & 3; h > 0; h--)
 		Next();
 }
 _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
@@ -223,7 +224,8 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 	Seed = t;
 #endif
 
-	for (int h = 0; h <= (ws & 3); h++)
+	Next();
+	for (int h = ws & 3; h > 0; h--)
 		Next();
 }
 _universal float NollaPRNG::Next() {
@@ -383,8 +385,8 @@ _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer) {
 _universal uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b) { return (r << 16) | (g << 8) | b; }
 _universal int GetWidthFromPix(int a, int b) { return ((b * 512) / 10 - (a * 512) / 10); }
 _universal Vec2i GetGlobalPos(const int x, const int y, const int px, int py) {
-	int gx = ((512 * x) / 10 - (512 * 35) / 10) * 10 + px - 5;
-	int gy = ((512 * y) / 10 - (512 * 14) / 10) * 10 + py - 13;
+	int gx = ((512 * x - 512 * 35 - 9 * (x < 35)) / 10) * 10 + px - 5;
+	int gy = ((512 * y - 512 * 14 + 9 * (y > 14)) / 10) * 10 + py - 13;
 	return {gx, gy};
 }
 _universal Vec2i GetLocalPos(const int gx, int gy) {
