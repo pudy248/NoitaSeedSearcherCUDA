@@ -88,7 +88,7 @@ struct BiomeSpawnColors {
 
 	constexpr BiomeSpawnColors() = default;
 	constexpr BiomeSpawnColors(std::initializer_list<uint32_t> list) : count(list.size()), colors() {
-		//Assert(list.size() <= 12, "Spawn function size overflow.");
+		Assert(list.size() <= 12, "Spawn function size overflow.");
 		for (int i = 0; i < list.size(); i++)
 			colors[i] = list.begin()[i];
 	}
@@ -103,7 +103,7 @@ struct BiomeSpawnFunctions {
 	_compute constexpr BiomeSpawnFunctions(
 		void (*_fn)(SpawnParams& params), std::initializer_list<void (*)(int, int, const SpawnParams&)> list)
 		: count(list.size()), init(_fn), funcs() {
-		//Assert(list.size() <= 12, "Spawn function size overflow.");
+		Assert(list.size() <= 12, "Spawn function size overflow.");
 		for (int i = 0; i < list.size(); i++)
 			funcs[i] = list.begin()[i];
 	}
@@ -141,7 +141,7 @@ struct PixelSceneList {
 	constexpr PixelSceneList() = default;
 	_universal constexpr PixelSceneList(std::initializer_list<PixelSceneData> list)
 		: count(list.size()), probSum(), scenes() {
-		//Assert(list.size() <= 20, "Pixel scene list size overflow.");
+		Assert(list.size() <= 20, "Pixel scene list size overflow.");
 		for (int i = 0; i < list.size(); i++) {
 			probSum += list.begin()[i].prob;
 			scenes[i] = list.begin()[i];
@@ -155,7 +155,7 @@ struct BiomePixelScenes {
 	_universal constexpr BiomePixelScenes(std::initializer_list<PixelSceneList> list)
 		: count(list.size())
 		, lists() {
-		//Assert(list.size() <= 10, "Biome pixel scenes size overflow.");
+		Assert(list.size() <= 10, "Biome pixel scenes size overflow.");
 		for (int i = 0; i < list.size(); i++) {
 			lists[i] = list.begin()[i];
 		}

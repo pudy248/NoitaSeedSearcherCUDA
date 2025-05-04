@@ -106,7 +106,7 @@ static const cmd commands[] = {
 		"Generate wands instead of using generic items like 'wand_t6ns'. Spells must also be generated for spells on wands."},
 	{"--biomes", "-b", cmd_biomes, "Select which biomes to generate. Ex. \"-b coalmine excavationsite crypt\"."},
 	{"--upwarps", "-u", cmd_upwarps, "Only check upwarped chests. Much faster than full biome generation."},
-	{"--aggregate", "-g", cmd_aggregate,
+	{"--aggregate", "-a", cmd_aggregate,
 		"Aggregate filter checks between all loaded objects instead of requiring every filter to pass on a single object."},
 	{"--filter-items", "-fi", cmd_filter_items,
 		"Define item filters of the formats {item[,count]} or {{item1,or-item2[,...]}[,count]}. Ex. \"-fi {{sampo,true_orb}} {bomb,3}\""},
@@ -401,11 +401,11 @@ int cmd_perks(int i) {
 	config.precheckCfg.perks.check = true;
 	int j = 0;
 	++i;
-	for (; i < g_argc && g_argv[i][0] == '{'; i++) {
+	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
 		auto composite = maybe_decompose(g_argv[i], {1, 3, 4});
 		int perk = list_to_id(composite[0], IDs::perks);
 		int start = composite.size() > 1 ? to_int(composite[1]) : 0;
-		int end = composite.size() > 1 ? to_int(composite[2]) : -1;
+		int end = composite.size() > 1 ? to_int(composite[2]) : 2;
 		int is_lottery = composite.size() > 3 ? list_to_id(composite[3], IDs::booleans) : 0;
 		config.precheckCfg.perks.perks[j++] = {(Perk)perk, (bool)is_lottery, start, end};
 	}

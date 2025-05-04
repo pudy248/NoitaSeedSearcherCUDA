@@ -127,9 +127,30 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x + 5, y - 9, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080, 0xc35700, 0x4e175e});
+_compute void spawn_bbqbox(int x, int y, const SpawnParams& params) {
+	NollaPRNG random(params.seed);
+	random.SetRandomSeed(x, y);
+	if (random.Random(1, 100) <= 99) {
+		params.sCount++;
+		writeInt(params.bytes, params.offset, x + 10);
+		writeInt(params.bytes, params.offset, y + 10);
+		writeByte(params.bytes, params.offset, TYPE_ITEM_PEDESTAL);
+		writeInt(params.bytes, params.offset, 1);
+		writeByte(params.bytes, params.offset, HEART_NORMAL);
+	} else {
+		params.sCount++;
+		writeInt(params.bytes, params.offset, x);
+		writeInt(params.bytes, params.offset, y);
+		writeByte(params.bytes, params.offset, TYPE_ITEM_PEDESTAL);
+		writeInt(params.bytes, params.offset, 3);
+		writeByte(params.bytes, params.offset, DATA_MATERIAL);
+		writeShort(params.bytes, params.offset, URINE);
+	}
+}
+
+static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080, 0xc35700, 0x4e175e, 0xf12ab5});
 _data static BiomeSpawnFunctions Funcs(
-	NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02, load_oiltank, load_oiltank_alt});
+	NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02, load_oiltank, load_oiltank_alt, spawn_bbqbox});
 };
 
 namespace FUNCS_COALMINE_ALT {
@@ -978,11 +999,11 @@ _data static BiomeSpawnFunctions Funcs(NULL, {});
 #define _SetBiomeDataHelper1(bName)                      \
 	AllSpawnFunctions[B_##bName] = FUNCS_##bName::Funcs; \
 	AllWandLevels[B_##bName] = FUNCS_##bName::wandLevels
-#define _SetBiomeDataHelper2(bName)                     \
-	HostSpawnColors[B_##bName] = FUNCS_##bName::Colors; \
-	if (B_##bName <= B_LIQUIDCAVE) {                    \
-		HostPixelSceneLists[B_##bName] = FUNCS_##bName::Scenes;\
-	}                      
+#define _SetBiomeDataHelper2(bName)                             \
+	HostSpawnColors[B_##bName] = FUNCS_##bName::Colors;         \
+	if (B_##bName <= B_LIQUIDCAVE) {                            \
+		HostPixelSceneLists[B_##bName] = FUNCS_##bName::Scenes; \
+	}
 
 _compute void SetBiomeData() {
 	AllSpawnFunctions[0] = DefaultSpawnFunctions;

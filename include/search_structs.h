@@ -135,6 +135,7 @@ struct BiomeWands {
 
 	_universal constexpr BiomeWands() : count(), levels() {}
 	_universal constexpr BiomeWands(std::initializer_list<WandLevel> list) : count(list.size()), levels() {
+		Assert(list.size() <= 6, "Initializer list size overflow.");
 		for (int i = 0; i < list.size(); i++)
 			levels[i] = list.begin()[i];
 	}

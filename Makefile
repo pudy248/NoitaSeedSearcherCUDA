@@ -1,7 +1,8 @@
 CC:=clang
 
-CFLAGS:=-Iinclude -std=c++23 -O3 -march=native -fwrapv --cuda-gpu-arch=sm_75 -Wno-enum-compare -g
-LIBS:=-L/usr/local/cuda-12.4/lib64 -lpng -lsfml-system -lsfml-graphics -lsfml-window -lstdc++ -lm -lcudart -ldl -lrt
+CFLAGS:=-Iinclude -std=c++23 -O3 -march=haswell -fwrapv -Wno-enum-compare -g
+#  --cuda-gpu-arch=sm_75 -L/usr/local/cuda-12.4/lib64 -lsfml-system -lsfml-graphics -lsfml-window -lcudart -ldl -lrt
+LIBS:=-lpng -lstdc++ -lm
 SRC:=$(wildcard src/*.cu) $(wildcard src/*.cpp) main.cu $(wildcard include/*.h)
 
 NoitaChestFinder: $(SRC)
@@ -21,6 +22,7 @@ profile:
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --starting-flask gold -cp --end-seed 50000000
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --alchemy {mud,water,soil} {any,any,any} -cp --end-seed 20000000
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --biome-mods {coalmine,extremely_lucrative} -cp --end-seed 10000000
+	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --fungal {gold,cheese,0,0} -cp
 	llvm-profdata merge -output=code.profdata code-*.profraw
 	rm code-*.profraw NoitaChestFinder
 
@@ -34,3 +36,4 @@ test:
 	./NoitaChestFinder --starting-flask gold -cp
 	./NoitaChestFinder --alchemy {mud,water,soil} {any,any,any} -cp
 	./NoitaChestFinder --biome-mods {coalmine,extremely_lucrative} -cp
+	./NoitaChestFinder --fungal {gold,cheese,0,0} -cp

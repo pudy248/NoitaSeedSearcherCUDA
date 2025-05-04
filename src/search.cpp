@@ -212,6 +212,7 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 				amount += 4;
 
 			for (int i = 0; i < amount; i++) {
+				random.Next();
 				Spell s = MakeRandomCard(random);
 				if (params.sCfg.genSpells) {
 					writeByte(params.bytes, params.offset, DATA_SPELL);
