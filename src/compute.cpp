@@ -78,8 +78,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 		}
 #endif
 #ifndef SEEDS_AS_TRIES
-		SpawnParams p = {
-			currentSeed, *config.biomeScopes[0], config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount};
+		SpawnParams p = {currentSeed, {}, config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount};
 		CheckMountains(p);
 		CheckEyeRooms(p);
 		CheckNightmareSpawnWands(p);

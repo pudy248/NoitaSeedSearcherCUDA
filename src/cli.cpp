@@ -416,7 +416,7 @@ int cmd_hms(int i) {
 	check_argc(i, 1);
 	auto composite = decompose(g_argv[i + 1], {2});
 	config.spawnableCfg.minHMidx = to_int(composite[0]);
-	config.spawnableCfg.minHMidx = to_int(composite[1]);
+	config.spawnableCfg.maxHMidx = to_int(composite[1]);
 	check_range(config.spawnableCfg.minHMidx, 0, 6);
 	check_range(config.spawnableCfg.maxHMidx, 0, 6);
 	return i + 1;
