@@ -145,11 +145,8 @@ namespace HELPERS
 		uint64_t start = idx;
 		uint64_t stride = std::thread::hardware_concurrency();
 		for (uint64_t i = start; i < MAX_CNT; i += stride) {
-			NollaPRNG rng(i);
-			float f = rng.RandomDistributionf(0.8, 1.2, 1, 6);
-			//printf("%f\n", f);
-			if (f == 1.f)
-				counter++;
+			if (SetRandomSeedHelper(i) != i)
+				printf("%i %lli\n", i, SetRandomSeedHelper(i));
 		}
 	}
 
@@ -234,8 +231,8 @@ int main(int argc, char** argv) {
 		.spellFilters = {},
 		.pixelSceneFilterCount = 0,
 		.pixelSceneFilters = {},
-		.wandStats = false,
-		.wandStatThreshold = 44,
+		.wandStatFilterCount = 0,
+		.wandStatFilters = {},
 	};
 
 	config.outputCfg = {
@@ -251,6 +248,8 @@ int main(int argc, char** argv) {
 	cli_main(argc, argv);
 
 	InitializePlatform();
+	if (DEBUG_DISPATCH_RATE_OVERRIDE)
+		SetTargetDispatchRate(DEBUG_DISPATCH_RATE_OVERRIDE);
 	HSetBiomeData();
 	GenerateSpellData();
 
@@ -260,8 +259,8 @@ int main(int argc, char** argv) {
 	InstantiateBiomes(config.biomeScopes, biomeCount, maxMapArea, map, biome_list);
 
 	config.biomeCount = biomeCount;
-	config.generalCfg.seedBlockSize = biomeCount ? (WorkerAppetite > 100 ? 1u : 32u) :
-												   (WorkerAppetite > 100 ? 256u : 16384u);
+	config.generalCfg.seedBlockSize = DEBUG_SEED_BLOCK_OVERRIDE ? DEBUG_SEED_BLOCK_OVERRIDE : (biomeCount ? (WorkerAppetite > 100 ? 1u : 32u) :
+												   (WorkerAppetite > 100 ? 256u : 16384u));
 
 	config.memSizes = {
 		.memoryCap = 40_GB,

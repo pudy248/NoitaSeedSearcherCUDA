@@ -235,3 +235,9 @@ struct PixelSceneFilter {
 	PixelSceneFilter(
 		std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes);
 };
+struct WandStatFilter {
+	WandStat stat;
+	int value;
+	int comparison;
+	int duplicates;
+};

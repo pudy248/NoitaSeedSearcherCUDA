@@ -121,7 +121,7 @@ _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, S
 		}
 	}
 }
-_compute static bool WandFilterPassed(Spawnable* s, int count, int howBig) {
+_compute static void WandStatFilterPassed(Spawnable* s, int count, WandStatFilter wsf, int& foundCount) {
 	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
 
@@ -133,17 +133,34 @@ _compute static bool WandFilterPassed(Spawnable* s, int count, int howBig) {
 			n += 4;
 			continue;
 		}
-
 		if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			if (dat.capacity >= howBig)
-				return true;
+			float stat;
+			switch (wsf.stat) {
+			case WandStat::SHUFFLE: stat = dat.shuffle; break;
+			case WandStat::MULTICAST: stat = dat.multicast; break;
+			case WandStat::CAST_DELAY: stat = dat.delay; break;
+			case WandStat::RELOAD: stat = dat.reload; break;
+			case WandStat::MANA: stat = dat.mana; break;
+			case WandStat::REGEN: stat = dat.regen; break;
+			case WandStat::CAPACITY: stat = (int)dat.capacity; break;
+			case WandStat::SPEED_MULT: stat = dat.speed; break;
+			}
+			bool passed = false;
+			switch (wsf.comparison) {
+			case 0: passed = stat < wsf.value; break;
+			case 1: passed = stat <= wsf.value; break;
+			case 2: passed = stat == wsf.value; break;
+			case 3: passed = stat >= wsf.value; break;
+			case 4: passed = stat > wsf.value; break;
+			}
+			if (passed)
+				foundCount++;
 			n += 23 + dat.spellCount * 3;
 			continue;
 		}
 	}
-	return false;
 }
 _compute static void PixelSceneFilterPassed(Spawnable* s, int count, PixelSceneFilter psf, int& foundCount) {
 	for (int n = 0; n < count; n++) {
@@ -194,6 +211,7 @@ _compute bool SpawnablesPassed(
 		int* materialsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 		int* spellsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 		int* pixelScenesPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
+		int* wandStatsPassed = (int*)ArenaAlloc(localArena, 4 * TOTAL_FILTER_COUNT).ptr;
 
 		for (int i = 0; i < fCfg.itemFilterCount; i++)
 			itemsPassed[i] = 0;
@@ -203,6 +221,8 @@ _compute bool SpawnablesPassed(
 			spellsPassed[i] = 0;
 		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
 			pixelScenesPassed[i] = 0;
+		for (int i = 0; i < fCfg.wandStatFilterCount; i++)
+			wandStatsPassed[i] = 0;
 
 		for (int j = 0; j < b.count; j++) {
 			Spawnable* s = b.spawnables[j];
@@ -257,6 +277,15 @@ _compute bool SpawnablesPassed(
 					relevantSpawnables[relevantSpawnableCount++] = s;
 				}
 			}
+
+			for (int i = 0; i < fCfg.wandStatFilterCount; i++) {
+				int prevPassCount = wandStatsPassed[i];
+				WandStatFilterPassed(s, sDat.count, fCfg.wandStatFilters[i], wandStatsPassed[i]);
+				if (wandStatsPassed[i] > prevPassCount && !added) {
+					added = true;
+					relevantSpawnables[relevantSpawnableCount++] = s;
+				}
+			}
 		}
 
 		bool failed = false;
@@ -274,6 +303,10 @@ _compute bool SpawnablesPassed(
 
 		for (int i = 0; i < fCfg.pixelSceneFilterCount; i++)
 			if (pixelScenesPassed[i] < fCfg.pixelSceneFilters[i].duplicates)
+				failed = true;
+
+		for (int i = 0; i < fCfg.wandStatFilterCount; i++)
+			if (wandStatsPassed[i] < fCfg.wandStatFilters[i].duplicates)
 				failed = true;
 
 		if (failed)
@@ -340,15 +373,22 @@ _compute bool SpawnablesPassed(
 			if (failed)
 				continue;
 
-			if (fCfg.wandStats)
-				if (!WandFilterPassed(s, sDat.count, fCfg.wandStatThreshold))
-					continue;
+			for (int i = 0; i < fCfg.wandStatFilterCount; i++) {
+				int passCount = 0;
+				WandStatFilterPassed(s, sDat.count, fCfg.wandStatFilters[i], passCount);
+				if (passCount < fCfg.wandStatFilters[i].duplicates) {
+					failed = true;
+					break;
+				}
+			}
+			if (failed)
+				continue;
 
 			relevantSpawnables[relevantSpawnableCount++] = s;
 		}
 
 		if (relevantSpawnableCount == 0 && (fCfg.itemFilterCount + fCfg.materialFilterCount + fCfg.spellFilterCount +
-											   fCfg.pixelSceneFilterCount + fCfg.wandStats) > 0)
+											   fCfg.pixelSceneFilterCount + fCfg.wandStatFilterCount) > 0)
 			return false;
 	}
 #ifndef IMAGE_OUTPUT

@@ -102,6 +102,7 @@ _universal static uint64_t SetRandomSeedHelperInt(int64_t r) {
 	int64_t b = ((~a & h) | (f << 0xd & a)) * c;
 	return b & 0xffffffff;
 }
+
 _universal static uint32_t SetRandomSeedHelper2(uint32_t a, uint32_t b, uint32_t ws) {
 	uint32_t uVar1;
 	uint32_t uVar2;
@@ -125,36 +126,18 @@ _universal NollaPRNG::NollaPRNG(uint32_t worldSeed) {
 _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y) {
 	uint32_t ws = world_seed;
 	uint32_t a = ws ^ 0x93262e6f;
-	uint32_t b = a & 0xfff;
-	uint32_t c = (a >> 0xc) & 0xfff;
-
-	double x_ = x + b;
-
-	double y_ = y + c;
-
-	double r = x_ * 134217727.0;
+	x += a & 0xfff;
+	y += (a >> 12) & 0xfff;
+	double r = x * 134217727.0;
 	// Apparently equivalent?
 	// Seems to be correct for the inputs that get generated anyway.
-	uint32_t e = SetRandomSeedHelper(r);
-	// Debug, remove later
-	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("e %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
+	uint32_t e = r ? (uint32_t)r : 2u; //SetRandomSeedHelper(r);
+	if (102400.0 <= fabs(y) || fabs(x) <= 1.0)
+		r = y * 134217727.0;
+	else
+		r = y * (y * 3483.328 + e);
 
-	uint64_t _x = *(uint64_t*)&x_ & 0x7fffffffffffffff;
-	uint64_t _y = *(uint64_t*)&y_ & 0x7fffffffffffffff;
-	if (102400.0 <= *(double*)&_y || *(double*)&_x <= 1.0) {
-		r = y_ * 134217727.0;
-	} else {
-		double y__ = y_ * 3483.328;
-		double t = (double)e;
-		y__ += t;
-		y_ *= y__;
-		r = y_;
-	}
-
-	uint32_t f = SetRandomSeedHelper(r);
-	//if (SetRandomSeedHelper(r) != (uint32_t)(int64_t)r) printf("f %lli : %lli (%f)\n", SetRandomSeedHelper(r), (uint32_t)(int64_t)r, r);
-
-	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
+	uint32_t g = SetRandomSeedHelper2(e, r ? (uint32_t)r : 2u, ws);
 
 #ifndef __CUDA_ARCH__
 	double s = g;
@@ -181,30 +164,15 @@ _universal _noinline void NollaPRNG::SetRandomSeed(double x, double y) {
 _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 	uint32_t ws = world_seed;
 	uint32_t a = ws ^ 0x93262e6f;
-	int b = a & 0xfff;
-	int c = (a >> 0xc) & 0xfff;
-
-	int x_ = x + b;
-
-	int y_ = y + c;
-
-	long long r = x_ * 134217727LLU;
-	uint64_t e = SetRandomSeedHelperInt(r);
-
-	int _x = abs(x_);
-	int _y = abs(y_);
-	if (102400 <= _y || _x <= 1) {
-		r = y_ * 134217727LLU;
-	} else {
-		double y__ = y_ * 3483.328;
-		double t = (double)e;
-		y__ += t;
-		r = y_ * y__;
-	}
-
-	uint64_t f = SetRandomSeedHelperInt(r);
-
-	uint32_t g = SetRandomSeedHelper2((uint32_t)e, (uint32_t)f, ws);
+	x += a & 0xfff;
+	y += (a >> 12) & 0xfff;
+	uint64_t r = x * 134217727LLU;
+	uint64_t e = r ? (uint32_t)r : 2u; //SetRandomSeedHelperInt(r);
+	if (102400 <= abs(y) || abs(x) <= 1)
+		r = y * 134217727;
+	else
+		r = (uint32_t)(y * (y * 3483.328 + e));
+	uint32_t g = SetRandomSeedHelper2(e, r, ws);
 
 #ifndef __CUDA_ARCH__
 	double s = g;

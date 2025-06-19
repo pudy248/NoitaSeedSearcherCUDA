@@ -6,6 +6,7 @@
 #include "../include/primitives.h"
 
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -32,7 +33,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 			bool tmp = config.spawnableCfg.biomeChests;
 			config.spawnableCfg.biomeChests = true;
 			MemSpan upwarps = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 8);
-			MemSpan miscMem = ArenaAlloc(arena, 16 * TOTAL_FILTER_COUNT + 128, 8);
+			MemSpan miscMem = ArenaAlloc(arena, 20 * TOTAL_FILTER_COUNT + 128, 8);
 			int offset = 0;
 			int _ = 0;
 			spawnChest(315, 17, {currentSeed, {}, config.spawnableCfg, upwarps, offset, _});
@@ -62,7 +63,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 		MemSpan visited = ArenaAlloc(arena, config.memSizes.visitedMemSize);
 		MemSpan spawnableDat = ArenaAlloc(arena, config.memSizes.spawnableMemSize, 4);
 		MemSpan spawnables = ArenaAlloc(arena, config.memSizes.spawnableMemSize / 4, 4);
-		MemSpan miscMem = ArenaAlloc(arena, max(config.memSizes.miscMemSize, 16 * TOTAL_FILTER_COUNT + 128), 8);
+		MemSpan miscMem = ArenaAlloc(arena, max(config.memSizes.miscMemSize, 20 * TOTAL_FILTER_COUNT + 128), 8);
 
 #ifdef DO_WORLDGEN
 		for (int biomeNum = 0; biomeNum < config.biomeCount; biomeNum++) {
@@ -113,6 +114,7 @@ using namespace API_INTERNAL;
 Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progress, void (*appendOutput)(char*, char*)) {
 	uint32_t displayIntervals = 0;
 	uint64_t recountIntervals = 2;
+	uint64_t recountTimestamp = 0;
 
 	uint32_t lastDiff = 0;
 	uint32_t lastSeed = 0;
@@ -190,23 +192,27 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 			uint64_t timescale1 = recountIntervals * recountIntervals * recountIntervals * recountIntervals;
 			if (timescale1 < milliseconds) {
 				recountIntervals++;
-				uint64_t timescale2 = recountIntervals * recountIntervals * recountIntervals * recountIntervals;
-				double expected = DispatchRate * (timescale2 - timescale1) / 1000.0;
-				double fraction = returnedBlocksThisIter / expected;
-				if (DEBUG_FLAGS & DEBUG::LOG_SEED_BLOCKS)
-					fprintf(stderr, "%llims: Recalculating seed block size. Current size %i, current fraction %.2f\n",
-						milliseconds, config.generalCfg.seedBlockSize, fraction);
-				returnedBlocksThisIter = 0;
+				uint64_t elapsed = milliseconds - recountTimestamp;
+				recountTimestamp = milliseconds;
+				if (returnedBlocksThisIter == 0)
+					goto recount_end;
+				{
+					double expected = (DispatchRate * elapsed) / 1000.;
+					double predicted_optimal = config.generalCfg.seedBlockSize * returnedBlocksThisIter / expected;
+					if (DEBUG_FLAGS & DEBUG::LOG_SEED_BLOCKS)
+						fprintf(stderr,
+							"%llims: Recalculating dispatch block size. Current size %i, predicted optimal size %i.\n",
+							milliseconds, config.generalCfg.seedBlockSize, (uint32_t)predicted_optimal);
+					returnedBlocksThisIter = 0;
 #ifndef REALTIME_SEEDS
-				if (!config.generalCfg.seedBlockOverride && fraction < 0.1 && config.generalCfg.seedBlockSize > 1)
-					config.generalCfg.seedBlockSize *= 0.5;
-				else if (!config.generalCfg.seedBlockOverride && fraction < 0.5 && config.generalCfg.seedBlockSize > 1)
-					config.generalCfg.seedBlockSize *= 0.8;
-				else if (!config.generalCfg.seedBlockOverride && fraction > 10)
-					config.generalCfg.seedBlockSize *= 4;
-				else if (!config.generalCfg.seedBlockOverride && fraction > 1.5)
-					config.generalCfg.seedBlockSize *= 1.5 + 0.5 * (config.generalCfg.seedBlockSize == 1);
+					if (!config.generalCfg.seedBlockOverride)
+						// Weighted geometric mean
+						config.generalCfg.seedBlockSize = std::max(
+							1u, (uint32_t)std::exp(
+									(std::log(config.generalCfg.seedBlockSize) + 2 * std::log(predicted_optimal)) / 3));
 #endif
+				}
+recount_end:
 			}
 			if (displayIntervals * config.outputCfg.printInterval * 1000 < milliseconds) {
 				lastDiff = checkedSeeds - lastSeed;

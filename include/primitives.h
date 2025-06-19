@@ -17,6 +17,8 @@ enum DEBUG {
 };
 }
 int DEBUG_FLAGS = 0;
+int DEBUG_SEED_BLOCK_OVERRIDE = 0;
+int DEBUG_DISPATCH_RATE_OVERRIDE = 0;
 bool QUIET = false;
 
 template <typename A, typename B>

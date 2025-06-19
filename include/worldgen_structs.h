@@ -179,4 +179,5 @@ constexpr uint32_t COLOR_YELLOW = 0xffff00U;
 constexpr uint32_t COLOR_COFFEE = 0xc0ffeeU;
 constexpr uint32_t COLOR_HELL_GREEN = 0x8aff80U;
 
+// No longer RGB! Stored as a palette. 1: B=0x42, 2: G=0x42, 3: G>0x10, 0 otherwise
 _compute uint8_t* coalmine_overlay;

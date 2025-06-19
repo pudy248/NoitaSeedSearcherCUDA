@@ -71,13 +71,13 @@ void InitializePlatform() {
 
 	char buffer[0x40];
 	GetProcessorName(buffer);
-	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+	if (DEBUG_FLAGS & (DEBUG::LOG_VERBOSE | DEBUG::LOG_BACKEND))
 		printf("Running with CPU backend using %s, creating %i threads.\n", buffer, NumThreads);
 	memIdxCtr = 0;
 
 	SetWorkerCount(NumThreads);
 	SetWorkerAppetite(1);
-	SetTargetDispatchRate(NumThreads);
+	SetTargetDispatchRate(NumThreads * 8);
 }
 void DestroyPlatform() {}
 
@@ -87,11 +87,20 @@ void AllocateComputeMemory() {
 	hostPtrs.arena = (uint8_t*)malloc(GetMinimumSpanMemory() * NumThreads);
 	hostPtrs.output = (uint8_t*)malloc(GetMinimumOutputMemory() * NumThreads);
 
-	coalmine_overlay = (uint8_t*)malloc(3 * 256 * 103);
+	uint8_t* coalmine_overlay_rgb = (uint8_t*)malloc(3 * 256 * 103);
+	coalmine_overlay = (uint8_t*)malloc(256 * 103);
 	ReadBufferImage(
-		(uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay, false);
-	
-	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+		(uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay_rgb, false);
+
+	for (int i = 0; i < 256 * 103; i++) {
+		coalmine_overlay[i] = coalmine_overlay_rgb[3 * i + 2] == 0x42 ? 1 :
+							  coalmine_overlay_rgb[3 * i + 1] == 0x42 ? 2 :
+							  coalmine_overlay_rgb[3 * i + 1] > 0x10  ? 3 :
+																		0;
+	}
+	free(coalmine_overlay_rgb);
+
+	if (DEBUG_FLAGS & (DEBUG::LOG_VERBOSE | DEBUG::LOG_BACKEND))
 		printf("Allocated %lluKB of host memory\n",
 			((GetMinimumSpanMemory() + GetMinimumOutputMemory()) * NumThreads) / 1_KB);
 }

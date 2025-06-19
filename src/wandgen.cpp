@@ -396,6 +396,9 @@ _compute static Wand GetWandStatsBetter(int _cost, int level, NollaPRNG& random)
 			gun.capacity += (gun.cost / 10.0f);
 		gun.cost = 0;
 	}
+
+	// Gun name
+	random.Next();
 	//gun.capacity = floor(gun.capacity - 0.1f);
 
 	if (random.Random(0, 10000) <= 9999) {
@@ -423,7 +426,7 @@ _compute static Wand GetWandStatsBetter(int _cost, int level, NollaPRNG& random)
 	}
 
 	gun.multicast = fminf(fmaxf(gun.multicast, 1), (int)gun.capacity);
-
+	
 	return gun;
 }
 
@@ -555,8 +558,7 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 	cardCount = random.Random((int)(0.51f * capacity), capacity);
 	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
 
-	if (random.Random(0, 100) < (orig_level * 10) - 5) {
-	}
+	random.Next();
 
 	if (random.Random(0, 100) < 4 || is_rare) {
 		int p = random.Random(0, 100);
@@ -621,7 +623,7 @@ _compute _noinline static Wand GetWandBetter(uint32_t seed, double x, double y, 
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStatsBetter(cost, level, random);
-	GetBestSprite(random, wand);
+	//GetBestSprite(random, wand);
 	wand.spellCount = 0;
 #ifdef DO_SPELLGEN
 	if (gen_spells)

@@ -91,6 +91,27 @@ static void stbhw__get_template_info(WangProcess& p, WangTileset& ts) {
 	ts.heightV = vert_h;
 }
 
+static void parse_pixel(WangProcess& p, WangTile& h, int& sIdx, uint32_t pix, uint8_t i, uint8_t j) {
+	for (int16_t z = 0; z < HostSpawnColors[p.biome].count; z++) {
+		if (pix == HostSpawnColors[p.biome].colors[z]) {
+			h.spawns[sIdx++] = {i, j, z};
+			if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+				fprintf(stderr, "Wang Spawn (%i, %i): Biome %i\n", i, j, z);
+			goto end;
+		}
+	}
+	for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
+		if (pix == HostSpawnColors[0].colors[z]) {
+			h.spawns[sIdx++] = {i, j, (int16_t)(HostSpawnColors[p.biome].count + z)};
+			if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+				fprintf(stderr, "Wang Spawn (%i, %i): Global %i\n", i, j, z);
+			goto end;
+		}
+	}
+end:
+	return;
+}
+
 static void stbhw__parse_h_rect(
 	WangProcess& p, WangTileset& ts, int tx, int ty, char a, char b, char c, char d, char e, char f, int idx) {
 	int sIdx = 0;
@@ -111,24 +132,7 @@ static void stbhw__parse_h_rect(
 	for (uint8_t j = 0; j < len; ++j)
 		for (uint8_t i = 0; i < len * 2; ++i) {
 			uint32_t pix = ts.h_tile_at(tx, ty, i, j);
-			for (int16_t z = 0; z < HostSpawnColors[p.biome].count; z++) {
-				if (pix == HostSpawnColors[p.biome].colors[z]) {
-					h.spawns[sIdx++] = {i, j, z};
-					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
-						fprintf(stderr, "Wang Spawn (%i, %i): Biome %i\n", i, j, z);
-					goto h_end;
-				}
-			}
-			for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
-				if (pix == HostSpawnColors[0].colors[z]) {
-					h.spawns[sIdx++] = {i, j, (int16_t)(HostSpawnColors[p.biome].count + z)};
-					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
-						fprintf(stderr, "Wang Spawn (%i, %i): Global %i\n", i, j, z);
-					goto h_end;
-				}
-			}
-h_end:
-			continue;
+			parse_pixel(p, h, sIdx, pix, i, j);
 		}
 	if (sIdx > _WangTileMaxSpawns)
 		fprintf(stderr, "H Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);
@@ -154,24 +158,7 @@ static void stbhw__parse_v_rect(
 	for (uint8_t j = 0; j < len * 2; ++j)
 		for (uint8_t i = 0; i < len; ++i) {
 			uint32_t pix = ts.v_tile_at(tx, ty, i, j);
-			for (int16_t z = 0; z < HostSpawnColors[p.biome].count; z++) {
-				if (pix == HostSpawnColors[p.biome].colors[z]) {
-					h.spawns[sIdx++] = {i, j, z};
-					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
-						fprintf(stderr, "Wang Spawn (%i, %i): Biome %i\n", i, j, z);
-					goto v_end;
-				}
-			}
-			for (int16_t z = 0; z < HostSpawnColors[0].count; z++) {
-				if (pix == HostSpawnColors[0].colors[z]) {
-					h.spawns[sIdx++] = {i, j, (int16_t)(HostSpawnColors[p.biome].count + z)};
-					if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
-						fprintf(stderr, "Wang Spawn (%i, %i): Global %i\n", i, j, z);
-					goto v_end;
-				}
-			}
-v_end:
-			continue;
+			parse_pixel(p, h, sIdx, pix, i, j);
 		}
 	if (sIdx > _WangTileMaxSpawns)
 		fprintf(stderr, "V Tile %i: Ran out of spawns! %i of %i.\n", idx, sIdx, _WangTileMaxSpawns);

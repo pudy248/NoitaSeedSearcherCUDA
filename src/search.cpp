@@ -56,7 +56,7 @@ _compute static void createWand(double x, double y, Item type, bool addOffset, c
 	bool better = wandNum % 3 == 2;
 
 #ifdef DO_WANDGEN
-	if (type < WAND_T1 || type > WAND_T10NS || !params.sCfg.genWands || better)
+	if (type < WAND_T1 || type > WAND_T10NS || !params.sCfg.genWands)
 		return;
 	else {
 		int rand_x = (int)x;
@@ -724,7 +724,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 	if (params.sCfg.pacifist) {
 		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x;
 			pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++) {
-			for (int hm_level = params.sCfg.minHMidx; hm_level < min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
+			for (int hm_level = params.sCfg.minHMidx; hm_level <= min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
 				hm_level++) {
 				int x = temple_x[hm_level] + chestOffsetX + params.currentBiome.map.w * 512 * pw;
 				int y = temple_y[hm_level] + chestOffsetY;
@@ -740,7 +740,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 		float stepSize = width / (float)itemCount;
 		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x;
 			pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++) {
-			for (int hm_level = params.sCfg.minHMidx; hm_level < min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
+			for (int hm_level = params.sCfg.minHMidx; hm_level <= min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
 				hm_level++) {
 				int x = temple_x[hm_level] + shopOffsetX + params.currentBiome.map.w * 512 * pw;
 				int y = temple_y[hm_level] + shopOffsetY;
@@ -869,11 +869,11 @@ _compute void CheckSpawnables(const GeneratedBiome& s, SpawnParams& params) {
 				if (px < 0 || py < 0 || px >= s.scope.bSec.map_w || py >= s.scope.bSec.map_h)
 					continue;
 				// Solid ground blocks all spawns
-				if (params.currentBiome.bSec.b == B_COALMINE && coalmine_overlay[3 * (py * 256 + px) + 1] == 0x42)
+				if (params.currentBiome.bSec.b == B_COALMINE && coalmine_overlay[py * 256 + px] == 1)
 					continue;
 				//Erase zone blocks only pixel scene spawns? Identifiable by being in the corner of a tile
 				if (params.currentBiome.bSec.b == B_COALMINE && t.spawns[sIdx].x == 0 && t.spawns[sIdx].y == 0 &&
-					coalmine_overlay[3 * (py * 256 + px) + 2] == 0x42)
+					coalmine_overlay[py * 256 + px] == 2)
 					continue;
 				Vec2i global =
 					GetGlobalPos(params.currentBiome.bSec.worldX, params.currentBiome.bSec.worldY, px * 10, py * 10);

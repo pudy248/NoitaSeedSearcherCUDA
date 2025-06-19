@@ -518,7 +518,7 @@ _compute void spawn_pixel_scene_02(int x, int y, const SpawnParams& params) {
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
-	if (r >= 0.2)
+	if (r <= 0.2)
 		return;
 	spawnWand(x + 5, y - 5, params);
 }

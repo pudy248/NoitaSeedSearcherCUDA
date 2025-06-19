@@ -1,12 +1,17 @@
 ﻿#pragma once
 
 namespace IDs {
+const char* debug_flags[1][10] = {{"all", "verbose", "backend", "biome_sectors", "spawn_pixels", "seed_blocks",
+	"cli_parsing", "single_thread", "seed_block_override", "dispatch_rate_override"}};
+
 const char* booleans[1][2] = {{"false", "true"}};
 const char* alchemy_orderings[1][3] = {{"unordered", "only_consumed", "strictly_ordered"}};
 const char* output_modes[1][4] = {{"seed", "objects", "bytes", "image"}};
 const char* priorities[1][3] = {{"low", "normal", "high"}};
-const char* debug_flags[1][8] = {
-	{"all", "verbose", "backend", "biome_sectors", "spawn_pixels", "seed_blocks", "cli_parsing", "single_thread"}};
+const char* comparisons[1][5] = {{"<", "<=", "=", ">=", ">"}};
+
+const char* wand_stats[1][9] = {
+	{"reload", "cast_delay", "spread", "speed", "capacity", "multicast", "shuffle", "mana", "regen"}};
 
 const char* carts[1][4] = {{"any", "minecart", "wheelbarrow", "skateboard"}};
 

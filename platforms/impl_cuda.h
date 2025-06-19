@@ -107,7 +107,7 @@ void InitializePlatform() {
 
 	cudaDeviceProp properties;
 	checkCudaErrors(cudaGetDeviceProperties_v2(&properties, 0));
-	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+	if (DEBUG_FLAGS & (DEBUG::LOG_VERBOSE | DEBUG::LOG_BACKEND))
 		printf("Running with CUDA backend using device %i: %s.\n", device, properties.name);
 #ifndef SINGLE_THREAD
 	BLOCKDIV = 8 * properties.multiProcessorCount;
@@ -133,13 +133,12 @@ void AllocateComputeMemory() {
 	uint64_t freeMem;
 	uint64_t physicalMem;
 	checkCudaErrors(cudaMemGetInfo(&freeMem, &physicalMem));
-	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+	if (DEBUG_FLAGS & (DEBUG::LOG_VERBOSE | DEBUG::LOG_BACKEND))
 		printf("Memory free: %lli of %lli bytes\n", freeMem, physicalMem);
 	freeMem *= 0.9f; //leave a bit of extra
 	freeMem = std::min(freeMem, config.memSizes.memoryCap);
 
 	size_t memPerThread = GetMinimumSpanMemory() + GetMinimumOutputMemory();
-	//printf("Each thread requires %lli bytes of block memory\n", memPerThread);
 
 	int numThreads = std::min((uint64_t)(config.generalCfg.seedEnd - config.generalCfg.seedStart + 1), freeMem / memPerThread);
 	int numBlocks = numThreads / BLOCKSIZE;
@@ -147,7 +146,7 @@ void AllocateComputeMemory() {
 	config.generalCfg.seedBlockSize = min((uint32_t)config.generalCfg.seedBlockSize, (config.generalCfg.seedEnd - config.generalCfg.seedStart + 1) / (NumBlocks * BLOCKSIZE) + 1);
 
 	SetWorkerCount(NumBlocks);
-	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+	if (DEBUG_FLAGS & (DEBUG::LOG_VERBOSE | DEBUG::LOG_BACKEND))
 		printf("Creating %ix%ix%i threads\n", NumBlocks, BLOCKDIV, BLOCKSIZE / BLOCKDIV);
 
 	//Do the actual allocation.
@@ -169,16 +168,25 @@ void AllocateComputeMemory() {
 
 	//Generate coalmine overlay, which is entirely separate for some reason.
 	uint8_t* dOverlayMem; //It's probably fine to forget this pointer since we can copy it back from the coalmine_overlay global.
-	checkCudaErrors(cudaMalloc((void**)&dOverlayMem, 3 * 256 * 103));
-	uint8_t* hPtr = (uint8_t*)malloc(3 * 256 * 103);
-	ReadBufferImage((uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), hPtr, false);
-	checkCudaErrors(cudaMemcpy(dOverlayMem, hPtr, 3 * 256 * 103, cudaMemcpyHostToDevice));
+	checkCudaErrors(cudaMalloc((void**)&dOverlayMem, 256 * 103));
+	uint8_t* coalmine_overlay_rgb = (uint8_t*)malloc(3 * 256 * 103);
+	uint8_t* hPtr = (uint8_t*)malloc(256 * 103);
+	ReadBufferImage(
+		(uint8_t*)get_wak_file("data/wang_tiles/extra_layers/coalmine.png").c_str(), coalmine_overlay_rgb, false);
+	for (int i = 0; i < 256 * 103; i++) {
+		hPtr[i] = coalmine_overlay_rgb[3 * i + 2] == 0x42 ? 1 :
+							  coalmine_overlay_rgb[3 * i + 1] == 0x42 ? 2 :
+							  coalmine_overlay_rgb[3 * i + 1] > 0x10  ? 3 :
+																		0;
+	}
+	free(coalmine_overlay_rgb);
+	checkCudaErrors(cudaMemcpy(dOverlayMem, hPtr, 256 * 103, cudaMemcpyHostToDevice));
 	checkCudaErrors(cudaDeviceSynchronize());
 	checkCudaErrors(cudaGetLastError());
 	checkCudaErrors(cudaMemcpyToSymbol(coalmine_overlay, &dOverlayMem, sizeof(void*), 0));
 	free(hPtr);
 
-	if (DEBUG_FLAGS & DEBUG::LOG_BACKEND)
+	if (DEBUG_FLAGS & (DEBUG::LOG_VERBOSE | DEBUG::LOG_BACKEND))
 		printf("Allocated %lliMB of host and %lliMB of device memory\n", (2 * outputSize + KIO_size * NumBlocks) / 1_MB,
 			(totalMemory + outputSize + KIO_size * NumBlocks) / 1_MB);
 }
@@ -204,7 +212,7 @@ void DispatchBlock(ComputePointers dPointers, size_t arenaPitch, SearchConfig co
 	uint8_t* threadMemBlock = dPointers.dArena + arenaPitch * (memIdx * BLOCKSIZE + hwIdx);
 	uint8_t* outputPtr = dPointers.uOutput + config.memSizes.outputSize * (memIdx * BLOCKSIZE + hwIdx);
 	SpanRet ret = EvaluateSpan(config, KIO_params(ioPtr)[hwIdx], threadMemBlock, outputPtr);
-
+	
 	for (uint64_t i = 0; i < sizeof(SpanRet) / sizeof(uint64_t); i++)
 		((uint64_t*)&KIO_ret(ioPtr)[hwIdx])[i] = ((uint64_t*)&ret)[i];
 	//memcpy(&KIO_ret(ioPtr)[hwIdx], &ret, sizeof(SpanRet));

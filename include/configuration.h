@@ -113,8 +113,8 @@ struct FilterConfig {
 	SpellFilter spellFilters[TOTAL_FILTER_COUNT];
 	int pixelSceneFilterCount;
 	PixelSceneFilter pixelSceneFilters[TOTAL_FILTER_COUNT];
-	bool wandStats;
-	int wandStatThreshold;
+	int wandStatFilterCount;
+	WandStatFilter wandStatFilters[TOTAL_FILTER_COUNT];
 };
 
 struct OutputConfig {

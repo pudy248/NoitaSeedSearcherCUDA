@@ -28,7 +28,7 @@ namespace API_INTERNAL
 
 	int WorkerAppetite = 1;
 	int NumWorkers = 1;
-	int DispatchRate = 1;
+	float DispatchRate = 1;
 	SearchConfig config;
 }
 
@@ -65,9 +65,9 @@ namespace PLATFORM_API
 		API_INTERNAL::NumWorkers = count;
 	}
 	//Sets how many worker jobs should be dispatched per second, on average.
-	void SetTargetDispatchRate(int dispatchesPerSecond)
+	void SetTargetDispatchRate(float dispatchesPerSecond)
 	{
-		API_INTERNAL::DispatchRate = std::max(1, dispatchesPerSecond / 20);
+		API_INTERNAL::DispatchRate = std::max(0.05f, dispatchesPerSecond);
 	}
 	//Span evaluation will want to know what to look for, this will provide the relevant information.
 	SearchConfig GetSearchConfig()
@@ -79,7 +79,7 @@ namespace PLATFORM_API
 	{
 		SearchConfig config = GetSearchConfig();
 #ifdef DO_WORLDGEN
-		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.mapDataSize + config.memSizes.miscMemSize + config.memSizes.visitedMemSize + config.memSizes.spawnableMemSize + config.memSizes.spawnableMemSize / 4 + 16 * TOTAL_FILTER_COUNT + 512;
+		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.mapDataSize + config.memSizes.miscMemSize + config.memSizes.visitedMemSize + config.memSizes.spawnableMemSize + config.memSizes.spawnableMemSize / 4 + 20 * TOTAL_FILTER_COUNT + 512;
 #else
 		uint64_t minMemoryPerThread = config.memSizes.outputSize + config.memSizes.spawnableMemSize;
 #endif

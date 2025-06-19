@@ -22,7 +22,7 @@ profile:
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --starting-flask gold -cp --end-seed 50000000
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --alchemy {mud,water,soil} {any,any,any} -cp --end-seed 20000000
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --biome-mods {coalmine,extremely_lucrative} -cp --end-seed 10000000
-	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --fungal {gold,cheese,0,0} -cp
+	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --fungal {gold,cheese_static,0,0} -cp --end-seed 5000000
 	llvm-profdata merge -output=code.profdata code-*.profraw
 	rm code-*.profraw NoitaChestFinder
 
@@ -36,4 +36,4 @@ test:
 	./NoitaChestFinder --starting-flask gold -cp
 	./NoitaChestFinder --alchemy {mud,water,soil} {any,any,any} -cp
 	./NoitaChestFinder --biome-mods {coalmine,extremely_lucrative} -cp
-	./NoitaChestFinder --fungal {gold,cheese,0,0} -cp
+	./NoitaChestFinder --fungal {gold,cheese_static,0,0} -cp

@@ -11,12 +11,13 @@ constexpr int BIOME_PATH_FIND_WORLD_POS_MAX_X = 223;
 constexpr int WORLD_OFFSET_X = 35;
 
 template <int coalmine_mode, bool skip_fill>
-_compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl) {
+_compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl, const uint8_t* rcoal_overlay) {
 	if constexpr (coalmine_mode) {
 		if (s.scope.bSec.b == B_COALMINE && y >= 0) {
-			if (coalmine_overlay[(y * 256 + x) * 3 + 2] == 0x42)
+			// Somehow this is really slow if it's not "forced" to be in a register. Apparently not caching well, not worth the time to investigate
+			if (rcoal_overlay[y * 256 + x] == 1)
 				return COLOR_BLACK;
-			else if (coalmine_overlay[(y * 256 + x) * 3 + 1] > 0X10)
+			else if (rcoal_overlay[y * 256 + x] > 1)
 				return COLOR_WHITE;
 		}
 	}
@@ -50,13 +51,13 @@ _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int 
 			if (!(x - off_x >= 0 && y - off_y - 4 >= 0 &&
 					(v ? s.scope.ts.vTiles : s.scope.ts.hTiles)[tile].should_block))
 				break;
-			//if (s.scope.bSec.b == B_COALMINE && coalmine_overlay[((y - off_y - 4) * 256 + x - off_x) * 3 + 1] > 0x10)
+			//if (s.scope.bSec.b == B_COALMINE && rcoal_overlay[(y - off_y - 4) * 256 + x - off_x] > 1)
 			//	break;
 			if (v && !(off_x < s.scope.ts.short_side_len - 1 && off_y < 2 * s.scope.ts.short_side_len - 1))
 				break;
 			if (!v && !(off_x < 2 * s.scope.ts.short_side_len - 1 && off_y < s.scope.ts.short_side_len - 1))
 				break;
-			uint32_t c = get_pixel<0, true>(s, f, x - off_x, y - off_y - 4, ssl);
+			uint32_t c = get_pixel<0, true>(s, f, x - off_x, y - off_y - 4, ssl, coalmine_overlay);
 			if (c != COLOR_BLACK && c != COLOR_WHITE)
 				return COLOR_WHITE;
 			break;
@@ -74,7 +75,7 @@ _compute static void tryNext(const GeneratedBiome& s, const MainPathFill& f, int
 	if (x >= 0 && y >= 0 && x < rmw && y < rmh) {
 		if (visited.ptr[y * rmw + x])
 			return;
-		uint32_t c = get_pixel(s, f, x, y, ssl);
+		uint32_t c = get_pixel(s, f, x, y, ssl, coalmine_overlay);
 		if (c == COLOR_BLACK || c == COLOR_COFFEE || c == COLOR_HELL_GREEN) {
 			((Vec2i*)stackCache.ptr)[stackSize++] = {x, y};
 			visited.ptr[y * rmw + x] = 2;
@@ -88,6 +89,7 @@ _compute static bool findPath(
 	int rmw = s.scope.bSec.map_w; //register map width
 	int rmh = s.scope.bSec.map_h; //register map height
 	int ssl = s.scope.ts.short_side_len;
+	const uint8_t* rcoal_overlay = coalmine_overlay;
 
 	bool pathFound = false;
 
@@ -100,7 +102,7 @@ _compute static bool findPath(
 
 	while (stackSize > 0 && pathFound != 1) {
 		Vec2i n = stackMem[--stackSize];
-		uint32_t c = get_pixel(s, f, n.x, n.y, ssl);
+		uint32_t c = get_pixel(s, f, n.x, n.y, ssl, rcoal_overlay);
 		if (c == COLOR_BLACK || c == COLOR_COFFEE || c == COLOR_HELL_GREEN)
 			visited.ptr[n.y * rmw + n.x] = 2;
 		else
@@ -141,7 +143,7 @@ _compute static bool HasPathToBottom(const GeneratedBiome& s, const MainPathFill
 		return findPath(s, f, stackMemArea, visited, path_start_x, 0);
 
 	for (uint32_t x = path_start_x; x < s.scope.bSec.map_w; x++) {
-		uint32_t c = get_pixel(s, f, x, 0, s.scope.ts.short_side_len);
+		uint32_t c = get_pixel(s, f, x, 0, s.scope.ts.short_side_len, coalmine_overlay);
 		if (c != COLOR_BLACK && c != COLOR_COFFEE)
 			continue;
 		if (visited.ptr[x])

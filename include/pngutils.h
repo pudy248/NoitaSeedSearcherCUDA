@@ -1,3 +1,4 @@
+#pragma once
 #include "primitives.h"
 
 #define PNG_DEBUG 3
@@ -16,6 +17,7 @@ png_byte GetColorType(const char* file_name);
 void ReadBufferImage(const uint8_t* compressed_data, uint8_t* data, bool rgba);
 void ReadImage(const char* file_name, uint8_t* data, bool rgba);
 
+#define PNG_IMPL
 #ifdef PNG_IMPL
 
 struct ImageStream {

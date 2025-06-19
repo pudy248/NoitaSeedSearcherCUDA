@@ -24,7 +24,7 @@ _compute MemSpan ArenaAlloc(MemoryArena& arena, uint32_t size, uint32_t alignmen
 _compute void ArenaSetOffset(MemoryArena& arena, uint8_t* endPointer);
 
 template <int coalmine_mode = 1, bool skip_fill = false>
-_compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl);
+_compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int x, int y, int ssl, const uint8_t* rcoal_overlay);
 _universal uint32_t createRGB(const uint8_t r, const uint8_t g, const uint8_t b);
 _universal int GetWidthFromPix(int a, int b);
 _universal Vec2i GetGlobalPos(const int x, const int y, const int px, int py);

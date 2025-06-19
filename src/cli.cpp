@@ -50,6 +50,7 @@ int cmd_filter_items(int);
 int cmd_filter_materials(int);
 int cmd_filter_spells(int);
 int cmd_filter_pixel_scenes(int);
+int cmd_filter_wands(int);
 // int cmd_filter_wands(int);
 int cmd_count_passed(int);
 int cmd_print_to_console(int);
@@ -115,6 +116,7 @@ static const cmd commands[] = {
 	{"--filter-spells", "-fs", cmd_filter_spells, "Define spell filters of the same format as item filters."},
 	{"--filter-pixel-scenes", "-fp", cmd_filter_pixel_scenes,
 		"Define pixel scene filters of the same format as item filters, or {scene,{mat1,mat2[,...]}[,count]} for pixel scenes like oil tanks which contain materials."},
+	{"--filter-wands", "-fw", cmd_filter_wands, "Define wand stat filters of the format {stat,value[,comparison][,count]}."},
 	{"--start-seed", nullptr, cmd_start_seed, "Set first seed to search."},
 	{"--end-seed", nullptr, cmd_end_seed, "Set last seed to search."},
 	{"--this-seed", "-s", cmd_this_seed, "Search only one seed. Overrides start-seed and end-seed."},
@@ -144,8 +146,8 @@ static bool was_cmd_passed(const char* name) {
 }
 
 static void check_argc(int i, int expected) {
-	if (i >= g_argc - expected) {
-		fprintf(stderr, "%s expected at least %i arguments but recieved %i.\n", g_argv[i], expected, g_argc - i - 1);
+	if (i > g_argc - expected) {
+		fprintf(stderr, "%s expected at least %i arguments but recieved %i.\n", g_argv[i - 1], expected, g_argc - i);
 		std::exit(-1);
 	}
 }
@@ -323,29 +325,28 @@ int cmd_exact(int i) {
 }
 int cmd_cart(int i) {
 	check_argc(i, 1);
-	int idx = list_to_id(g_argv[i + 1], IDs::carts);
+	int idx = list_to_id(g_argv[i++], IDs::carts);
 	config.precheckCfg.cart = {idx != 0, (CartType)idx};
-	return i + 1;
+	return i;
 }
 int cmd_flask(int i) {
 	check_argc(i, 1);
-	int idx = list_to_id(g_argv[i + 1], IDs::materials, HTables::starting_flasks).x;
+	int idx = list_to_id(g_argv[i++], IDs::materials, HTables::starting_flasks).x;
 	config.precheckCfg.flask = {idx != 0, (Material)idx};
-	return i + 1;
+	return i;
 }
 int cmd_rain(int i) {
 	check_argc(i, 1);
-	int idx = list_to_id(g_argv[i + 1], IDs::materials, HTables::rain_materials).x;
+	int idx = list_to_id(g_argv[i++], IDs::materials, HTables::rain_materials).x;
 	config.precheckCfg.rain = {idx != 0, (Material)idx};
-	return i + 1;
+	return i;
 }
 
 int cmd_biome_mods(int i) {
 	check_argc(i, 1);
 	config.precheckCfg.biomes.check = true;
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		auto composite = decompose(g_argv[i], {2});
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = decompose(g_argv[i++], {2});
 		Vec2i idx1 = list_to_id(composite[0], IDs::biomes, HTables::bm_biomes);
 		int idx2 = list_to_id(composite[1], IDs::biome_modifiers, HTables::bm_lists[idx1.y]).x;
 		if (config.precheckCfg.biomes.modifiers[idx1.y] != BM_NONE) {
@@ -354,13 +355,13 @@ int cmd_biome_mods(int i) {
 		}
 		config.precheckCfg.biomes.modifiers[idx1.y] = (BiomeModifier)idx2;
 	}
-	return i - 1;
+	return i;
 }
 int cmd_alchemy(int i) {
 	check_argc(i, 2);
 	config.precheckCfg.alchemy.check = true;
 	{
-		auto composite = decompose(g_argv[++i], {3, 4});
+		auto composite = decompose(g_argv[i++], {3, 4});
 		int idx1 = list_to_id(composite[0], IDs::materials, HTables::alchemy_materials).x;
 		int idx2 = list_to_id(composite[1], IDs::materials, HTables::alchemy_materials).x;
 		int idx3 = list_to_id(composite[2], IDs::materials, HTables::alchemy_materials).x;
@@ -369,7 +370,7 @@ int cmd_alchemy(int i) {
 		config.precheckCfg.alchemy.LC = {(Material)idx1, (Material)idx2, (Material)idx3};
 	}
 	{
-		auto composite = decompose(g_argv[++i], {3, 4});
+		auto composite = decompose(g_argv[i++], {3, 4});
 		int idx1 = list_to_id(composite[0], IDs::materials, HTables::alchemy_materials).x;
 		int idx2 = list_to_id(composite[1], IDs::materials, HTables::alchemy_materials).x;
 		int idx3 = list_to_id(composite[2], IDs::materials, HTables::alchemy_materials).x;
@@ -383,9 +384,8 @@ int cmd_fungal(int i) {
 	check_argc(i, 1);
 	config.precheckCfg.fungal.check = true;
 	int j = 0;
-	++i;
-	for (; i < g_argc && g_argv[i][0] == '{'; i++) {
-		auto composite = decompose(g_argv[i], {2, 4});
+	for (; i < g_argc && g_argv[i][0] == '{';) {
+		auto composite = decompose(g_argv[i++], {2, 4});
 		int idx1 = list_to_id(composite[0], IDs::materials, HTables::fungal_from).x;
 		int idx2 = list_to_id(composite[1], IDs::materials, HTables::fungal_to).x;
 		int start = composite.size() > 2 ? to_int(composite[2]) : 0;
@@ -394,41 +394,38 @@ int cmd_fungal(int i) {
 		check_range(end, 0, 20);
 		config.precheckCfg.fungal.shifts[j++] = {(ShiftSource)idx1, (ShiftDest)idx2, start, end};
 	}
-	return i - 1;
+	return i;
 }
 int cmd_perks(int i) {
 	check_argc(i, 1);
 	config.precheckCfg.perks.check = true;
 	int j = 0;
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		auto composite = maybe_decompose(g_argv[i], {1, 3, 4});
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = maybe_decompose(g_argv[i++], {1, 3, 4});
 		int perk = list_to_id(composite[0], IDs::perks);
 		int start = composite.size() > 1 ? to_int(composite[1]) : 0;
 		int end = composite.size() > 1 ? to_int(composite[2]) : 2;
 		int is_lottery = composite.size() > 3 ? list_to_id(composite[3], IDs::booleans) : 0;
 		config.precheckCfg.perks.perks[j++] = {(Perk)perk, (bool)is_lottery, start, end};
 	}
-	return i - 1;
+	return i;
 }
 
 int cmd_hms(int i) {
 	check_argc(i, 1);
-	auto composite = decompose(g_argv[i + 1], {2});
+	auto composite = decompose(g_argv[i++], {2});
 	config.spawnableCfg.minHMidx = to_int(composite[0]);
 	config.spawnableCfg.maxHMidx = to_int(composite[1]);
 	check_range(config.spawnableCfg.minHMidx, 0, 6);
 	check_range(config.spawnableCfg.maxHMidx, 0, 6);
-	return i + 1;
+	return i;
 }
 int cmd_pws(int i) {
 	check_argc(i, 1);
-	++i;
-	auto composite = maybe_decompose(g_argv[i], {1, 2});
+	auto composite = maybe_decompose(g_argv[i++], {1, 2});
 	config.spawnableCfg.pwWidth = {to_int(composite[0]), composite.size() > 1 ? to_int(composite[1]) : 0};
-	if (i + 1 < g_argc && g_argv[i + 1][0] == '{') {
-		++i;
-		auto composite = decompose(g_argv[i], {2});
+	if (i < g_argc && g_argv[i][0] == '{') {
+		auto composite = decompose(g_argv[i++], {2});
 		config.spawnableCfg.pwCenter = {to_int(composite[0]), to_int(composite[1])};
 	}
 	return i;
@@ -505,9 +502,8 @@ int cmd_aggregate(int i) {
 std::vector<Biome> biome_list;
 int cmd_biomes(int i) {
 	check_argc(i, 1);
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		int n = list_to_id(g_argv[i], IDs::biomes);
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		int n = list_to_id(g_argv[i++], IDs::biomes);
 		if (n == 0) {
 			biome_list.clear();
 			for (int j = 1; j < 23; j++)
@@ -529,15 +525,13 @@ int cmd_biomes(int i) {
 			biome_list.push_back((Biome)n);
 		}
 	}
-	return i - 1;
+	return i;
 }
 int cmd_filter_items(int i) {
 	check_argc(i, 1);
-	config.precheckCfg.fungal.check = true;
 	int j = config.filterCfg.itemFilterCount;
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		auto composite = maybe_decompose(g_argv[i], {1, 2});
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = maybe_decompose(g_argv[i++], {1, 2});
 		std::string tmp(composite[0]);
 		auto inner = maybe_decompose(tmp.c_str());
 		for (int k = 0; k < inner.size(); k++)
@@ -545,15 +539,13 @@ int cmd_filter_items(int i) {
 		config.filterCfg.itemFilters[j++].duplicates = composite.size() > 1 ? to_int(composite[1]) : 1;
 	}
 	config.filterCfg.itemFilterCount = j;
-	return i - 1;
+	return i;
 }
 int cmd_filter_materials(int i) {
 	check_argc(i, 1);
-	config.precheckCfg.fungal.check = true;
 	int j = config.filterCfg.materialFilterCount;
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		auto composite = maybe_decompose(g_argv[i], {1, 2});
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = maybe_decompose(g_argv[i++], {1, 2});
 		std::string tmp(composite[0]);
 		auto inner = maybe_decompose(tmp.c_str());
 		for (int k = 0; k < inner.size(); k++)
@@ -561,15 +553,13 @@ int cmd_filter_materials(int i) {
 		config.filterCfg.materialFilters[j++].duplicates = composite.size() > 1 ? to_int(composite[1]) : 1;
 	}
 	config.filterCfg.materialFilterCount = j;
-	return i - 1;
+	return i;
 }
 int cmd_filter_spells(int i) {
 	check_argc(i, 1);
-	config.precheckCfg.fungal.check = true;
 	int j = config.filterCfg.spellFilterCount;
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		auto composite = maybe_decompose(g_argv[i], {1, 2});
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = maybe_decompose(g_argv[i++], {1, 2});
 		std::string tmp(composite[0]);
 		auto inner = maybe_decompose(tmp.c_str());
 		for (int k = 0; k < inner.size(); k++)
@@ -579,15 +569,13 @@ int cmd_filter_spells(int i) {
 		config.filterCfg.spellFilters[j++].duplicates = composite.size() > 1 ? to_int(composite[1]) : 1;
 	}
 	config.filterCfg.spellFilterCount = j;
-	return i - 1;
+	return i;
 }
 int cmd_filter_pixel_scenes(int i) {
 	check_argc(i, 1);
-	config.precheckCfg.fungal.check = true;
 	int j = config.filterCfg.pixelSceneFilterCount;
-	++i;
-	for (; i < g_argc && g_argv[i][0] != '-'; i++) {
-		auto composite = maybe_decompose(g_argv[i], {1, 2, 3});
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = maybe_decompose(g_argv[i++], {1, 2, 3});
 		std::string tmp(composite[0]);
 		auto inner1 = maybe_decompose(tmp.c_str());
 		std::string tmp2(composite.size() > 1 ? composite[1] : "");
@@ -604,7 +592,21 @@ int cmd_filter_pixel_scenes(int i) {
 																					1;
 	}
 	config.filterCfg.pixelSceneFilterCount = j;
-	return i - 1;
+	return i;
+}
+int cmd_filter_wands(int i) {
+	check_argc(i, 1);
+	int j = config.filterCfg.wandStatFilterCount;
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		auto composite = decompose(g_argv[i++], {2, 3, 4});
+		config.filterCfg.wandStatFilters[j].stat = (WandStat)list_to_id(composite[0], IDs::wand_stats);
+		config.filterCfg.wandStatFilters[j].value = to_int(composite[1]);
+		config.filterCfg.wandStatFilters[j].comparison =
+			composite.size() > 2 ? list_to_id(composite[2], IDs::comparisons) : 3;
+		config.filterCfg.wandStatFilters[j++].duplicates = composite.size() > 3 ? to_int(composite[3]) : 1;
+	}
+	config.filterCfg.wandStatFilterCount = j;
+	return i;
 }
 int cmd_count_passed(int i) {
 	config.outputCfg.countPassesOnly = true;
@@ -621,41 +623,41 @@ int cmd_print_to_file(int i) {
 int cmd_output_file(int i) {
 	check_argc(i, 1);
 	config.outputCfg.printOutputToFile = true;
-	config.outputCfg.outputFile = g_argv[i + 1];
-	return i + 1;
+	config.outputCfg.outputFile = g_argv[i++];
+	return i;
 }
 int cmd_logging_interval(int i) {
 	check_argc(i, 1);
-	config.outputCfg.printInterval = to_int(g_argv[i + 1]);
+	config.outputCfg.printInterval = to_int(g_argv[i++]);
 	if (!config.outputCfg.printInterval)
 		config.outputCfg.printProgressLog = false;
-	return i + 1;
+	return i;
 }
 int cmd_output_mode(int i) {
 	check_argc(i, 1);
-	config.outputCfg.outputMode = list_to_id(g_argv[i + 1], IDs::output_modes);
-	return i + 1;
+	config.outputCfg.outputMode = list_to_id(g_argv[i++], IDs::output_modes);
+	return i;
 }
 int cmd_start_seed(int i) {
 	check_argc(i, 1);
-	config.generalCfg.seedStart = to_int(g_argv[i + 1]);
-	return i + 1;
+	config.generalCfg.seedStart = to_int(g_argv[i++]);
+	return i;
 }
 int cmd_end_seed(int i) {
 	check_argc(i, 1);
-	config.generalCfg.seedEnd = to_int(g_argv[i + 1]);
-	return i + 1;
+	config.generalCfg.seedEnd = to_int(g_argv[i++]);
+	return i;
 }
 int cmd_this_seed(int i) {
 	check_argc(i, 1);
-	config.generalCfg.seedStart = to_int(g_argv[i + 1]);
+	config.generalCfg.seedStart = to_int(g_argv[i++]);
 	config.generalCfg.seedEnd = config.generalCfg.seedStart;
-	return i + 1;
+	return i;
 }
 int cmd_priority(int i) {
 	check_argc(i, 1);
-	config.generalCfg.priority = list_to_id(g_argv[i + 1], IDs::priorities);
-	return i + 1;
+	config.generalCfg.priority = list_to_id(g_argv[i++], IDs::priorities);
+	return i;
 }
 int cmd_verbose(int i) {
 	DEBUG_FLAGS |= DEBUG::LOG_VERBOSE;
@@ -663,12 +665,25 @@ int cmd_verbose(int i) {
 }
 int cmd_debug(int i) {
 	check_argc(i, 1);
-	int flag = list_to_id(g_argv[i + 1], IDs::debug_flags);
-	if (!flag)
-		DEBUG_FLAGS |= DEBUG::ALL;
-	else
-		DEBUG_FLAGS |= (1 << (flag - 1));
-	return i + 1;
+	for (; i < g_argc && g_argv[i][0] != '-';) {
+		int flag = list_to_id(g_argv[i++], IDs::debug_flags);
+		if (flag >= 8) {
+			check_argc(i, 1);
+			int value = to_int(g_argv[i++]);
+			switch (flag) {
+			case 8:
+				DEBUG_SEED_BLOCK_OVERRIDE = value;
+				config.generalCfg.seedBlockOverride = true;
+				break;
+			case 9: DEBUG_DISPATCH_RATE_OVERRIDE = value; break;
+			}
+		}
+		else if (!flag)
+			DEBUG_FLAGS |= DEBUG::ALL;
+		else
+			DEBUG_FLAGS |= (1 << (flag - 1));
+	}
+	return i;
 }
 
 void cli_main(int argc, char** argv) {
@@ -679,12 +694,12 @@ void cli_main(int argc, char** argv) {
 		cmd_help(0);
 		return;
 	}
-	for (int i = 1; i < argc; i++) {
+	for (int i = 1; i < argc;) {
 		for (int j = 0; j < num_commands; j++) {
 			if (!strcmp(argv[i], commands[j].long_name) ||
 				(commands[j].short_name && !strcmp(argv[i], commands[j].short_name))) {
 				cmd_passed[j] = true;
-				i = commands[j].fn(i);
+				i = commands[j].fn(++i);
 				goto end;
 			}
 		}
