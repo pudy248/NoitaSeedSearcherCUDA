@@ -649,7 +649,6 @@ enum ShiftDest : short {
 	SD_CHEESE_STATIC = Material::CHEESE_STATIC,
 
 	SD_FL_GOLD = Material::GOLD,
-	SD_FL_GRASS_HOLY = Material::GRASS_HOLY,
 };
 
 enum Biome : unsigned char {

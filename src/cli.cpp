@@ -51,7 +51,6 @@ int cmd_filter_materials(int);
 int cmd_filter_spells(int);
 int cmd_filter_pixel_scenes(int);
 int cmd_filter_wands(int);
-// int cmd_filter_wands(int);
 int cmd_count_passed(int);
 int cmd_print_to_console(int);
 int cmd_print_to_file(int);
@@ -61,6 +60,7 @@ int cmd_output_mode(int);
 int cmd_start_seed(int);
 int cmd_end_seed(int);
 int cmd_this_seed(int);
+int cmd_seeds_from_file(int);
 int cmd_priority(int);
 int cmd_exact(int);
 int cmd_quiet(int);
@@ -113,13 +113,14 @@ static const cmd commands[] = {
 		"Define item filters of the formats {item[,count]} or {{item1,or-item2[,...]}[,count]}. Ex. \"-fi {{sampo,true_orb}} {bomb,3}\""},
 	{"--filter-materials", "-fm", cmd_filter_materials,
 		"Define potion material filters of the same format as item filters."},
-	{"--filter-spells", "-fs", cmd_filter_spells, "Define spell filters of the same format as item filters."},
+	{"--filter-spells", "-fs", cmd_filter_spells, "Define spell filters of the format {{spell1,or-spell2[,...]}[,count][,as-always-cast]}. Ex. \"-fs {regeneration_field,1,true}\""},
 	{"--filter-pixel-scenes", "-fp", cmd_filter_pixel_scenes,
 		"Define pixel scene filters of the same format as item filters, or {scene,{mat1,mat2[,...]}[,count]} for pixel scenes like oil tanks which contain materials."},
 	{"--filter-wands", "-fw", cmd_filter_wands, "Define wand stat filters of the format {stat,value[,comparison][,count]}."},
 	{"--start-seed", nullptr, cmd_start_seed, "Set first seed to search."},
 	{"--end-seed", nullptr, cmd_end_seed, "Set last seed to search."},
 	{"--this-seed", "-s", cmd_this_seed, "Search only one seed. Overrides start-seed and end-seed."},
+	{"--seeds-from-file", "-if", cmd_seeds_from_file, "Filepath to load a list of specific seeds to search. Useful in conjunction with \"-of -om seed\" to composite searches that can't be done in one go."},
 	{"--count-passed", "-cp", cmd_count_passed,
 		"Do not record which seeds passed, only how many. Useful for gathering statistics where keeping track of specific seeds is an unnecessary slowdown."},
 	{"--no-print-to-console", "-nc", cmd_print_to_console, "Don't print seeds to standard output."},
@@ -559,12 +560,12 @@ int cmd_filter_spells(int i) {
 	check_argc(i, 1);
 	int j = config.filterCfg.spellFilterCount;
 	for (; i < g_argc && g_argv[i][0] != '-';) {
-		auto composite = maybe_decompose(g_argv[i++], {1, 2});
+		auto composite = maybe_decompose(g_argv[i++], {1, 2, 3});
 		std::string tmp(composite[0]);
 		auto inner = maybe_decompose(tmp.c_str());
 		for (int k = 0; k < inner.size(); k++)
 			config.filterCfg.spellFilters[j].spells[k] = (Spell)list_to_id(inner[k], IDs::spells);
-		config.filterCfg.spellFilters[j].asAlwaysCast = false;
+		config.filterCfg.spellFilters[j].asAlwaysCast = composite.size() > 2 ? list_to_id(composite[2], IDs::booleans) : false;
 		config.filterCfg.spellFilters[j].perWand = false;
 		config.filterCfg.spellFilters[j++].duplicates = composite.size() > 1 ? to_int(composite[1]) : 1;
 	}
@@ -654,6 +655,24 @@ int cmd_this_seed(int i) {
 	config.generalCfg.seedEnd = config.generalCfg.seedStart;
 	return i;
 }
+std::vector<uint32_t> seed_list;
+int cmd_seeds_from_file(int i) { check_argc(i, 1);
+	std::ifstream f(g_argv[i++]);
+	if (!f.good()) {
+		fprintf(stderr, "Error opening seed list file.\n");
+		std::exit(-1);
+	}
+	while (!f.eof()) {
+		uint32_t n;
+		f >> n;
+		seed_list.emplace_back(n);
+	}
+	config.generalCfg.seedStart = 0;
+	config.generalCfg.seedEnd = seed_list.size() - 1;
+	config.generalCfg.seedBlockOverride = true;
+	return i;
+}
+
 int cmd_priority(int i) {
 	check_argc(i, 1);
 	config.generalCfg.priority = list_to_id(g_argv[i++], IDs::priorities);

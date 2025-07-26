@@ -66,7 +66,7 @@ const ShiftDest fungal_to[] = {SD_NONE, SD_FLASK, SD_VAR1, SD_VAR2, SD_VAR3, SD_
 	SD_BLOOD_WORM, SD_POISON, SD_VOMIT, SD_PEA_SOUP, SD_FUNGI, SD_SAND, SD_DIAMOND, SD_SILVER, SD_STEAM, SD_ROCK_STATIC,
 	SD_GUNPOWDER, SD_MATERIAL_DARKNESS, SD_MATERIAL_CONFUSION, SD_ROCK_STATIC_RADIOACTIVE, SD_MAGIC_LIQUID_POLYMORPH,
 	SD_MAGIC_LIQUID_RANDOM_POLYMORPH, SD_MAGIC_LIQUID_TELEPORTATION, SD_MIMIC_LIQUID, SD_URINE, SD_POO, SD_VOID_LIQUID,
-	SD_CHEESE_STATIC};
+	SD_CHEESE_STATIC, SD_FL_GOLD};
 
 const char* wang_paths[] = {nullptr, "data/wang_tiles/coalmine.png", "data/wang_tiles/coalmine_alt.png",
 	"data/wang_tiles/excavationsite.png", "data/wang_tiles/snowcave.png", "data/wang_tiles/snowcastle.png",

@@ -259,8 +259,11 @@ int main(int argc, char** argv) {
 	InstantiateBiomes(config.biomeScopes, biomeCount, maxMapArea, map, biome_list);
 
 	config.biomeCount = biomeCount;
-	config.generalCfg.seedBlockSize = DEBUG_SEED_BLOCK_OVERRIDE ? DEBUG_SEED_BLOCK_OVERRIDE : (biomeCount ? (WorkerAppetite > 100 ? 1u : 32u) :
-												   (WorkerAppetite > 100 ? 256u : 16384u));
+	if (!config.generalCfg.seedBlockOverride)
+		config.generalCfg.seedBlockSize =
+			DEBUG_SEED_BLOCK_OVERRIDE ?
+				DEBUG_SEED_BLOCK_OVERRIDE :
+				(biomeCount ? (WorkerAppetite > 100 ? 1u : 32u) : (WorkerAppetite > 100 ? 256u : 16384u));
 
 	config.memSizes = {
 		.memoryCap = 40_GB,

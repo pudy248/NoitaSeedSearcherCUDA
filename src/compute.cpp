@@ -149,6 +149,8 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					continue;
 				}
 				uint32_t nextSeed = currentSeed;
+				if (!config.generalCfg.seedStart)
+					nextSeed = seed_list[currentSeed];
 #ifdef REALTIME_SEEDS
 				uint8_t* output = hOutput + (i * WorkerAppetite + j) * config.memSizes.outputSize;
 				int _ = 0;
@@ -275,6 +277,8 @@ recount_end:
 					if (currentSeed > config.generalCfg.seedEnd || returns[i].seedFound)
 						continue;
 					uint32_t nextSeed = currentSeed;
+					if (!config.generalCfg.seedStart)
+						nextSeed = seed_list[currentSeed];
 #ifdef REALTIME_SEEDS
 					uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;
 					int _ = 0;
@@ -345,6 +349,8 @@ void InstantiateBiomes(
 
 		BiomeWangScope scope;
 		scope.map = {map.w, map.h, (Biome*)dPtr};
+		if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
+			fprintf(stderr, "%s\n", HTables::wang_paths[c.b]);
 		scope.ts = stbhw_build_tileset_from_image(hTileData, sector.b, 3 * tileDims.x, tileDims.x, tileDims.y);
 		sector.wang_w = (sector.map_w + scope.ts.short_side_len - 1) / scope.ts.short_side_len;
 		sector.wang_h = (sector.map_h + scope.ts.short_side_len + 3) / scope.ts.short_side_len;

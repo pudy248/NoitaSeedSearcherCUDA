@@ -106,7 +106,7 @@ _compute static bool MaterialSetVars(Material reference, Material test, int* ptr
 
 _compute static bool FungalShiftEquals(
 	FungalShift reference, FungalShift test, int ptrs[4], Material vars[materialVarEntryCount * 4]) {
-	if (reference.to == SD_FL_GOLD || reference.to == SD_FL_GRASS_HOLY)
+	if (reference.to == SD_FL_GOLD)
 		return (test.randomRoll == 1) && test.toFlask &&
 			   MaterialEquals((Material)reference.from, (Material)test.from, ptrs, vars);
 	if (reference.fromFlask && !test.fromFlask)

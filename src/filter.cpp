@@ -72,19 +72,21 @@ _compute static void MaterialFilterPassed(Spawnable* s, int count, MaterialFilte
 _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, SpellFilter sf, int& foundCount) {
 	for (int n = 0; n < count; n++) {
 		Item c = (&s->contents)[n];
-		if (c == DATA_SPELL && !sf.asAlwaysCast && !sf.perWand) {
-			int offset = n + 1;
-			Spell sp2 = (Spell)readShort((uint8_t*)(&s->contents), offset);
+		if (c == DATA_SPELL) {
+			if (!sf.asAlwaysCast && !sf.perWand) {
+				int offset = n + 1;
+				Spell sp2 = (Spell)readShort((uint8_t*)(&s->contents), offset);
 
-			bool foundOnThisSpell = sf.spells[0] == SPELL_NONE;
-			for (int i = 0; i < FILTER_OR_COUNT; i++) {
-				if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i]) {
-					foundOnThisSpell = true;
-					break;
+				bool foundOnThisSpell = sf.spells[0] == SPELL_NONE;
+				for (int i = 0; i < FILTER_OR_COUNT; i++) {
+					if (sf.spells[i] != SPELL_NONE && sp2 == sf.spells[i]) {
+						foundOnThisSpell = true;
+						break;
+					}
 				}
+				if (foundOnThisSpell)
+					foundCount++;
 			}
-			if (foundOnThisSpell)
-				foundCount++;
 			n += 2;
 			continue;
 		} else if (c == DATA_MATERIAL) {
@@ -103,7 +105,7 @@ _compute static void SpellFilterPassed(uint32_t seed, Spawnable* s, int count, S
 				Spell sp = (Spell)readShort((uint8_t*)(&s->contents), offset);
 				bool foundOnThisSpell = false;
 				for (int i = 0; i < FILTER_OR_COUNT; i++) {
-					if (sf.spells[i] != SPELL_NONE && sp == sf.spells[i]) {
+					if (sf.spells[i] != SPELL_NONE && sp == sf.spells[i] && (j == -1 || !sf.asAlwaysCast)) {
 						foundOnThisSpell = true;
 						break;
 					}

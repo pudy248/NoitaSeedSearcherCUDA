@@ -91,6 +91,8 @@ static void stbhw__get_template_info(WangProcess& p, WangTileset& ts) {
 	ts.heightV = vert_h;
 }
 
+static const char* spawnNames[] = {"spawnHeart", "spawnChest", "spawnPotion"};
+
 static void parse_pixel(WangProcess& p, WangTile& h, int& sIdx, uint32_t pix, uint8_t i, uint8_t j) {
 	for (int16_t z = 0; z < HostSpawnColors[p.biome].count; z++) {
 		if (pix == HostSpawnColors[p.biome].colors[z]) {
@@ -104,7 +106,7 @@ static void parse_pixel(WangProcess& p, WangTile& h, int& sIdx, uint32_t pix, ui
 		if (pix == HostSpawnColors[0].colors[z]) {
 			h.spawns[sIdx++] = {i, j, (int16_t)(HostSpawnColors[p.biome].count + z)};
 			if (DEBUG_FLAGS & DEBUG::LOG_SPAWN_PIXELS)
-				fprintf(stderr, "Wang Spawn (%i, %i): Global %i\n", i, j, z);
+				fprintf(stderr, "Wang Spawn (%i, %i): Global %i (%s)\n", i, j, z, spawnNames[z]);
 			goto end;
 		}
 	}
