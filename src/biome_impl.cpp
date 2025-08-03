@@ -261,10 +261,10 @@ BiomePixelScenes Scenes(
 			// g_gunpowderpool_04
 			PixelSceneData(
 				PS_EXCAVATIONSITE_GUNPOWDERPOOL_04, 1.5f),
-		}),
+		}),*/
 		PixelSceneList({
 			PixelSceneData(PS_EXCAVATIONSITE_MEDITATION_CUBE, 1),
-		})*/});
+		})});
 
 _data BiomeWands wandLevels({
 	WandLevel(2, WAND_T1NS),
@@ -314,7 +314,7 @@ _compute void spawn_meditation_cube(int x, int y, const SpawnParams& params) {
 	random.SetRandomSeedInt(x, y);
 	int rnd = random.Random(1, 100);
 	if (rnd > 96)
-		load_random_pixel_scene(x - 20, y - 29, params, 7, 2);
+		load_random_pixel_scene(x - 20, y - 29, params, 3, 2);
 }
 
 _compute void spawn_item(int x, int y, const SpawnParams& params) {

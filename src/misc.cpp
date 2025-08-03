@@ -169,7 +169,7 @@ _universal _noinline void NollaPRNG::SetRandomSeedInt(int x, int y) {
 	uint64_t r = x * 134217727LLU;
 	uint64_t e = r ? (uint32_t)r : 2u; //SetRandomSeedHelperInt(r);
 	if (102400 <= abs(y) || abs(x) <= 1)
-		r = y * 134217727;
+		r = y * 134217727LLU;
 	else
 		r = (uint32_t)(y * (y * 3483.328 + e));
 	uint32_t g = SetRandomSeedHelper2(e, r, ws);
