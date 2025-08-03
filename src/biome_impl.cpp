@@ -12,8 +12,8 @@
 // Add spawn functions to biome-specific table
 // Update SetBiomeData
 
-static BiomeSpawnColors DefaultSpawnColors({0x78ffff, 0x55ff8c, 0x50a000});
-_data static BiomeSpawnFunctions DefaultSpawnFunctions(NULL, {spawnHeart, spawnChest, spawnPotion});
+static BiomeSpawnColors DefaultSpawnColors({0x78ffff, 0x55ff8c});
+_data static BiomeSpawnFunctions DefaultSpawnFunctions(NULL, {spawnHeart, spawnChest});
 
 _compute static void load_random_pixel_scene(int x, int y, const SpawnParams& params, int index, int dim) {
 	LoadPixelScene(x, y, AllPixelSceneLists[params.currentBiome.bSec.b].lists[index], dim, params);
@@ -148,9 +148,9 @@ _compute void spawn_bbqbox(int x, int y, const SpawnParams& params) {
 	}
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080, 0xc35700, 0x4e175e, 0xf12ab5});
-_data static BiomeSpawnFunctions Funcs(
-	NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02, load_oiltank, load_oiltank_alt, spawn_bbqbox});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080, 0xc35700, 0x4e175e, 0xf12ab5});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02,
+												 load_oiltank, load_oiltank_alt, spawn_bbqbox});
 };
 
 namespace FUNCS_COALMINE_ALT {
@@ -203,8 +203,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 		return;
 	spawnWand(x + 5, y - 9, params);
 }
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
 };
 
 namespace FUNCS_EXCAVATIONSITE {
@@ -326,9 +326,9 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 }
 
 static BiomeSpawnColors Colors(
-	{0x00ff00, 0x00ac64, 0x00ac6e, 0x7868ff, /*0x70d79e, 0x70d79f, 0x70d7a0, 0x70d7a1,*/ 0xb09016});
-_data static BiomeSpawnFunctions Funcs(
-	NULL, {spawn_item, spawn_pixel_scene_04, spawn_pixel_scene_04_alt, spawn_puzzleroom, /*spawn_gunpowderpool_01,
+	{0x50a000, 0x00ff00, 0x00ac64, 0x00ac6e, 0x7868ff, /*0x70d79e, 0x70d79f, 0x70d7a0, 0x70d7a1,*/ 0xb09016});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_04, spawn_pixel_scene_04_alt,
+												 spawn_puzzleroom, /*spawn_gunpowderpool_01,
 			  spawn_gunpowderpool_02, spawn_gunpowderpool_03, spawn_gunpowderpool_04,*/
 			  spawn_meditation_cube});
 };
@@ -458,6 +458,15 @@ _compute void spawn_acidtank_left(int x, int y, const SpawnParams& params) {
 		load_random_pixel_scene(x - 252, y - 12, params, 5, false);
 }*/
 
+_compute void spawn_potion(int x, int y, const SpawnParams& params) {
+	if (!params.sCfg.biomePedestals)
+		return;
+	NollaPRNG random = NollaPRNG(params.seed);
+	float rnd = random.ProceduralRandomf(x, y, 0, 1);
+
+	if (rnd > 0.65f)
+		CheckItemPedestalLoot(x + 6, y - 3, params);
+}
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -466,9 +475,10 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x - 5, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xc800ff, 0xff0080, 0x00ac33, 0x4691c7, 0x3691d7});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xc800ff, 0xff0080, 0x00ac33, 0x4691c7, 0x3691d7});
 _data static BiomeSpawnFunctions Funcs(
-	NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_01_alt, spawn_pixel_scene_02, spawn_pixel_scene_03,
+	NULL, {spawn_potion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_01_alt, spawn_pixel_scene_02,
+			  spawn_pixel_scene_03,
 			  spawn_puzzle_capsule, spawn_puzzle_capsule_b});
 };
 
@@ -523,8 +533,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x + 5, y - 5, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
 
 };
 
@@ -574,8 +584,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
 };
 
 namespace FUNCS_RAINFOREST_OPEN {
@@ -624,8 +634,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
 };
 
 namespace FUNCS_VAULT {
@@ -683,6 +693,15 @@ _compute void spawn_pixel_scene_tall(int x, int y, const SpawnParams& params) {
 	load_random_pixel_scene(x, y, params, 3, true);
 }
 
+_compute void spawn_potion(int x, int y, const SpawnParams& params) {
+	if (!params.sCfg.biomePedestals)
+		return;
+	NollaPRNG random = NollaPRNG(params.seed);
+	float rnd = random.ProceduralRandomf(x, y, 0, 1);
+
+	if (rnd > 0.65f)
+		CheckItemPedestalLoot(x + 6, y - 4, params);
+}
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -691,9 +710,9 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x + 5, y - 6, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080, 0x692e94, 0x822e5b});
-_data static BiomeSpawnFunctions Funcs(
-	NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02, spawn_pixel_scene_wide, spawn_pixel_scene_tall});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080, 0x692e94, 0x822e5b});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02,
+												 spawn_pixel_scene_wide, spawn_pixel_scene_tall});
 };
 
 namespace FUNCS_CRYPT {
@@ -761,9 +780,9 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0x00ac33, 0x97ab00, 0xc9d959});
-_data static BiomeSpawnFunctions Funcs(
-	NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_03, spawn_pixel_scene_05, spawn_pixel_scene_05b});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0x00ac33, 0x97ab00, 0xc9d959});
+_data static BiomeSpawnFunctions Funcs(NULL,
+	{spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_03, spawn_pixel_scene_05, spawn_pixel_scene_05b});
 };
 
 namespace FUNCS_FUNGICAVE {
@@ -774,6 +793,15 @@ _data BiomeWands wandLevels({
 	WandLevel(0.5f, WAND_T1NS),
 });
 
+_compute void spawn_potion(int x, int y, const SpawnParams& params) {
+	if (!params.sCfg.biomePedestals)
+		return;
+	NollaPRNG random = NollaPRNG(params.seed);
+	float rnd = random.ProceduralRandomf(x, y, 0, 1);
+
+	if (rnd > 0.65f)
+		CheckItemPedestalLoot(x, y - 6, params);
+}
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -783,7 +811,7 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 }
 
 static BiomeSpawnColors Colors({0x00ff00});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item});
 };
 
 namespace FUNCS_FUNGIFOREST {
@@ -795,6 +823,15 @@ _data BiomeWands wandLevels({
 	WandLevel(5, WAND_T5B),
 });
 
+_compute void spawn_potion(int x, int y, const SpawnParams& params) {
+	if (!params.sCfg.biomePedestals)
+		return;
+	NollaPRNG random = NollaPRNG(params.seed);
+	float rnd = random.ProceduralRandomf(x, y, 0, 1);
+
+	if (rnd > 0.65f)
+		CheckItemPedestalLoot(x, y - 6, params);
+}
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -804,7 +841,7 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 }
 
 static BiomeSpawnColors Colors({0x00ff00});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item});
 };
 
 namespace FUNCS_RAINFOREST_DARK {
@@ -849,8 +886,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00, 0xff0aff, 0xff0080});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00, 0xff0aff, 0xff0080});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item, spawn_pixel_scene_01, spawn_pixel_scene_02});
 };
 
 namespace FUNCS_WIZARDCAVE {
@@ -871,8 +908,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item});
 };
 
 namespace FUNCS_LIQUIDCAVE {
@@ -893,8 +930,8 @@ _compute void spawn_pixel_scene_01(int x, int y, const SpawnParams& params) {
 	load_random_pixel_scene(x, y, params, 0, 2);
 }
 
-static BiomeSpawnColors Colors({0xff0aff});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_pixel_scene_01});
+static BiomeSpawnColors Colors({0x50a000, 0xff0aff});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_pixel_scene_01});
 
 };
 
@@ -908,6 +945,15 @@ _data BiomeWands wandLevels({
 	WandLevel(2, WAND_T4NS),
 });
 
+_compute void spawn_potion(int x, int y, const SpawnParams& params) {
+	if (!params.sCfg.biomePedestals)
+		return;
+	NollaPRNG random = NollaPRNG(params.seed);
+	float rnd = random.ProceduralRandomf(x, y, 0, 1);
+
+	if (rnd > 0.65f)
+		CheckItemPedestalLoot(x + 6, y - 4, params);
+}
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -916,8 +962,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x + 5, y - 6, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item});
 };
 
 namespace FUNCS_VAULT_FROZEN {
@@ -929,6 +975,15 @@ _data BiomeWands wandLevels({
 	WandLevel(2, WAND_T4NS),
 });
 
+_compute void spawn_potion(int x, int y, const SpawnParams& params) {
+	if (!params.sCfg.biomePedestals)
+		return;
+	NollaPRNG random = NollaPRNG(params.seed);
+	float rnd = random.ProceduralRandomf(x, y, 0, 1);
+
+	if (rnd > 0.65f)
+		CheckItemPedestalLoot(x + 6, y - 4, params);
+}
 _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	NollaPRNG random(params.seed);
 	float r = random.ProceduralRandomf(x - 11.631, y + 10.2257, 0, 1);
@@ -938,8 +993,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 		CheckUtilityBoxLoot(x, y, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item});
 };
 
 namespace FUNCS_MEAT {
@@ -961,8 +1016,8 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 		CheckUtilityBoxLoot(x, y, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00});
-_data static BiomeSpawnFunctions Funcs(NULL, {spawn_item});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00});
+_data static BiomeSpawnFunctions Funcs(NULL, {spawnPotion, spawn_item});
 };
 
 namespace FUNCS_WANDCAVE {
