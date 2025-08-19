@@ -138,7 +138,7 @@ _compute static void WandStatFilterPassed(Spawnable* s, int count, WandStatFilte
 		if (c == DATA_WAND) {
 			n++;
 			WandData dat = readMisalignedWand((WandData*)(&s->contents + n));
-			float stat;
+			float stat;	
 			switch (wsf.stat) {
 			case WandStat::SHUFFLE: stat = dat.shuffle; break;
 			case WandStat::MULTICAST: stat = dat.multicast; break;
@@ -146,7 +146,7 @@ _compute static void WandStatFilterPassed(Spawnable* s, int count, WandStatFilte
 			case WandStat::RELOAD: stat = dat.reload; break;
 			case WandStat::MANA: stat = dat.mana; break;
 			case WandStat::REGEN: stat = dat.regen; break;
-			case WandStat::CAPACITY: stat = (int)dat.capacity; break;
+			case WandStat::CAPACITY: stat = floorf(dat.capacity); break;
 			case WandStat::SPEED_MULT: stat = dat.speed; break;
 			}
 			bool passed = false;
@@ -159,7 +159,7 @@ _compute static void WandStatFilterPassed(Spawnable* s, int count, WandStatFilte
 			}
 			if (passed)
 				foundCount++;
-			n += 23 + dat.spellCount * 3;
+			n += 22 + dat.spellCount * 3;
 			continue;
 		}
 	}

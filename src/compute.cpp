@@ -66,7 +66,7 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 		MemSpan miscMem = ArenaAlloc(arena, max(config.memSizes.miscMemSize, 20 * TOTAL_FILTER_COUNT + 128), 8);
 
 #ifdef DO_WORLDGEN
-		for (int biomeNum = 0; biomeNum < config.biomeCount; biomeNum++) {
+		for (int biomeNum = 1; biomeNum < config.biomeCount; biomeNum++) {
 			GeneratedBiome b =
 				GenerateMap(currentSeed, *config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			threadSync();
@@ -79,7 +79,8 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 		}
 #endif
 #ifndef SEEDS_AS_TRIES
-		SpawnParams p = {currentSeed, {}, config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount};
+		SpawnParams p = {currentSeed, *config.biomeScopes[0], config.spawnableCfg, spawnableDat, spawnableOffset,
+			spawnableCount};
 		CheckMountains(p);
 		CheckEyeRooms(p);
 		CheckNightmareSpawnWands(p);
@@ -332,6 +333,11 @@ recount_end:
 void InstantiateBiomes(
 	BiomeWangScope** ss, int& biomeCount, int& maxMapArea, BiomeMapChunks map, std::vector<Biome>& b) {
 	void* dPtr = UploadToDevice(map.map, map.w * map.h);
+	BiomeWangScope nullScope = {};
+	nullScope.map = {map.w, map.h, (Biome*)dPtr};
+	BiomeWangScope* dnScope = (BiomeWangScope*)UploadToDevice(&nullScope, sizeof(BiomeWangScope));
+	ss[biomeCount++] = dnScope;
+
 	for (auto& c : map.chunks) {
 		if (std::ranges::find(b, c.b) == b.end())
 			continue;

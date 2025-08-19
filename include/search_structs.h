@@ -79,10 +79,10 @@ struct SpellTables {
 	const bool* spellSpawnableInBoxes;
 	const SpellProb* allSpellProbs[11];
 	int spellTierCounts[11];
-	float spellTierSums[11];
+	double spellTierSums[11];
 	const SpellProb* spellProbs_Types[11][8];
 	int spellProbs_Counts[11][8];
-	float spellProbs_Sums[11][8];
+	double spellProbs_Sums[11][8];
 };
 
 struct Wand {

@@ -110,6 +110,11 @@ static void GenerateSpellData() {
 		}
 	}
 	HSetSpellData(&tbl);
+	//for (int i = 0; i < spellTables.spellTierCounts[10]; i++) {
+	//	printf("%s %f\n", SpellNames[spellTables.allSpellProbs[10][i].s], spellTables.allSpellProbs[10][i].p);
+	//}
+	//for (int i = 0; i < 10; i++)
+	//	printf("%s\n", SpellNames[GetRandomAction(1502229, 2367, 13166, 10, i)]);
 }
 
 #if 0
@@ -145,8 +150,14 @@ namespace HELPERS
 		uint64_t start = idx;
 		uint64_t stride = std::thread::hardware_concurrency();
 		for (uint64_t i = start; i < MAX_CNT; i += stride) {
-			if (SetRandomSeedHelper(i) != i)
-				printf("%i %lli\n", i, SetRandomSeedHelper(i));
+			uint8_t chest[1000];
+			BiomeWangScope sc = {};
+			SpawnableConfig sCfg = {};
+			int o = 0, scount = 0;
+			CheckNormalChestLoot(0, 0, false, SpawnParams{(int)i, sc, sCfg, {chest, 1000}, o, scount});
+			
+			if (NollaPRNG(i).Random(1, 10000) == 1)
+				counter++;
 		}
 	}
 

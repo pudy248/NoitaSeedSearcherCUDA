@@ -85,7 +85,7 @@ _compute static StatProbBlock statProbabilitiesBetter[] = {{1, 1, {{1, 5, 40, 20
 
 _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset) {
 	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
-	random.SetRandomSeed(x, y);
+	random.SetRandomSeedInt(x, y);
 	level = min(level, 10);
 
 	int low = 0;
@@ -94,7 +94,9 @@ _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int
 	const SpellProb* tierProbs = spellTables.allSpellProbs[level];
 
 	double sum = spellTables.spellTierSums[level];
-	double cutoff = random.NextD() * sum + 0.00001;
+	double cutoff = random.NextD() * sum + 0.0000001;
+	//if (level == 10)
+	//	printf("%i %f %f %i - %f\n", seed, x, y, offset, cutoff);
 
 	while (low < high) {
 		int mid = low + (high - low) / 2;
@@ -107,7 +109,7 @@ _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int
 }
 _compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset) {
 	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
-	random.SetRandomSeed(x, y);
+	random.SetRandomSeedInt(x, y);
 	level = min(level, 10);
 
 	int low = 0;
