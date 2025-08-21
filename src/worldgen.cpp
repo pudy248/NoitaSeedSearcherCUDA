@@ -98,7 +98,7 @@ _compute GeneratedBiome GenerateMap(
 	uint8_t* img = output.ptr + 12;
 	for (int y = 0; y < scope.bSec.map_h; y++) {
 		for (int x = 0; x < scope.bSec.map_w; x++) {
-			uint32_t c = get_pixel<1, false>(b, {}, x, y, scope.ts.short_side_len);
+			uint32_t c = get_pixel<0, false>(b, {}, x, y, scope.ts.short_side_len, coalmine_overlay);
 			if (visited.ptr[y * scope.bSec.map_w + x] == 2 && !false)
 				c = 0xff00ffU;
 			int i = (y * scope.bSec.map_w + x) * 3;

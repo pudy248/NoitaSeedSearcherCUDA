@@ -6,6 +6,7 @@
 #include "../include/noita_random.h"
 #include "../include/worldgen_structs.h"
 
+constexpr int BIOME_PATH_FIND_HEIGHT_LIMIT = 205;
 constexpr int BIOME_PATH_FIND_WORLD_POS_MIN_X = 159;
 constexpr int BIOME_PATH_FIND_WORLD_POS_MAX_X = 223;
 constexpr int WORLD_OFFSET_X = 35;
@@ -167,6 +168,8 @@ _compute bool isValid(const GeneratedBiome& s, MemSpan stackMemArea, MemSpan vis
 	uint32_t path_start_x = 0;
 	if (s.scope.bSec.b == B_COALMINE)
 		path_start_x = 0x8e;
+	else if (s.scope.bSec.map_h > BIOME_PATH_FIND_HEIGHT_LIMIT)
+		return true;
 	else if (active)
 		path_start_x = fill_x_from;
 

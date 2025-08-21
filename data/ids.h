@@ -15,14 +15,23 @@ const char* wand_stats[1][9] = {
 
 const char* carts[1][4] = {{"any", "minecart", "wheelbarrow", "skateboard"}};
 
-const char* items[1][63] = {{"any", "gold_nuggets", "gold_powder", "gold_rain", "bomb", "pouch", "potion_normal",
-	"potion_secret", "potion_random", "kammi", "kuu", "evil_eye", "chaos_die", "shiny_orb", "thunderstone", "firestone",
-	"waterstone", "poopstone", "runestone_light", "runestone_fire", "runestone_magma", "runestone_weight",
-	"runestone_empty", "runestone_edges", "runestone_metal", "random_card", "spell_refresh", "spell_refresh_mimic",
-	"heart", "heart_mimic", "heart_bigger", "full_heal", "wand_t1", "wand_t1ns", "wand_t1b", "wand_t2", "wand_t2ns",
-	"wand_t2b", "wand_t3", "wand_t3ns", "wand_t3b", "wand_t4", "wand_t4ns", "wand_t4b", "wand_t5", "wand_t5ns",
-	"wand_t5b", "wand_t6", "wand_t6ns", "wand_t6b", "wand_t10", "wand_t10ns", "egg_purple", "egg_slime", "egg",
-	"broken_wand", "wand_premade", "mimic", "mimic_leggy", "mimic_sign", "mimic_potion", "sampo", "true_orb"}};
+const char* items[2][63] = {
+	{"any", "gold_nuggets", "gold_powder", "gold_rain", "bomb", "pouch", "potion_normal", "potion_secret",
+		"potion_random", "safe_haven", "moon", "evil_eye", "physics_die", "gold_orb", "thunderstone", "firestone",
+		"waterstone", "poopstone", "runestone_laser", "runestone_fireball", "runestone_lava", "runestone_slow",
+		"runestone_null", "runestone_disc", "runestone_metal", "random_card", "spell_refresh", "spell_refresh_mimic",
+		"heart", "heart_mimic", "heart_better", "heart_fullhp", "wand_t1", "wand_t1ns", "wand_t1b", "wand_t2", "wand_t2ns",
+		"wand_t2b", "wand_t3", "wand_t3ns", "wand_t3b", "wand_t4", "wand_t4ns", "wand_t4b", "wand_t5", "wand_t5ns",
+		"wand_t5b", "wand_t6", "wand_t6ns", "wand_t6b", "wand_t10", "wand_t10ns", "egg_spiders", "egg_slime", "egg_monster",
+		"broken_wand", "wand_premade", "mimic", "chest_leggy", "mimic_sign", "potion_mimic", "sampo", "true_orb"},
+	{"any", "gold_nuggets", "gold_powder", "gold_rain", "bomb", "pouch", "potion_normal", "potion_secret",
+		"potion_random", "kammi", "kuu", "paha_silma", "chaos_die", "shiny_orb", "ukkoskivi", "kiuaskivi",
+		"vuoksikivi", "kakkakikkare", "runestone_light", "runestone_fire", "runestone_magma", "runestone_weight",
+		"runestone_emptiness", "runestone_edges", "runestone_metal", "random_spell", "spell_refresh", "spell_refresh_mimic",
+		"heart", "heart_mimic", "large_heart", "full_heal", "wand_t1", "wand_t1ns", "wand_t1b", "wand_t2", "wand_t2ns",
+		"wand_t2b", "wand_t3", "wand_t3ns", "wand_t3b", "wand_t4", "wand_t4ns", "wand_t4b", "wand_t5", "wand_t5ns",
+		"wand_t5b", "wand_t6", "wand_t6ns", "wand_t6b", "wand_t10", "wand_t10ns", "chilly_egg", "slimy_egg", "egg",
+		"broken_wand", "wand_premade", "mimic", "leggy_mimic", "mimic_sign", "potion_mimic", "sampo", "true_orb"}};
 
 const char* materials[1][470] = {{"any", "var1", "var2", "var3", "var4", "flask", "waterrock", "ice_glass",
 	"ice_glass_b2", "glass_brittle", "wood_player_b2", "wood", "wax_b2", "fuse", "wood_loose", "rock_loose",

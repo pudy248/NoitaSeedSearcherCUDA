@@ -810,7 +810,7 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00});
 _data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item});
 };
 
@@ -840,7 +840,7 @@ _compute void spawn_item(int x, int y, const SpawnParams& params) {
 	spawnWand(x, y - 14, params);
 }
 
-static BiomeSpawnColors Colors({0x00ff00});
+static BiomeSpawnColors Colors({0x50a000, 0x00ff00});
 _data static BiomeSpawnFunctions Funcs(NULL, {spawn_potion, spawn_item});
 };
 
