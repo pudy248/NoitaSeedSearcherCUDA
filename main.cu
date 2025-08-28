@@ -110,11 +110,6 @@ static void GenerateSpellData() {
 		}
 	}
 	HSetSpellData(&tbl);
-	//for (int i = 0; i < spellTables.spellTierCounts[10]; i++) {
-	//	printf("%s %f\n", SpellNames[spellTables.allSpellProbs[10][i].s], spellTables.allSpellProbs[10][i].p);
-	//}
-	//for (int i = 0; i < 10; i++)
-	//	printf("%s\n", SpellNames[GetRandomAction(1502229, 2367, 13166, 10, i)]);
 }
 
 #if 0
