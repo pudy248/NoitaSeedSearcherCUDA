@@ -112,8 +112,14 @@ std::string& get_wak_file(const std::string& path) {
 std::string find_wak() {
 #ifndef __CUDA_ARCH__
 	const char* wakpath = ".wakpath";
-	if (std::filesystem::exists(wakpath))
-		return read_file(wakpath);
+	if (std::filesystem::exists(wakpath)) {
+		std::filesystem::path p = read_file(wakpath);
+		if (p.filename().string() != "data.wak") {
+			printf(".wakpath didn't contain a valid path!\n");
+			exit(-1);
+		}
+		return p.string();
+	}
 
 	std::filesystem::path current = std::filesystem::current_path();
 	std::filesystem::path dialog_ret = locate_file_dialog(
@@ -121,8 +127,10 @@ std::string find_wak() {
 	std::filesystem::current_path(current);
 	write_file(wakpath, dialog_ret.string().c_str());
 
-	if (dialog_ret.filename().string() != "data.wak")
+	if (dialog_ret.filename().string() != "data.wak") {
+		printf("File dialog selection didn't result in a valid path!\n");
 		exit(-1);
+	}
 
 	return dialog_ret.string();
 #else

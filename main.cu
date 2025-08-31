@@ -171,6 +171,7 @@ namespace HELPERS
 void cli_main(int argc, char** argv);
 
 int main(int argc, char** argv) {
+	std::filesystem::current_path() = argv[0];
 	//HELPERS::HCountForEach();
 	//return 0;
 
