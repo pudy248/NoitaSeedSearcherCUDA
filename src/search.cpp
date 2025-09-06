@@ -463,13 +463,13 @@ _compute _noinline static void CheckUtilityBoxLoot(int x, int y, const SpawnPara
 }
 
 _compute void spawnHeart(int x, int y, const SpawnParams& params) {
-	if (!params.sCfg.biomeChests)
-		return;
 	NollaPRNG random = NollaPRNG(params.seed);
 	float r = random.ProceduralRandomf(x, y, 0, 1);
 	float heart_spawn_percent = 0.7f;
 
 	if (r > heart_spawn_percent) {
+		if (!params.sCfg.biomePedestals)
+			return;
 #ifdef DEBUG_ATOMIC_COUNTERS
 		globalHeartCounter++;
 #endif
@@ -480,6 +480,8 @@ _compute void spawnHeart(int x, int y, const SpawnParams& params) {
 		writeInt(params.bytes, params.offset, 1);
 		writeByte(params.bytes, params.offset, HEART_NORMAL);
 	} else if (r > 0.3) {
+		if (!params.sCfg.biomeChests)
+			return;
 		random.SetRandomSeed(x + 45, y - 2123);
 		int rnd = random.Random(1, 100);
 		if (rnd <= 90 || y < 512 * 3) {

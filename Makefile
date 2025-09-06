@@ -1,6 +1,6 @@
 CC:=clang
 
-CFLAGS:=-Iinclude -std=c++23 -O3 -march=haswell -fwrapv -Wno-enum-compare -g
+CFLAGS:=-Iinclude -std=c++23 -O3 -march=native -fwrapv -Wno-enum-compare -g
 #  --cuda-gpu-arch=sm_75 -L/usr/local/cuda-12.4/lib64 -lsfml-system -lsfml-graphics -lsfml-window -lcudart -ldl -lrt
 LIBS:=-lpng -lstdc++ -lm
 SRC:=$(wildcard src/*.cu) $(wildcard src/*.cpp) main.cu $(wildcard include/*.h)
@@ -13,10 +13,10 @@ build_profiled:
 
 profile:
 	$(CC) $(CFLAGS) $(LIBS) -fprofile-generate -xc++ main.cu -o NoitaChestFinder
-	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b coalmine -c -fi sampo -cp --end-seed 40000
-	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b vault -c -i -gp -fm gold -cp --end-seed 250000
-	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b crypt -c -w -gw -gs -fs nuke_giga -cp --end-seed 100000
-	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b coalmine -ps -fp coalmine_oiltank_puzzle -cp --end-seed 40000
+	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b coalmine -c -fi sampo -cp --end-seed 40000 --debug no_pathfinding
+	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b vault -c -i -gp -fm gold -cp --end-seed 250000 --debug no_pathfinding
+	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b crypt -c -w -gw -gs -fs nuke_giga -cp --end-seed 100000 --debug no_pathfinding
+	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder -b coalmine -ps -fp coalmine_oiltank_puzzle -cp --end-seed 40000 --debug no_pathfinding
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --cart skateboard -cp --end-seed 100000000
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --rain acid -cp --end-seed 100000000
 	LLVM_PROFILE_FILE="code-%p.profraw" ./NoitaChestFinder --starting-flask gold -cp --end-seed 50000000
@@ -37,3 +37,16 @@ test:
 	./NoitaChestFinder --alchemy {mud,water,soil} {any,any,any} -cp
 	./NoitaChestFinder --biome-mods {coalmine,extremely_lucrative} -cp
 	./NoitaChestFinder --fungal {gold,cheese_static,0,0} -cp
+
+BIOME = crypt
+test2:
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,10}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,9}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,8}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,7}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,6}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,5}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,4}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,3}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,2}" | grep finished
+	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,1}" | grep finished

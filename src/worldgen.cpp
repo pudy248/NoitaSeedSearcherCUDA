@@ -83,7 +83,7 @@ _compute GeneratedBiome GenerateMap(
 #ifdef SEEDS_AS_TRIES
 		isValid(b, miscMem, visited);
 #else
-		if (isValid(b, miscMem, visited))
+		if ((DEBUG_FLAGS & DEBUG::NO_PATHFINDING) || isValid(b, miscMem, visited))
 			break;
 #endif
 	}
