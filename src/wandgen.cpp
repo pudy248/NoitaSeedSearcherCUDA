@@ -90,10 +90,12 @@ _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int
 
 	int low = 0;
 	int high = spellTables.spellTierCounts[level];
+	if (high <= 0) return SPELL_NONE;
 
 	const SpellProb* tierProbs = spellTables.allSpellProbs[level];
 
 	double sum = spellTables.spellTierSums[level];
+	if (sum <= 0) return SPELL_NONE;
 	double cutoff = random.NextD() * sum + 0.0000001;
 
 	while (low < high) {

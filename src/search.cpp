@@ -80,6 +80,10 @@ _compute static void createWand(double x, double y, Item type, bool addOffset, c
 
 _compute static Spell MakeRandomCard(NollaPRNG& random) {
 	Spell res = SPELL_NONE;
+	// Fast check: if nothing spawnable, return none
+	bool any = false;
+	for (int i = 0; i < SpellCount; ++i) { if (spellTables.spellSpawnableInChests[i]) { any = true; break; } }
+	if (!any) return res;
 	char valid = 0;
 	while (valid == 0) {
 		int itemno = random.Random(0, SpellCount - 1);
@@ -91,6 +95,9 @@ _compute static Spell MakeRandomCard(NollaPRNG& random) {
 }
 _compute static Spell MakeRandomUtility(NollaPRNG& random) {
 	Spell res = SPELL_NONE;
+	bool any = false;
+	for (int i = 0; i < SpellCount; ++i) { if (spellTables.spellSpawnableInBoxes[i]) { any = true; break; } }
+	if (!any) return res;
 	char valid = 0;
 	while (valid == 0) {
 		int itemno = random.Random(0, SpellCount - 1);
