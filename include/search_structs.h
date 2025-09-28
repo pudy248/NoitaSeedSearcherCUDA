@@ -67,6 +67,7 @@ struct SpellData {
 	ActionType type;
 	double spawn_probabilities[11];
 	const char* name;
+	const char* unlock_flag;
 };
 
 struct SpellProb {

@@ -71,16 +71,16 @@ int cmd_verbose(int);
 int cmd_debug(int);
 // Unlock gating commands (new preferred flow)
 int cmd_flags_dir(int);
-int cmd_locked_spells_csv(int);
-int cmd_allow_manual_unlocks(int);
+
+
 int cmd_enable_unlock_gating(int);
 
 static const cmd commands[] = {
 	{"--help", "-h", cmd_help, "Display this menu."},
 	{"--cart", nullptr, cmd_cart, "Select a starting cart."},
 {"--flags-dir", nullptr, cmd_flags_dir, "Path to save00/persistent/flags directory (where achievement flags are files)."},
-	{"--locked-spells-csv", nullptr, cmd_locked_spells_csv, "CSV mapping of locked spell IDs to required flags (export UNLOCKZ.xlsx to CSV)."},
-	{"--allow-manual-unlocks", nullptr, cmd_allow_manual_unlocks, "Treat spawn_manual_unlock spells as unlocked."},
+	
+
 	{"--enable-unlock-gating", "-eug", cmd_enable_unlock_gating, "Enable gating of spells requiring flags; config is persisted."},
 	{"--rain", "-r", cmd_rain, "Select an initial rain."},
 	{"--starting-flask", "-sf", cmd_flask, "Select a starting flask material."},
@@ -339,24 +339,15 @@ int cmd_exact(int i) {
 
 // --- Unlock gating implementation hooks (variables declared in main.cu) ---
 extern bool g_enable_unlock_gating;
-extern bool g_allow_manual_unlocks;
 extern std::string g_flags_dir;
-extern std::string g_locked_csv_path;
 
 int cmd_flags_dir(int i) {
 	check_argc(i, 1);
 	g_flags_dir = std::string(g_argv[i++]);
 	return i;
 }
-int cmd_locked_spells_csv(int i) {
-	check_argc(i, 1);
-	g_locked_csv_path = std::string(g_argv[i++]);
-	return i;
-}
-int cmd_allow_manual_unlocks(int i) {
-	g_allow_manual_unlocks = true;
-	return i;
-}
+
+
 int cmd_enable_unlock_gating(int i) {
 	g_enable_unlock_gating = true;
 	return i;

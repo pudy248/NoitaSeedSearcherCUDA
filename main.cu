@@ -50,16 +50,13 @@ OutputProgressData d;
 
 // --- Unlock gating (config and helpers) --------------------------------------
 bool g_enable_unlock_gating = false;
-bool g_allow_manual_unlocks = false; // kept for compatibility, not commonly needed
+
 
 // Preferred inputs
 std::string g_flags_dir;             // e.g., C:\\Users\\<name>\\AppData\\LocalLow\\Nolla_Games_Noita\\save00\\persistent\\flags
-std::string g_locked_csv_path;       // Optional explicit path to UNLOCKZ.csv (export of UNLOCKZ.xlsx)
 
 // Derived at runtime (internal)
 static std::unordered_set<std::string> g_unlocked_flags; // names from files present in flags dir
-static std::unordered_map<std::string, std::string> g_spell_required_flag; // spell ID -> required flag (from CSV)
-static std::unordered_set<std::string> g_manual_unlock_ids; // from CSV (optional)
 static std::vector<bool> g_spell_unlock_mask; // index by [0..SpellCount-1]
 
 static inline std::string trim(const std::string& s) {
@@ -78,51 +75,8 @@ static inline bool extract_quoted(const std::string& line, std::string& out) {
 	return true;
 }
 
-// Fallback: parse gun_actions.lua if no CSV mapping is provided
-static void ParseGunActionsLuaForUnlocks(const std::string& dataPath) {
-	g_spell_required_flag.clear();
-	g_manual_unlock_ids.clear();
-	std::string p = dataPath + "/scripts/gun/gun_actions.lua";
-	std::ifstream f(p);
-	if (!f) return; // silently skip if not available
-	std::string line;
-	std::string cur_id;
-	bool waiting_flag_value = false;
 
-	while (std::getline(f, line)) {
-		if (line.find("id") != std::string::npos && line.find('"') != std::string::npos) {
-			std::string id;
-			if (extract_quoted(line, id)) {
-				cur_id = id;
-				waiting_flag_value = false;
-			}
-			continue;
-		}
-		if (line.find("spawn_requires_flag") != std::string::npos) {
-			std::string val;
-			if (extract_quoted(line, val)) {
-				if (!cur_id.empty()) g_spell_required_flag[cur_id] = val;
-				waiting_flag_value = false;
-			} else {
-				waiting_flag_value = true;
-			}
-			continue;
-		}
-		if (waiting_flag_value) {
-			std::string val;
-			if (extract_quoted(line, val)) {
-				if (!cur_id.empty()) g_spell_required_flag[cur_id] = val;
-				waiting_flag_value = false;
-			}
-		}
-		if (line.find("spawn_manual_unlock") != std::string::npos) {
-			if (line.find("true") != std::string::npos) {
-				if (!cur_id.empty()) g_manual_unlock_ids.insert(cur_id);
-			}
-			continue;
-		}
-	}
-}
+
 
 
 static void LoadFlagsFromDirectory(const std::string& dir) {
@@ -137,35 +91,7 @@ static void LoadFlagsFromDirectory(const std::string& dir) {
 	}
 }
 
-static void LoadLockedMappingFromCSVContent(std::istream& in) {
-	g_spell_required_flag.clear();
-	g_manual_unlock_ids.clear();
-	std::string line;
-	while (std::getline(in, line)) {
-		if (line.empty()) continue;
-		if (line[0] == '#') continue;
-		auto comma1 = line.find(',');
-		if (comma1 == std::string::npos) continue;
-		std::string id = trim(line.substr(0, comma1));
-		std::string rest = line.substr(comma1 + 1);
-		auto comma2 = rest.find(',');
-		std::string flag = trim(comma2 == std::string::npos ? rest : rest.substr(0, comma2));
-		if (!id.empty() && !flag.empty()) {
-			g_spell_required_flag[id] = flag;
-		}
-		if (comma2 != std::string::npos) {
-			std::string manual = trim(rest.substr(comma2 + 1));
-			if (!manual.empty() && (manual == "1" || manual == "true" || manual == "TRUE"))
-				g_manual_unlock_ids.insert(id);
-		}
-	}
-}
-static void LoadLockedMappingFromCSV(const std::string& csvPath) {
-	if (csvPath.empty()) return;
-	std::ifstream f(csvPath);
-	if (!f) return;
-	LoadLockedMappingFromCSVContent(f);
-}
+
 
 static std::string DefaultFlagsDir() {
 	const char* up = std::getenv("USERPROFILE");
@@ -173,11 +99,7 @@ static std::string DefaultFlagsDir() {
 	std::string base(up);
 	return base + "\\AppData\\LocalLow\\Nolla_Games_Noita\\save00\\persistent\\flags";
 }
-static std::string DefaultLockedCsvInCwd() {
-	std::string p = std::filesystem::current_path().string() + std::string("\\UNLOCKZ.csv");
-	if (std::filesystem::exists(p)) return p;
-	return std::string();
-}
+
 
 static void BuildSpellUnlockMask() {
 	g_spell_unlock_mask.assign(SpellCount, true);
@@ -189,33 +111,15 @@ static void BuildSpellUnlockMask() {
 	// Load current save flags
 	LoadFlagsFromDirectory(g_flags_dir);
 
-	// Load locked mapping from explicit path, else from UNLOCKZ.csv in CWD
-	bool loaded_mapping = false;
-	if (!g_locked_csv_path.empty() && std::filesystem::exists(g_locked_csv_path)) {
-		LoadLockedMappingFromCSV(g_locked_csv_path);
-		loaded_mapping = !g_spell_required_flag.empty();
-	}
-	if (!loaded_mapping) {
-		std::string cwdCsv = DefaultLockedCsvInCwd();
-		if (!cwdCsv.empty()) {
-			LoadLockedMappingFromCSV(cwdCsv);
-			g_locked_csv_path = cwdCsv;
-			loaded_mapping = !g_spell_required_flag.empty();
-		}
-	}
-
 	for (int j = 0; j < SpellCount; ++j) {
-		const char* id = HTables::spells[j].name; // IDs like "BLACK_HOLE_GIGA"
 		bool allowed = true; // default unlocked
-		auto it = g_spell_required_flag.find(id);
-		if (it != g_spell_required_flag.end()) {
+		const char* unlock_flag = HTables::spells[j].unlock_flag;
+		
+		if (unlock_flag != nullptr) {
 			// This spell is gated; require the corresponding flag file to exist
-			allowed = g_unlocked_flags.find(it->second) != g_unlocked_flags.end();
+			allowed = g_unlocked_flags.find(unlock_flag) != g_unlocked_flags.end();
 		}
-		// Optional manual gates
-		if (allowed && g_manual_unlock_ids.find(id) != g_manual_unlock_ids.end()) {
-			allowed = g_allow_manual_unlocks;
-		}
+		
 		g_spell_unlock_mask[j] = allowed;
 	}
 }
