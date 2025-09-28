@@ -35,6 +35,7 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #define PNG_IMPL
 #include "include/pngutils.h"
 
+#ifndef __CUDA_ARCH__
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
@@ -45,6 +46,7 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #include <array>
 #include <chrono>
 #include <filesystem>
+#endif
 
 OutputProgressData d;
 
@@ -52,13 +54,16 @@ OutputProgressData d;
 bool g_enable_unlock_gating = false;
 
 
+#ifndef __CUDA_ARCH__
 // Preferred inputs
 std::string g_flags_dir;             // e.g., C:\\Users\\<name>\\AppData\\LocalLow\\Nolla_Games_Noita\\save00\\persistent\\flags
 
 // Derived at runtime (internal)
 static std::unordered_set<std::string> g_unlocked_flags; // names from files present in flags dir
 static std::vector<bool> g_spell_unlock_mask; // index by [0..SpellCount-1]
+#endif
 
+#ifndef __CUDA_ARCH__
 static inline std::string trim(const std::string& s) {
 	const char* ws = " \t\r\n";
 	size_t b = s.find_first_not_of(ws);
@@ -74,11 +79,13 @@ static inline bool extract_quoted(const std::string& line, std::string& out) {
 	out = line.substr(a + 1, b - a - 1);
 	return true;
 }
+#endif
 
 
 
 
 
+#ifndef __CUDA_ARCH__
 static void LoadFlagsFromDirectory(const std::string& dir) {
 	g_unlocked_flags.clear();
 	if (dir.empty()) return;
@@ -91,16 +98,16 @@ static void LoadFlagsFromDirectory(const std::string& dir) {
 	}
 }
 
-
-
 static std::string DefaultFlagsDir() {
 	const char* up = std::getenv("USERPROFILE");
 	if (!up) return std::string();
 	std::string base(up);
 	return base + "\\AppData\\LocalLow\\Nolla_Games_Noita\\save00\\persistent\\flags";
 }
+#endif
 
 
+#ifndef __CUDA_ARCH__
 static void BuildSpellUnlockMask() {
 	g_spell_unlock_mask.assign(SpellCount, true);
 	if (!g_enable_unlock_gating) return;
@@ -127,7 +134,9 @@ static void BuildSpellUnlockMask() {
 static inline bool spell_unlocked_idx(int j) {
 	return (j >= 0 && j < SpellCount) && (!g_enable_unlock_gating || (j < (int)g_spell_unlock_mask.size() && g_spell_unlock_mask[j]));
 }
+#endif
 
+#ifndef __CUDA_ARCH__
 static void GenerateSpellData() {
 	SpellTables tbl;
 	std::array<bool, SpellCount> spellSpawnableInChests = {};
@@ -198,6 +207,7 @@ static void GenerateSpellData() {
 	}
 	HSetSpellData(&tbl);
 }
+#endif
 
 #if 0
 namespace HELPERS
@@ -258,7 +268,9 @@ namespace HELPERS
 void cli_main(int argc, char** argv);
 
 int main(int argc, char** argv) {
+#ifndef __CUDA_ARCH__
 	std::filesystem::current_path() = argv[0];
+#endif
 	//HELPERS::HCountForEach();
 	//return 0;
 
@@ -342,13 +354,17 @@ int main(int argc, char** argv) {
 	cli_main(argc, argv);
 
 	// Build unlock mask (if enabled via CLI) before generating spell tables
+#ifndef __CUDA_ARCH__
 	BuildSpellUnlockMask();
+#endif
 
 	InitializePlatform();
 	if (DEBUG_DISPATCH_RATE_OVERRIDE)
 		SetTargetDispatchRate(DEBUG_DISPATCH_RATE_OVERRIDE);
 	HSetBiomeData();
+#ifndef __CUDA_ARCH__
 	GenerateSpellData();
+#endif
 
 	BiomeMapChunks map = load_biome_map("data/biome_impl/biome_map.png", 0);
 	int biomeCount = 0;
