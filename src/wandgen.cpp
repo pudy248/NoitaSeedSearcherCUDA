@@ -482,7 +482,7 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 			bulletCard = GetRandomActionWithType(seed, x, y, extraLevel, PROJECTILE, 0);
 		}
 		if (cardCount < 3) {
-			if (cardCount < 1 && random.Random(0, 100) < 20) {
+			if (cardCount > 1 && random.Random(0, 100) < 20) {
 				card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
 				gun->spells[gun->spellCount++] = {DATA_SPELL, card};
 				cardCount--;
