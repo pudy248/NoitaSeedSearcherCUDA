@@ -38,15 +38,11 @@ test:
 	./NoitaChestFinder --biome-mods {coalmine,extremely_lucrative} -cp
 	./NoitaChestFinder --fungal {gold,cheese_static,0,0} -cp
 
-BIOME = crypt
 test2:
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,10}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,9}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,8}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,7}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,6}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,5}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,4}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,3}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,2}" | grep finished
-	@./NoitaChestFinder --debug no_pathfinding -b $(BIOME) -i -cp --end-seed 20000000 -a -fi "{heart,1}" | grep finished
+	@for b in wizardcave meat vault_frozen robobase; do \
+	echo $$b; \
+	for i in $$(seq 1 15); do\
+		echo -n ">="$$i": ";\
+		./NoitaChestFinder --debug no_pathfinding -b $$b -i -cp --end-seed 20000000 -a -fi "{"heart,$$i"}" -li 0;\
+    done;\
+	done;

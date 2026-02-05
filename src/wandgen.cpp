@@ -454,7 +454,8 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 		cardCount += random.Random(1, 2);
 
 	goodCards = random.Random(5, 45);
-	cardCount = random.Random((int)(0.51f * capacity), capacity);
+	cardCount = random.Random((int)roundf(0.51f * capacity), capacity);
+	printf("%.0f %.0f %i\n", x, y, cardCount);
 	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
 
 	if (random.Random(0, 100) < (orig_level * 10) - 5)
@@ -555,7 +556,7 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 		cardCount += random.Random(1, 2);
 
 	goodCards = random.Random(5, 45);
-	cardCount = random.Random((int)(0.51f * capacity), capacity);
+	cardCount = random.Random((int)roundf(0.51f * capacity), capacity);
 	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
 
 	random.Next();
@@ -576,7 +577,7 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 		gun->alwaysCast = {DATA_SPELL, SPELL_NONE};
 
 	if (cardCount < 3) {
-		if (cardCount < 1 && random.Random(0, 100) < 20) {
+		if (cardCount > 1 && random.Random(0, 100) < 20) {
 			card = GetRandomActionWithType(seed, x, y, level, MODIFIER, 2);
 			gun->spells[gun->spellCount++] = {DATA_SPELL, card};
 			cardCount--;
