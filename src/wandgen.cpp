@@ -440,9 +440,9 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 
 	int orig_level = _level;
 	int level = _level - 1;
-	int capacity = (int)gun->capacity;
+	float capacity = gun->capacity;
 	int multicast = gun->multicast;
-	int cardCount = random.Random(1, 3);
+	float cardCount = random.Random(1, 3);
 	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
 	Spell card = SPELL_NONE;
 	int randomBullets = 0;
@@ -454,9 +454,8 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 		cardCount += random.Random(1, 2);
 
 	goodCards = random.Random(5, 45);
-	cardCount = random.Random((int)roundf(0.51f * capacity), capacity);
-	printf("%.0f %.0f %i\n", x, y, cardCount);
-	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
+	cardCount = random.Random(roundf(0.51f * capacity), roundf(capacity));
+	cardCount = fminf(fmaxf(cardCount, 1), capacity - 1);
 
 	if (random.Random(0, 100) < (orig_level * 10) - 5)
 		randomBullets = 1;
@@ -489,7 +488,7 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 				cardCount--;
 			}
 
-			for (int i = 0; i < cardCount; i++)
+			for (int i = 0; i < (int)cardCount; i++)
 				gun->spells[gun->spellCount++] = {DATA_SPELL, bulletCard};
 		} else {
 			if (random.Random(0, 100) < 40) {
@@ -508,11 +507,11 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 				cardCount--;
 			}
 
-			for (int i = 0; i < cardCount; i++)
+			for (int i = 0; i < (int)cardCount; i++)
 				gun->spells[gun->spellCount++] = {DATA_SPELL, bulletCard};
 		}
 	} else {
-		for (int i = 0; i < cardCount; i++) {
+		for (int i = 0; i < (int)cardCount; i++) {
 			if (random.Random(0, 100) < goodCards && cardCount > 2) {
 				if (good_card_count == 0 && multicast == 1) {
 					card = GetRandomActionWithType(seed, x, y, level, DRAW_MANY, i + 1);
@@ -544,8 +543,8 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 
 	int orig_level = _level;
 	int level = _level - 1;
-	int capacity = (int)gun->capacity;
-	int cardCount = random.Random(1, 3);
+	float capacity = gun->capacity;
+	float cardCount = random.Random(1, 3);
 	Spell bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, 0);
 	Spell card = SPELL_NONE;
 	int good_card_count = 0;
@@ -556,8 +555,8 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 		cardCount += random.Random(1, 2);
 
 	goodCards = random.Random(5, 45);
-	cardCount = random.Random((int)roundf(0.51f * capacity), capacity);
-	cardCount = (int)fminf(fmaxf(cardCount, 1), capacity - 1);
+	cardCount = random.Random(roundf(0.51f * capacity), roundf(capacity));
+	cardCount = fminf(fmaxf(cardCount, 1), capacity - 1);
 
 	random.Next();
 
@@ -583,7 +582,7 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 			cardCount--;
 		}
 
-		for (int i = 0; i < cardCount; i++)
+		for (int i = 0; i < (int)cardCount; i++)
 			gun->spells[gun->spellCount++] = {DATA_SPELL, bulletCard};
 	} else {
 		if (random.Random(0, 100) < 40) {
@@ -602,7 +601,7 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 			cardCount--;
 		}
 
-		for (int i = 0; i < cardCount; i++)
+		for (int i = 0; i < (int)cardCount; i++)
 			gun->spells[gun->spellCount++] = {DATA_SPELL, bulletCard};
 	}
 }
