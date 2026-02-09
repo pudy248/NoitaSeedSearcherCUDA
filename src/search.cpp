@@ -719,7 +719,7 @@ _compute static void spawnHellShop(int x, int y, const SpawnParams& params) {
 _compute static Wand GetShopWand(NollaPRNG& random, double x, double y, int level, bool gen_spells) {
 	random.SetRandomSeed(x, y);
 	bool shuffle = random.Random(0, 100) <= 50;
-	return GetWandWithLevel(random.world_seed, x, y, level, shuffle, false, gen_spells);
+	return GetWandWithLevel(random.world_seed, round(x), y, level, !shuffle, false, gen_spells);
 }
 
 _compute void CheckMountains(const SpawnParams& params) {
@@ -739,7 +739,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 		NollaPRNG random(params.seed);
 		int width = 132;
 		constexpr int itemCount = 5;
-		float stepSize = width / (float)itemCount;
+		double stepSize = width / (double)itemCount;
 		for (int pw = params.sCfg.pwCenter.x - params.sCfg.pwWidth.x;
 			pw <= params.sCfg.pwCenter.x + params.sCfg.pwWidth.x; pw++) {
 			for (int hm_level = params.sCfg.minHMidx; hm_level <= min(params.sCfg.maxHMidx, pw == 0 ? 7 : 6);
@@ -763,7 +763,7 @@ _compute void CheckMountains(const SpawnParams& params) {
 					params.offset += 4;
 
 					for (int i = 0; i < itemCount; i++) {
-						Wand w = GetShopWand(random, round(x + i * stepSize), y, max(1, tier), params.sCfg.genSpells);
+						Wand w = GetShopWand(random, x + i * stepSize, y, max(1, tier), params.sCfg.genSpells);
 						writeByte(params.bytes, params.offset, DATA_WAND);
 						params.bytes.is_safe("CheckMountains", "output", params.offset + 22 + w.spellCount * 3);
 						cMemcpyU(params.bytes.ptr + params.offset, &w.capacity, 23);
