@@ -136,10 +136,10 @@ _compute _noinline static void CheckNormalChestLoot(int x, int y, bool hasMimicS
 			}
 
 			rnd = random.Random(0, 100);
-			if (rnd > 30) {
+			if (rnd <= 99) {
 				random.Next();
 				random.Next();
-			} else if (rnd > 99) {
+			} else {
 				int tamount = random.Random(1, 3);
 				for (int i = 0; i < tamount; i++) {
 					random.Next();
