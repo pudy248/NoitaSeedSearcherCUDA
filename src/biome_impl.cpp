@@ -561,7 +561,7 @@ _data BiomeWands wandLevels({
 	WandLevel(5, WAND_T4),
 	WandLevel(5, WAND_T5),
 	WandLevel(3, WAND_T2NS),
-	WandLevel(3, WAND_T2NS),
+	WandLevel(3, WAND_T3NS),
 	WandLevel(5, WAND_T4B),
 });
 
@@ -611,7 +611,7 @@ _data BiomeWands wandLevels({
 	WandLevel(5, WAND_T4),
 	WandLevel(5, WAND_T5),
 	WandLevel(3, WAND_T2NS),
-	WandLevel(3, WAND_T2NS),
+	WandLevel(3, WAND_T3NS),
 	WandLevel(5, WAND_T4B),
 });
 
@@ -863,7 +863,7 @@ _data BiomeWands wandLevels({
 	WandLevel(5, WAND_T4),
 	WandLevel(5, WAND_T5),
 	WandLevel(3, WAND_T2NS),
-	WandLevel(3, WAND_T2NS),
+	WandLevel(3, WAND_T3NS),
 	WandLevel(5, WAND_T4B),
 });
 
