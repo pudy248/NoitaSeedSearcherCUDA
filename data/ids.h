@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 namespace IDs {
-const char* debug_flags[1][11] = {{"all", "verbose", "backend", "biome_sectors", "spawn_pixels", "seed_blocks",
-	"cli_parsing", "single_thread", "no_pathfinding", "seed_block_override", "dispatch_rate_override"}};
+const char* debug_flags[1][14] = {{"all", "verbose", "backend", "biome_sectors", "spawn_pixels", "seed_blocks", "cli_parsing",
+	"single_thread", "no_pathfinding", "image_output", "seed_block_override", "dispatch_rate_override", "output_size_override", "seeds_as_tries"}};
 
 const char* booleans[1][2] = {{"false", "true"}};
 const char* alchemy_orderings[1][3] = {{"unordered", "only_consumed", "strictly_ordered"}};

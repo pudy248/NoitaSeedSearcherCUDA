@@ -31,6 +31,7 @@ _compute void spawnChest(int x, int y, const SpawnParams& params);
 _compute void spawnPotion(int x, int y, const SpawnParams& params);
 _compute void spawnWand(int x, int y, const SpawnParams& params);
 _compute void LoadPixelScene(int x, int y, const PixelSceneList& list, int dim, const SpawnParams& params);
+_compute void spawnHellShop(int x, int y, const SpawnParams& params);
 
 _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset);
 _compute Spell GetRandomActionWithType(uint32_t seed, double x, double y, int level, ActionType type, int offset);

@@ -686,19 +686,19 @@ int cmd_debug(int i) {
 	check_argc(i, 1);
 	for (; i < g_argc && g_argv[i][0] != '-';) {
 		int flag = list_to_id(g_argv[i++], IDs::debug_flags);
-		if (flag >= 9) {
+		if (flag >= 10) {
 			check_argc(i, 1);
 			int value = to_int(g_argv[i++]);
 			switch (flag) {
-			case 9:
+			case 10:
 				DEBUG_SEED_BLOCK_OVERRIDE = value;
 				config.generalCfg.seedBlockOverride = true;
 				break;
-			case 10: DEBUG_DISPATCH_RATE_OVERRIDE = value; break;
+			case 11: DEBUG_DISPATCH_RATE_OVERRIDE = value; break;
+			case 12: DEBUG_OUTPUT_SIZE_OVERRIDE = value; break;
+			case 13: DEBUG_SEEDS_AS_TRIES = value; break;
 			}
 		}
-		else if (!flag)
-			DEBUG_FLAGS |= DEBUG::ALL;
 		else
 			DEBUG_FLAGS |= (1 << (flag - 1));
 	}

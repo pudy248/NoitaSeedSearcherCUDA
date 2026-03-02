@@ -70,31 +70,28 @@ _compute SpanRet PLATFORM_API::EvaluateSpan(
 			GeneratedBiome b =
 				GenerateMap(currentSeed, *config.biomeScopes[biomeNum], output, mapMem, visited, miscMem);
 			threadSync();
-#ifndef SEEDS_AS_TRIES
-			SpawnParams p = {currentSeed, *config.biomeScopes[biomeNum], config.spawnableCfg, spawnableDat,
-				spawnableOffset, spawnableCount};
-			CheckSpawnables(b, p);
-			threadSync();
-#endif
+			if (!DEBUG_SEEDS_AS_TRIES) {
+				SpawnParams p = {currentSeed, *config.biomeScopes[biomeNum], config.spawnableCfg, spawnableDat,
+					spawnableOffset, spawnableCount};
+				CheckSpawnables(b, p);
+				threadSync();
+			}
 		}
 #endif
-#ifndef SEEDS_AS_TRIES
-		SpawnParams p = {currentSeed, *config.biomeScopes[0], config.spawnableCfg, spawnableDat, spawnableOffset,
-			spawnableCount};
-		CheckMountains(p);
-		CheckEyeRooms(p);
-		CheckNightmareSpawnWands(p);
-		threadSync();
+		if (!DEBUG_SEEDS_AS_TRIES) {
+			SpawnParams p = {currentSeed, *config.biomeScopes[0], config.spawnableCfg, spawnableDat, spawnableOffset, spawnableCount};
+			CheckMountains(p);
+			CheckEyeRooms(p);
+			CheckNightmareSpawnWands(p);
+			threadSync();
 
-		SpawnableBlock result =
-			ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
-		threadSync();
-		seedPassed &=
-			SpawnablesPassed(result, config.filterCfg, output, miscMem, true, config.precheckCfg.precheckUpwarps);
+			SpawnableBlock result = ParseSpawnableBlock(spawnableDat.ptr, spawnables, config.spawnableCfg, currentSeed, spawnableCount);
+			threadSync();
+			seedPassed &= SpawnablesPassed(result, config.filterCfg, output, miscMem, true, config.precheckCfg.precheckUpwarps);
 
-		if (!seedPassed)
-			continue;
-#endif
+			if (!seedPassed)
+				continue;
+		}
 		if (config.outputCfg.countPassesOnly)
 			seedsFound++;
 		else {

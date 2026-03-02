@@ -705,7 +705,11 @@ _compute void LoadPixelScene(int x, int y, const PixelSceneList& list, int dim, 
 }
 */
 
-_compute static void spawnHellShop(int x, int y, const SpawnParams& params) {
+_compute void spawnHellShop(int x, int y, const SpawnParams& params) {
+	if (y > -params.currentBiome.bSec.worldY * 512 && y < (params.currentBiome.bSec.worldH - params.currentBiome.bSec.worldY) * 512) {
+		printf("%i, %i is not in a PW.\n", x, y);
+		return;
+	}
 	params.sCount++;
 	writeInt(params.bytes, params.offset, x);
 	writeInt(params.bytes, params.offset, y);

@@ -178,13 +178,8 @@ int main(int argc, char** argv) {
 	read_wak(find_wak().c_str());
 
 	config.generalCfg = {
-#ifdef SEEDS_AS_TRIES
-		.seedStart = 1,
-		.seedEnd = 100,
-#else
 		.seedStart = 1,
 		.seedEnd = INT_MAX - 1,
-#endif
 		.seedBlockSize = 1,
 		.seedBlockOverride = false,
 		.priority = 0,
@@ -278,14 +273,15 @@ int main(int argc, char** argv) {
 #ifdef IMAGE_OUTPUT
 		.outputSize = (size_t)maxMapArea * 3 + 512, // output
 #else
-		.outputSize = (size_t)8192,
+		.outputSize = DEBUG_OUTPUT_SIZE_OVERRIDE ? (size_t) DEBUG_OUTPUT_SIZE_OVERRIDE : (size_t)8192,
 #endif
 		.mapDataSize = (size_t)maxMapArea * 2,
 		.miscMemSize = (size_t)maxMapArea * 2,
 		.visitedMemSize = (size_t)maxMapArea + 512,
 		.spawnableMemSize = max((size_t)maxMapArea / 4, 8192u),
 	};
-
+	if (config.outputCfg.outputMode == 3)
+		config.memSizes.outputSize = (size_t)maxMapArea * 3 + 512;
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.x * 2 + 1;
 	config.memSizes.spawnableMemSize *= config.spawnableCfg.pwWidth.y * 2 + 1;
 	config.memSizes.spawnableMemSize *= max(1, biomeCount);

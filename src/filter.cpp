@@ -393,9 +393,8 @@ _compute bool SpawnablesPassed(
 											   fCfg.pixelSceneFilterCount + fCfg.wandStatFilterCount) > 0)
 			return false;
 	}
-#ifndef IMAGE_OUTPUT
-	if (write)
+
+	if (write && (~DEBUG_FLAGS & DEBUG::IMAGE_OUTPUT))
 		WriteOutputBlock(output, {b.seed, relevantSpawnableCount, relevantSpawnables});
-#endif
 	return true;
 }

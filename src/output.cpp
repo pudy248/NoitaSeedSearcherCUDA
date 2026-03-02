@@ -34,7 +34,8 @@ void PrintOutputBlock(
 //write output
 {
 	char* seedNum = (char*)malloc(12);
-	char* seedInfo = (char*)malloc(16384);
+	const int outputSize = DEBUG_OUTPUT_SIZE_OVERRIDE ? 2 * DEBUG_OUTPUT_SIZE_OVERRIDE : 16384;
+	char* seedInfo = (char*)malloc(outputSize);
 	int memOffset = 0;
 	int bufOffset = 0;
 	int seed = readInt(output, memOffset);
@@ -157,7 +158,7 @@ void PrintOutputBlock(
 		if (outputCfg.printOutputToConsole)
 			printf("%s\n", seedInfo);
 	}
-	if (bufOffset > 16384)
+	if (bufOffset > outputSize)
 		fprintf(stderr, "Buffer overflow in output with size %i\n", bufOffset);
 	if (appendOutput != NULL)
 		appendOutput(seedNum, seedInfo);
