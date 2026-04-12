@@ -140,29 +140,29 @@ namespace HELPERS
 	}
 #else
 	constexpr uint64_t MAX_CNT = 2147483647;
-	std::atomic<int> counter = 0;
+	volatile int buckets[1000] = {};
 	void CountForEach(int idx) {
 		uint64_t start = idx;
 		uint64_t stride = std::thread::hardware_concurrency();
 		for (uint64_t i = start; i < MAX_CNT; i += stride) {
-			uint8_t chest[1000];
-			BiomeWangScope sc = {};
-			SpawnableConfig sCfg = {};
-			int o = 0, scount = 0;
-			CheckNormalChestLoot(0, 0, false, SpawnParams{(int)i, sc, sCfg, {chest, 1000}, o, scount});
-			
-			if (NollaPRNG(i).Random(1, 10000) == 1)
-				counter++;
+			if (i % 100000000 == 0)
+				printf("%i\n", i);
+			Wand w = GetWandWithLevelGivenSeed(i, 11, false);
+			buckets[(int)w.sprite] = buckets[(int)w.sprite] + 1;
 		}
 	}
 
 	static void HCountForEach() {
-		{
-			std::vector<std::jthread> vec;
-			for (int i = 0; i < std::thread::hardware_concurrency(); i++)
-				vec.emplace_back(CountForEach, i);
-		}
-		printf("%i %f\n", counter.load(), (double)counter.load() / MAX_CNT);
+        {
+            std::vector<std::jthread> vec;
+            for (int i = 0; i < std::thread::hardware_concurrency(); i++)
+                vec.emplace_back(CountForEach, i);
+        }
+        for (int i = 0; i < 1000; i++) {
+            printf("%i,", buckets[i]);
+            buckets[i] = 0;
+        }
+        printf("\n");
 	}
 #endif
 }

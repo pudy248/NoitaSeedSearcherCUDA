@@ -26,7 +26,7 @@ _compute uint32_t get_pixel(const GeneratedBiome& s, const MainPathFill& f, int 
 		return COLOR_BLACK;
 
 	if (f.active) {
-		if (y < 6 && x >= f.x1 && x <= f.x2)
+		if (y < 7 && x >= f.x1 && x <= f.x2)
 			return COLOR_BLACK;
 	}
 	y += 4;

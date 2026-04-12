@@ -168,6 +168,15 @@ static int to_int(const std::string_view s) {
 	}
 	return result;
 }
+static float to_float(const std::string_view s) {
+	float result;
+	auto err = std::from_chars(s.data(), s.data() + s.size(), result);
+	if (err.ec != std::errc{} || err.ptr != s.data() + s.size()) {
+		fprintf(stderr, "Value '%.*s' could not be converted to a number.\n", (int)s.size(), s.data());
+		std::exit(-1);
+	}
+	return result;
+}
 
 template <std::size_t N, std::size_t N2>
 static int list_to_id(std::string_view s, const char* (&lists)[N2][N]) {
@@ -601,7 +610,7 @@ int cmd_filter_wands(int i) {
 	for (; i < g_argc && g_argv[i][0] != '-';) {
 		auto composite = decompose(g_argv[i++], {2, 3, 4});
 		config.filterCfg.wandStatFilters[j].stat = (WandStat)list_to_id(composite[0], IDs::wand_stats);
-		config.filterCfg.wandStatFilters[j].value = to_int(composite[1]);
+		config.filterCfg.wandStatFilters[j].value = to_float(composite[1]);
 		config.filterCfg.wandStatFilters[j].comparison =
 			composite.size() > 2 ? list_to_id(composite[2], IDs::comparisons) : 3;
 		config.filterCfg.wandStatFilters[j++].duplicates = composite.size() > 3 ? to_int(composite[3]) : 1;
