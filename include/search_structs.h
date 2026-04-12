@@ -103,6 +103,7 @@ struct Wand {
 	int8_t spread;
 	bool shuffle;
 	uint8_t spellCount;
+	int sprite;
 	LabelledSpell alwaysCast;
 	LabelledSpell spells[67];
 };
@@ -232,8 +233,7 @@ struct PixelSceneFilter {
 	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes);
 	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, int _dupes);
 	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials);
-	PixelSceneFilter(
-		std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes);
+	PixelSceneFilter(std::initializer_list<PixelScene> _pixelScenes, std::initializer_list<Material> _materials, int _dupes);
 };
 struct WandStatFilter {
 	WandStat stat;

@@ -148,6 +148,7 @@ _compute static void WandStatFilterPassed(Spawnable* s, int count, WandStatFilte
 			case WandStat::REGEN: stat = dat.regen; break;
 			case WandStat::CAPACITY: stat = floorf(dat.capacity); break;
 			case WandStat::SPEED_MULT: stat = dat.speed; break;
+			case WandStat::SPREAD: stat = dat.spread; break;
 			}
 			bool passed = false;
 			switch (wsf.comparison) {

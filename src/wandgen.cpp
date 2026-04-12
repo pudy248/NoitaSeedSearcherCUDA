@@ -7,8 +7,8 @@
 #include <cmath>
 #include <cstdio>
 
-_compute static void GetBestSprite(NollaPRNG& rnd, Wand w) {
-	//float bestScore = 1000;
+_compute static void GetBestSprite(NollaPRNG& rnd, Wand& w) {
+	float bestScore = 100000;
 	WandSpaceDat gunInWandSpace = {};
 	gunInWandSpace.fire_rate_wait = fminf(fmaxf(((w.delay + 5) / 7.0f) - 1, 0), 4);
 	gunInWandSpace.actions_per_round = fminf(fmaxf(w.multicast - 1, 0), 2);
@@ -38,16 +38,15 @@ _compute static void GetBestSprite(NollaPRNG& rnd, Wand w) {
 								if (rnd.Random(0, 100) < 33)
 									break;
 		//float score = 0;
-		//score += abs(gunInWandSpace.fire_rate_wait - wandSprites[i].fire_rate_wait) * 2;
-		//score += abs(gunInWandSpace.actions_per_round - wandSprites[i].actions_per_round) * 20;
+		//score += fabsf(gunInWandSpace.fire_rate_wait - wandSprites[i].fire_rate_wait) * 2;
+		//score += fabsf(gunInWandSpace.actions_per_round - wandSprites[i].actions_per_round) * 20;
 		//score += abs(gunInWandSpace.shuffle_deck_when_empty - wandSprites[i].shuffle_deck_when_empty) * 30;
-		//score += abs(gunInWandSpace.deck_capacity - wandSprites[i].deck_capacity) * 5;
-		//score += abs(gunInWandSpace.spread_degrees - wandSprites[i].spread_degrees);
-		//score += abs(gunInWandSpace.reload_time - wandSprites[i].reload_time);
+		//score += fabsf(gunInWandSpace.deck_capacity - wandSprites[i].deck_capacity) * 5;
+		//score += fabsf(gunInWandSpace.spread_degrees - wandSprites[i].spread_degrees);
+		//score += fabsf(gunInWandSpace.reload_time - wandSprites[i].reload_time);
 		//if (score <= bestScore) {
 		//	bestScore = score;
-		//	printf("best %i\n", i);
-		//	//w.sprite = i;
+		//	w.sprite = i;
 		//	if (score == 0 && rnd.Random(0, 100) < 33)
 		//		break;
 		//}
@@ -72,16 +71,13 @@ _compute static StatProbBlock statProbabilities[] = {
 	{4, 1.87f, {{1, 5, 60, 30, 2}, {0.5f, 1, 100, 40, 2}, {0.02f, 1, 100, 40, 0}, {0.35f, 1, 240, 40, 0}}},
 	{4, 1.65f, {{1, 1, 30, 5, 2}, {0.1f, 1, 50, 15, 3}, {0.1f, -15, 15, 0, 3}, {0.45f, 0, 35, 12, 0}}},
 	{2, 1.1f, {{1, -5, 10, 0, 3}, {0.1f, -35, 35, 0, 0}}},
-	{5, 2.101f,
-		{{1, 0.8f, 1.2f, 1, 6}, {0.05f, 1, 2, 1.1f, 3}, {0.05f, 0.5f, 1, 0.9f, 3}, {1, 0.8f, 1.2f, 1, 0},
-			{0.001f, 1, 10, 5, 2}}},
+	{5, 2.101f, {{1, 0.8f, 1.2f, 1, 6}, {0.05f, 1, 2, 1.1f, 3}, {0.05f, 0.5f, 1, 0.9f, 3}, {1, 0.8f, 1.2f, 1, 0}, {0.001f, 1, 10, 5, 2}}},
 	{7, 2.57f,
-		{{1, 3, 10, 6, 2}, {0.1f, 2, 7, 4, 4}, {0.05f, 1, 5, 3, 4}, {0.15f, 5, 11, 8, 2}, {0.12f, 2, 20, 8, 4},
-			{0.15f, 3, 12, 6, 6}, {1, 1, 20, 6, 0}}},
+		{{1, 3, 10, 6, 2}, {0.1f, 2, 7, 4, 4}, {0.05f, 1, 5, 3, 4}, {0.15f, 5, 11, 8, 2}, {0.12f, 2, 20, 8, 4}, {0.15f, 3, 12, 6, 6},
+			{1, 1, 20, 6, 0}}},
 	{4, 2.25f, {{1, 1, 3, 1, 3}, {0.2f, 2, 4, 2, 8}, {0.05f, 1, 5, 2, 2}, {1, 1, 5, 2, 0}}}, {0}};
 _compute static StatProbBlock statProbabilitiesBetter[] = {{1, 1, {{1, 5, 40, 20, 2}}}, {1, 1, {{1, 1, 35, 5, 2}}},
-	{1, 1, {{1, -1, 2, 0, 3}}}, {1, 1, {{1, 0.8f, 1.2f, 1, 6}}}, {1, 1, {{1, 5, 13, 8, 2}}}, {1, 1, {{1, 1, 3, 1, 3}}},
-	{0}};
+	{1, 1, {{1, -1, 2, 0, 3}}}, {1, 1, {{1, 0.8f, 1.2f, 1, 6}}}, {1, 1, {{1, 5, 13, 8, 2}}}, {1, 1, {{1, 1, 3, 1, 3}}}, {0}};
 
 _compute Spell GetRandomAction(uint32_t seed, double x, double y, int level, int offset) {
 	NollaPRNG random = NollaPRNG((uint32_t)(seed + offset));
@@ -188,20 +184,18 @@ _compute static void applyCapacity(Wand* gun, StatProb prob, NollaPRNG& random) 
 	gun->cost -= (gun->capacity - 6) * 5;
 }
 _compute static void applyMulticast(Wand* gun, StatProb prob, NollaPRNG& random) {
-	float actionCosts[] = {0, 5 + (gun->capacity * 2), 15 + (gun->capacity * 3.5f), 35 + (gun->capacity * 5),
-		45 + (gun->capacity * gun->capacity)};
+	float actionCosts[] = {
+		0, 5 + (gun->capacity * 2), 15 + (gun->capacity * 3.5f), 35 + (gun->capacity * 5), 45 + (gun->capacity * gun->capacity)};
 
 	float min = 1;
 	float max = 1;
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 5; i++)
 		if (actionCosts[i] <= gun->cost)
 			max = i + 1;
-	}
 	max = fminf(fmaxf(max, 1), gun->capacity);
 
-	gun->multicast =
-		(int)floorf(fminf(fmaxf(random.RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max));
-	gun->cost -= actionCosts[(int)(fminf(fmaxf(gun->multicast, 1), 5))-1];
+	gun->multicast = (int)floorf(fminf(fmaxf(random.RandomDistribution(prob.min, prob.max, prob.mean, prob.sharpness), min), max));
+	gun->cost -= actionCosts[(int)(fminf(fmaxf(gun->multicast, 1), 5)) - 1];
 }
 _compute static void applyShuffle(Wand* gun, StatProb prob, NollaPRNG& random) {
 	int rnd = random.Random(0, 1);
@@ -302,9 +296,8 @@ _compute static Wand GetWandStats(int _cost, int level, bool force_unshuffle, No
 
 	if (force_unshuffle)
 		gun.shuffle = false;
-	if (random.Random(0, 10000) <= 9999) {
+	if (random.Random(0, 10000) <= 9999)
 		gun.capacity = fminf(fmaxf(gun.capacity, 2), 26);
-	}
 
 	gun.capacity = fmaxf(gun.capacity, 2);
 
@@ -401,9 +394,8 @@ _compute static Wand GetWandStatsBetter(int _cost, int level, NollaPRNG& random)
 	random.Next();
 	//gun.capacity = floor(gun.capacity - 0.1f);
 
-	if (random.Random(0, 10000) <= 9999) {
+	if (random.Random(0, 10000) <= 9999)
 		gun.capacity = fminf(fmaxf(gun.capacity, 2), 26);
-	}
 
 	gun.capacity = fmaxf(gun.capacity, 2);
 
@@ -426,7 +418,7 @@ _compute static Wand GetWandStatsBetter(int _cost, int level, NollaPRNG& random)
 	}
 
 	gun.multicast = fminf(fmaxf(gun.multicast, 1), (int)gun.capacity);
-	
+
 	return gun;
 }
 
@@ -526,9 +518,8 @@ _compute static void AddRandomCards(Wand* gun, uint32_t seed, double x, double y
 				gun->spells[gun->spellCount++] = {DATA_SPELL, card};
 			} else {
 				gun->spells[gun->spellCount++] = {DATA_SPELL, bulletCard};
-				if (randomBullets == 1) {
+				if (randomBullets == 1)
 					bulletCard = GetRandomActionWithType(seed, x, y, level, PROJECTILE, i + 1);
-				}
 			}
 		}
 	}
@@ -606,8 +597,7 @@ _compute static void AddRandomCardsBetter(Wand* gun, uint32_t seed, double x, do
 	}
 }
 
-_compute _noinline static Wand GetWand(
-	uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle, bool gen_spells) {
+_compute _noinline static Wand GetWand(uint32_t seed, double x, double y, int cost, int level, bool force_unshuffle, bool gen_spells) {
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStats(cost, level, force_unshuffle, random);
@@ -623,17 +613,16 @@ _compute _noinline static Wand GetWandBetter(uint32_t seed, double x, double y, 
 	NollaPRNG random = NollaPRNG(seed);
 	random.SetRandomSeed(x, y);
 	Wand wand = GetWandStatsBetter(cost, level, random);
-	//GetBestSprite(random, wand);
 	wand.spellCount = 0;
 #ifdef DO_SPELLGEN
 	if (gen_spells)
 		AddRandomCardsBetter(&wand, seed, x, y, level, random);
 #endif
+	//GetBestSprite(random, wand);
 	return wand;
 }
 
-_compute _noinline Wand GetWandWithLevel(
-	uint32_t seed, double x, double y, int level, bool nonshuffle, bool better, bool gen_spells) {
+_compute _noinline Wand GetWandWithLevel(uint32_t seed, double x, double y, int level, bool nonshuffle, bool better, bool gen_spells) {
 	if (nonshuffle)
 		switch (level) {
 		case 1: return GetWand(seed, x, y, 25, 1, true, gen_spells);

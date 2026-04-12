@@ -168,6 +168,15 @@ static int to_int(const std::string_view s) {
 	}
 	return result;
 }
+static float to_float(const std::string_view s) {
+	float result;
+	auto err = std::from_chars(s.data(), s.data() + s.size(), result);
+	if (err.ec != std::errc{} || err.ptr != s.data() + s.size()) {
+		fprintf(stderr, "Value '%.*s' could not be converted to a number.\n", (int)s.size(), s.data());
+		std::exit(-1);
+	}
+	return result;
+}
 
 template <std::size_t N, std::size_t N2>
 static int list_to_id(std::string_view s, const char* (&lists)[N2][N]) {
