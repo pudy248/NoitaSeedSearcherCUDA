@@ -35,19 +35,115 @@ std::atomic<uint64_t> globalWandCounter = 0;
 #define PNG_IMPL
 #include "include/pngutils.h"
 
+#ifndef __CUDA_ARCH__
+#include <unordered_map>
+#include <unordered_set>
+#include <string>
+#include <fstream>
+#include <vector>
+#include <cstdlib>
+
 #include <array>
 #include <chrono>
 #include <filesystem>
+#endif
 
 OutputProgressData d;
 
+// --- Unlock gating (config and helpers) --------------------------------------
+bool g_enable_unlock_gating = false;
+
+
+#ifndef __CUDA_ARCH__
+// Preferred inputs
+std::string g_flags_dir;             // e.g., C:\\Users\\<name>\\AppData\\LocalLow\\Nolla_Games_Noita\\save00\\persistent\\flags
+
+// Derived at runtime (internal)
+static std::unordered_set<std::string> g_unlocked_flags; // names from files present in flags dir
+static std::vector<bool> g_spell_unlock_mask; // index by [0..SpellCount-1]
+#endif
+
+#ifndef __CUDA_ARCH__
+static inline std::string trim(const std::string& s) {
+	const char* ws = " \t\r\n";
+	size_t b = s.find_first_not_of(ws);
+	if (b == std::string::npos) return "";
+	size_t e = s.find_last_not_of(ws);
+	return s.substr(b, e - b + 1);
+}
+static inline bool extract_quoted(const std::string& line, std::string& out) {
+	size_t a = line.find('"');
+	if (a == std::string::npos) return false;
+	size_t b = line.find('"', a + 1);
+	if (b == std::string::npos) return false;
+	out = line.substr(a + 1, b - a - 1);
+	return true;
+}
+#endif
+
+
+
+
+
+#ifndef __CUDA_ARCH__
+static void LoadFlagsFromDirectory(const std::string& dir) {
+	g_unlocked_flags.clear();
+	if (dir.empty()) return;
+	std::error_code ec;
+	for (auto& entry : std::filesystem::directory_iterator(dir, ec)) {
+		if (ec) break;
+		if (!entry.is_regular_file()) continue;
+		std::string name = entry.path().filename().string();
+		g_unlocked_flags.insert(name);
+	}
+}
+
+static std::string DefaultFlagsDir() {
+	const char* up = std::getenv("USERPROFILE");
+	if (!up) return std::string();
+	std::string base(up);
+	return base + "\\AppData\\LocalLow\\Nolla_Games_Noita\\save00\\persistent\\flags";
+}
+#endif
+
+
+#ifndef __CUDA_ARCH__
+static void BuildSpellUnlockMask() {
+	g_spell_unlock_mask.assign(SpellCount, true);
+	if (!g_enable_unlock_gating) return;
+
+	// Default directories if not set
+	if (g_flags_dir.empty()) g_flags_dir = DefaultFlagsDir();
+
+	// Load current save flags
+	LoadFlagsFromDirectory(g_flags_dir);
+
+	for (int j = 0; j < SpellCount; ++j) {
+		bool allowed = true; // default unlocked
+		const char* unlock_flag = HTables::spells[j].unlock_flag;
+		
+		if (unlock_flag != nullptr) {
+			// This spell is gated; require the corresponding flag file to exist
+			allowed = g_unlocked_flags.find(unlock_flag) != g_unlocked_flags.end();
+		}
+		
+		g_spell_unlock_mask[j] = allowed;
+	}
+}
+
+static inline bool spell_unlocked_idx(int j) {
+	return (j >= 0 && j < SpellCount) && (!g_enable_unlock_gating || (j < (int)g_spell_unlock_mask.size() && g_spell_unlock_mask[j]));
+}
+#endif
+
+#ifndef __CUDA_ARCH__
 static void GenerateSpellData() {
 	SpellTables tbl;
 	std::array<bool, SpellCount> spellSpawnableInChests = {};
 	for (int j = 0; j < SpellCount; j++) {
 		for (int t = 0; t < 11; t++) {
-			if (HTables::spells[j].spawn_probabilities[t] > 0 || HTables::spells[j].s == SPELL_SUMMON_PORTAL ||
-				HTables::spells[j].s == SPELL_SEA_SWAMP) {
+			if ((HTables::spells[j].spawn_probabilities[t] > 0 || HTables::spells[j].s == SPELL_SUMMON_PORTAL ||
+				 HTables::spells[j].s == SPELL_SEA_SWAMP) && spell_unlocked_idx(j)) {
 				spellSpawnableInChests[j] = true;
 				break;
 			}
@@ -58,7 +154,7 @@ static void GenerateSpellData() {
 
 	std::array<bool, SpellCount> spellSpawnableInBoxes = {};
 	for (int j = 0; j < SpellCount; j++) {
-		if (HTables::spells[j].type == MODIFIER || HTables::spells[j].type == UTILITY) {
+		if ((HTables::spells[j].type == MODIFIER || HTables::spells[j].type == UTILITY) && spell_unlocked_idx(j)) {
 			for (int t = 0; t < 11; t++) {
 				if (HTables::spells[j].spawn_probabilities[t] > 0 || HTables::spells[j].s == SPELL_SUMMON_PORTAL ||
 					HTables::spells[j].s == SPELL_SEA_SWAMP) {
@@ -75,7 +171,7 @@ static void GenerateSpellData() {
 		std::array<SpellProb, SpellCount> spellProbs_n = {};
 		int n = 0;
 		for (int j = 0; j < SpellCount; j++) {
-			if (HTables::spells[j].spawn_probabilities[t] > 0) {
+			if (HTables::spells[j].spawn_probabilities[t] > 0 && spell_unlocked_idx(j)) {
 				tbl.spellTierCounts[t]++;
 				tbl.spellTierSums[t] += HTables::spells[j].spawn_probabilities[t];
 				spellProbs_n[n++] = {tbl.spellTierSums[t], HTables::spells[j].s};
@@ -87,7 +183,7 @@ static void GenerateSpellData() {
 	for (int tier = 0; tier < 11; tier++) {
 		for (int t = 0; t < 8; t++) {
 			for (int j = 0; j < SpellCount; j++) {
-				if ((int)HTables::spells[j].type == t && HTables::spells[j].spawn_probabilities[tier] > 0) {
+				if ((int)HTables::spells[j].type == t && HTables::spells[j].spawn_probabilities[tier] > 0 && spell_unlocked_idx(j)) {
 					tbl.spellProbs_Counts[tier][t]++;
 				}
 			}
@@ -98,7 +194,7 @@ static void GenerateSpellData() {
 			if (tbl.spellProbs_Counts[tier][t] > 0) {
 				double sum = 0;
 				for (int j = 0; j < SpellCount; j++) {
-					if ((int)HTables::spells[j].type == t && HTables::spells[j].spawn_probabilities[tier] > 0) {
+					if ((int)HTables::spells[j].type == t && HTables::spells[j].spawn_probabilities[tier] > 0 && spell_unlocked_idx(j)) {
 						sum += HTables::spells[j].spawn_probabilities[tier];
 						spellProbs_t_n[n++] = {sum, HTables::spells[j].s};
 					}
@@ -111,6 +207,7 @@ static void GenerateSpellData() {
 	}
 	HSetSpellData(&tbl);
 }
+#endif
 
 #if 0
 namespace HELPERS
@@ -171,7 +268,9 @@ namespace HELPERS
 void cli_main(int argc, char** argv);
 
 int main(int argc, char** argv) {
+#ifndef __CUDA_ARCH__
 	std::filesystem::current_path() = argv[0];
+#endif
 	//HELPERS::HCountForEach();
 	//return 0;
 
@@ -249,11 +348,18 @@ int main(int argc, char** argv) {
 
 	cli_main(argc, argv);
 
+	// Build unlock mask (if enabled via CLI) before generating spell tables
+#ifndef __CUDA_ARCH__
+	BuildSpellUnlockMask();
+#endif
+
 	InitializePlatform();
 	if (DEBUG_DISPATCH_RATE_OVERRIDE)
 		SetTargetDispatchRate(DEBUG_DISPATCH_RATE_OVERRIDE);
 	HSetBiomeData();
+#ifndef __CUDA_ARCH__
 	GenerateSpellData();
+#endif
 
 	BiomeMapChunks map = load_biome_map("data/biome_impl/biome_map.png", 0);
 	int biomeCount = 0;
