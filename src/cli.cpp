@@ -662,6 +662,8 @@ int cmd_this_seed(int i) {
 	check_argc(i, 1);
 	config.generalCfg.seedStart = to_int(g_argv[i++]);
 	config.generalCfg.seedEnd = config.generalCfg.seedStart;
+	if (!config.generalCfg.seedStart)
+		config.generalCfg.explicitSeed0 = true;
 	return i;
 }
 std::vector<uint32_t> seed_list;
