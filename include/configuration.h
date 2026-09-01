@@ -12,6 +12,7 @@ struct GeneralConfig {
 	uint32_t seedBlockSize;
 	bool seedBlockOverride;
 	int priority;
+	bool explicitSeed0;
 };
 struct MemSizeConfig {
 	size_t memoryCap;

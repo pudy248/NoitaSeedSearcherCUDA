@@ -147,7 +147,7 @@ Vec2i OutputLoop(FILE* outputFile, time_t startTime, OutputProgressData& progres
 					continue;
 				}
 				uint32_t nextSeed = currentSeed;
-				if (!config.generalCfg.seedStart)
+				if (!config.generalCfg.seedStart && !config.generalCfg.explicitSeed0)
 					nextSeed = seed_list[currentSeed];
 #ifdef REALTIME_SEEDS
 				uint8_t* output = hOutput + (i * WorkerAppetite + j) * config.memSizes.outputSize;
@@ -275,7 +275,7 @@ recount_end:
 					if (currentSeed > config.generalCfg.seedEnd || returns[i].seedFound)
 						continue;
 					uint32_t nextSeed = currentSeed;
-					if (!config.generalCfg.seedStart)
+					if (!config.generalCfg.seedStart && !config.generalCfg.explicitSeed0)
 						nextSeed = seed_list[currentSeed];
 #ifdef REALTIME_SEEDS
 					uint8_t* output = hOutput + (index * WorkerAppetite + i) * config.memSizes.outputSize;

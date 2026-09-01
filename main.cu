@@ -183,6 +183,7 @@ int main(int argc, char** argv) {
 		.seedBlockSize = 1,
 		.seedBlockOverride = false,
 		.priority = 0,
+		.explicitSeed0 = false,
 	};
 
 	// Runs before generation, once
